@@ -53,6 +53,7 @@ class CompanyProfile(Base):
     __tablename__ = "company_profiles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(80), default="default", index=True)
     name: Mapped[str] = mapped_column(String(220), default="Sample Electrical Contractor")
     states_served: Mapped[list] = mapped_column(MutableList.as_mutable(json_type()), default=list)
     bonding_capacity: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), nullable=True)
@@ -60,6 +61,34 @@ class CompanyProfile(Base):
     installation_capabilities: Mapped[list] = mapped_column(MutableList.as_mutable(json_type()), default=list)
     labor_type: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
     experience: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(40), default="user", index=True)
+    tenant_id: Mapped[str] = mapped_column(String(80), default="default", index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    token_hash: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

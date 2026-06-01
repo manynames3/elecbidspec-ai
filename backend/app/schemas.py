@@ -65,6 +65,27 @@ class SearchRequest(BaseModel):
     query: str
 
 
+class UserRead(BaseModel):
+    id: int
+    email: str
+    role: str
+    tenant_id: str
+    is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    token: str
+    user: UserRead
+    expires_at: datetime
+
+
 class ProposalRead(BaseModel):
     bid_summary: str
     scope_checklist: list[str]
@@ -72,11 +93,14 @@ class ProposalRead(BaseModel):
     required_documents_checklist: list[str]
     risk_flags: list[str]
     draft_executive_summary: str
+    compliance_matrix: list[dict[str, str]]
+    bid_no_bid_memo: str
     partner_email_template: str
 
 
 class CompanyProfileBase(BaseModel):
     name: str
+    tenant_id: str = "default"
     states_served: list[str] = Field(default_factory=list)
     bonding_capacity: Decimal | None = None
     cable_types_supplied: list[str] = Field(default_factory=list)

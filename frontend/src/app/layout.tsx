@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ClipboardList, DatabaseZap, Upload, UserRoundCog } from "lucide-react";
+import { AuthStatus } from "@/components/AuthStatus";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 Profile
               </Link>
             </nav>
+            <AuthStatus />
           </aside>
           <main className="main-content">{children}</main>
         </div>
@@ -39,4 +41,3 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
-

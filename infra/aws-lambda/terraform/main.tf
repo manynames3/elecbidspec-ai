@@ -17,6 +17,12 @@ locals {
     BEDROCK_TEMPERATURE       = tostring(var.bedrock_temperature)
     SAM_GOV_API_KEY           = var.sam_gov_api_key
     ADMIN_API_TOKEN           = var.admin_api_token
+    AUTH_REQUIRED             = tostring(var.auth_required)
+    AUTH_SESSION_TTL_HOURS    = tostring(var.auth_session_ttl_hours)
+    AUTH_ADMIN_EMAIL          = var.auth_admin_email
+    AUTH_ADMIN_PASSWORD       = var.auth_admin_password
+    AUTH_USER_EMAIL           = var.auth_user_email
+    AUTH_USER_PASSWORD        = var.auth_user_password
     NYPA_API_SUBSCRIPTION_KEY = var.nypa_api_subscription_key
   }
 }

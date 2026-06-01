@@ -92,6 +92,37 @@ select {
   color: var(--text);
 }
 
+.auth-card {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.auth-card strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.auth-card input {
+  min-height: 34px;
+  font-size: 13px;
+}
+
+.compact-button {
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: 13px;
+}
+
+.form-error {
+  color: var(--red);
+  font-size: 12px;
+}
+
 .main-content {
   padding: 28px;
   min-width: 0;
@@ -418,6 +449,12 @@ select:focus {
   color: var(--amber);
 }
 
+.source-pill.pending {
+  background: #f3f4f6;
+  border-color: #cfd5dc;
+  color: #4b5563;
+}
+
 .compact-copy {
   color: var(--muted);
   font-size: 14px;
@@ -512,6 +549,32 @@ select:focus {
   background: #fffefa;
   padding: 12px;
   line-height: 1.5;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+  font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+  border: 1px solid var(--border);
+  padding: 9px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.data-table th {
+  background: #f4f6f8;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
 }
 
 .form-panel {

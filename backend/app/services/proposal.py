@@ -19,10 +19,13 @@ PROPOSAL_KEYS = {
     "required_documents_checklist",
     "risk_flags",
     "draft_executive_summary",
+    "compliance_matrix",
+    "bid_no_bid_memo",
     "partner_email_template",
 }
-PROPOSAL_TEXT_KEYS = {"bid_summary", "draft_executive_summary", "partner_email_template"}
-PROPOSAL_LIST_KEYS = PROPOSAL_KEYS - PROPOSAL_TEXT_KEYS
+PROPOSAL_TEXT_KEYS = {"bid_summary", "draft_executive_summary", "bid_no_bid_memo", "partner_email_template"}
+PROPOSAL_MATRIX_KEYS = {"compliance_matrix"}
+PROPOSAL_LIST_KEYS = PROPOSAL_KEYS - PROPOSAL_TEXT_KEYS - PROPOSAL_MATRIX_KEYS
 PROPOSAL_TOOL_NAME = "create_proposal_package"
 
 
@@ -39,6 +42,20 @@ def _proposal_schema() -> dict[str, Any]:
             for key in sorted(PROPOSAL_LIST_KEYS)
         }
     )
+    properties["compliance_matrix"] = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "requirement": {"type": "string"},
+                "status": {"type": "string"},
+                "evidence": {"type": "string"},
+                "owner": {"type": "string"},
+            },
+            "required": ["requirement", "status", "evidence", "owner"],
+            "additionalProperties": False,
+        },
+    }
     return {
         "type": "object",
         "properties": properties,
@@ -108,6 +125,44 @@ def generate_deterministic_proposal(opportunity: Mapping, company_profile: Mappi
     if not bonding:
         risk_flags.append("Bonding and insurance requirements need manual confirmation.")
 
+    compliance_matrix = [
+        {
+            "requirement": "Technical scope",
+            "status": "Review required",
+            "evidence": "; ".join(scope_items[:3]),
+            "owner": company_name,
+        },
+        {
+            "requirement": "Material compliance",
+            "status": "Review required",
+            "evidence": "; ".join(materials[:3]),
+            "owner": company_name,
+        },
+        {
+            "requirement": "Bonding and insurance",
+            "status": "Needs confirmation",
+            "evidence": "; ".join(bonding[:3]),
+            "owner": "Estimating / contracts",
+        },
+        {
+            "requirement": "Submission instructions",
+            "status": "Needs confirmation",
+            "evidence": "; ".join(submission[:3]),
+            "owner": "Proposal lead",
+        },
+        {
+            "requirement": "Partner/self-perform boundary",
+            "status": "Needs confirmation",
+            "evidence": f"Confirm which scope items {company_name} will self-perform versus subcontract or partner.",
+            "owner": "Business development",
+        },
+    ]
+    bid_recommendation = "pursue"
+    if fit_score is not None and fit_score < 55:
+        bid_recommendation = "conditional no-bid unless a strong local installation partner is secured"
+    elif risk_flags:
+        bid_recommendation = "pursue with clarifications"
+
     bid_summary = (
         f"{agency} is seeking bids for {title}, classified as {project_type}. "
         f"The response is due by {due_date}. {capability_sentence} Key extracted keywords include "
@@ -138,6 +193,13 @@ def generate_deterministic_proposal(opportunity: Mapping, company_profile: Mappi
             f"{capability_sentence} We will align compliant material sourcing, experienced execution resources, disciplined safety practices, "
             "and schedule-focused project management to deliver the work with minimal operational disruption."
         ),
+        "compliance_matrix": compliance_matrix,
+        "bid_no_bid_memo": (
+            f"Recommendation: {bid_recommendation}. Fit score: {fit_score if fit_score is not None else 'not scored'}. "
+            f"Primary rationale: {capability_sentence} Key risks to resolve before final pursuit are "
+            f"{'; '.join(risk_flags[:4]) if risk_flags else 'limited based on automated review, subject to manual solicitation review'}. "
+            "Next actions: validate drawings/specifications, confirm bonding and insurance, assign partner scope, and complete pricing go/no-go review."
+        ),
         "partner_email_template": (
             "Subject: Partner review requested - "
             f"{title}\n\n"
@@ -155,7 +217,14 @@ def _proposal_prompt(opportunity: Mapping, company_profile: Mapping | None, base
         "company_profile": _json_safe(company_profile or {}),
         "opportunity": _json_safe(opportunity),
         "baseline_proposal": _json_safe(baseline),
-        "output_schema": {key: "string" if key in PROPOSAL_TEXT_KEYS else "array of strings" for key in sorted(PROPOSAL_KEYS)},
+        "output_schema": {
+            key: "array of requirement/status/evidence/owner objects"
+            if key in PROPOSAL_MATRIX_KEYS
+            else "string"
+            if key in PROPOSAL_TEXT_KEYS
+            else "array of strings"
+            for key in sorted(PROPOSAL_KEYS)
+        },
     }
     return (
         "Create an optimized bid-readiness and proposal-prep package for the company profile and public bid opportunity below. "
@@ -191,6 +260,20 @@ def _normalize_proposal_payload(payload: Mapping, fallback: Mapping) -> dict:
         if key in PROPOSAL_TEXT_KEYS:
             if isinstance(value, str) and value.strip():
                 normalized[key] = value.strip()
+        elif key in PROPOSAL_MATRIX_KEYS and isinstance(value, list):
+            rows = []
+            for item in value:
+                if isinstance(item, Mapping):
+                    rows.append(
+                        {
+                            "requirement": str(item.get("requirement") or "").strip(),
+                            "status": str(item.get("status") or "").strip(),
+                            "evidence": str(item.get("evidence") or "").strip(),
+                            "owner": str(item.get("owner") or "").strip(),
+                        }
+                    )
+            if rows:
+                normalized[key] = rows
         elif isinstance(value, list):
             normalized[key] = [str(item).strip() for item in value if str(item).strip()]
     return normalized

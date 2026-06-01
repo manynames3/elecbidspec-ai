@@ -24,6 +24,7 @@ function splitList(value: string): string[] {
 export function ProfileForm() {
   const [profileId, setProfileId] = useState<number | null>(null);
   const [form, setForm] = useState({
+    tenant_id: "default",
     name: "",
     states_served: "",
     bonding_capacity: "",
@@ -42,6 +43,7 @@ export function ProfileForm() {
         setProfileId(profile.id);
         setForm({
           name: profile.name,
+          tenant_id: profile.tenant_id,
           states_served: profile.states_served.join(", "),
           bonding_capacity: profile.bonding_capacity ? String(profile.bonding_capacity) : "",
           cable_types_supplied: profile.cable_types_supplied.join(", "),
@@ -63,6 +65,7 @@ export function ProfileForm() {
     try {
       const payload = {
         name: form.name,
+        tenant_id: form.tenant_id || "default",
         states_served: splitList(form.states_served).map((state) => state.toUpperCase()),
         bonding_capacity: form.bonding_capacity ? Number(form.bonding_capacity) : null,
         cable_types_supplied: splitList(form.cable_types_supplied),
@@ -89,6 +92,7 @@ export function ProfileForm() {
           <h1>Company capability profile</h1>
         </div>
         {profileId ? <span className="source-pill">profile #{profileId}</span> : null}
+        <span className="source-pill">tenant {form.tenant_id}</span>
       </section>
 
       <form className="form-panel" onSubmit={save}>

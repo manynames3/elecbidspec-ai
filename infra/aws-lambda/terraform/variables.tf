@@ -135,6 +135,44 @@ variable "admin_api_token" {
   sensitive   = true
 }
 
+variable "auth_required" {
+  description = "Require login for tenant-specific app endpoints."
+  type        = bool
+  default     = false
+}
+
+variable "auth_session_ttl_hours" {
+  description = "Login session lifetime in hours."
+  type        = number
+  default     = 168
+}
+
+variable "auth_admin_email" {
+  description = "Optional seeded admin email."
+  type        = string
+  default     = ""
+}
+
+variable "auth_admin_password" {
+  description = "Optional seeded admin password."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "auth_user_email" {
+  description = "Optional seeded standard user email."
+  type        = string
+  default     = ""
+}
+
+variable "auth_user_password" {
+  description = "Optional seeded standard user password."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "nypa_api_subscription_key" {
   description = "Optional NYPA public RFQ API subscription key."
   type        = string

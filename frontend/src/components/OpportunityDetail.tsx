@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, ExternalLink, FileText, RefreshCw } from "lucide-react";
-import { apiFetch, formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
+import { ArrowLeft, CalendarDays, Download, ExternalLink, FileText, RefreshCw } from "lucide-react";
+import { apiFetch, apiUrl, authHeaders, formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
 import type { Opportunity, Proposal } from "@/lib/types";
 
 function ListBlock({ title, items }: { title: string; items: string[] }) {
@@ -26,7 +26,9 @@ export function OpportunityDetail() {
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [proposalError, setProposalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [proposalLoading, setProposalLoading] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -37,14 +39,21 @@ export function OpportunityDetail() {
       return;
     }
     try {
-      const [nextOpportunity, nextProposal] = await Promise.all([
-        apiFetch<Opportunity>(`/opportunities/${id}`),
-        apiFetch<Proposal>(`/opportunities/${id}/proposal`)
-      ]);
+      setProposalError(null);
+      const nextOpportunity = await apiFetch<Opportunity>(`/opportunities/${id}`);
       setOpportunity(nextOpportunity);
-      setProposal(nextProposal);
+      setLoading(false);
+      setProposalLoading(true);
+      try {
+        setProposal(await apiFetch<Proposal>(`/opportunities/${id}/proposal`));
+      } catch (err) {
+        setProposalError(err instanceof Error ? err.message : "Unable to generate proposal package");
+      } finally {
+        setProposalLoading(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load opportunity");
+      setProposalLoading(false);
     } finally {
       setLoading(false);
     }
@@ -56,6 +65,27 @@ export function OpportunityDetail() {
     }
     setOpportunity(await apiFetch<Opportunity>(`/opportunities/${opportunity.id}/rescore`, { method: "POST" }));
     setProposal(await apiFetch<Proposal>(`/opportunities/${opportunity.id}/proposal`));
+  }
+
+  async function downloadProposal() {
+    if (!opportunity) {
+      return;
+    }
+    const response = await fetch(apiUrl(`/opportunities/${opportunity.id}/proposal.docx`), {
+      headers: authHeaders()
+    });
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `${opportunity.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.docx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
   }
 
   useEffect(() => {
@@ -81,6 +111,10 @@ export function OpportunityDetail() {
         <button className="secondary-button" onClick={() => void rescore()} type="button">
           <RefreshCw size={16} />
           Rescore
+        </button>
+        <button className="secondary-button" onClick={() => void downloadProposal().catch((err) => setError(err instanceof Error ? err.message : "Download failed"))} type="button">
+          <Download size={16} />
+          DOCX
         </button>
       </div>
 
@@ -171,6 +205,8 @@ export function OpportunityDetail() {
         </div>
       </section>
 
+      {proposalError ? <div className="alert">{proposalError}</div> : null}
+
       <section className="panel-grid">
         {proposal ? (
           <>
@@ -179,6 +215,8 @@ export function OpportunityDetail() {
             <ListBlock title="Required Documents" items={proposal.required_documents_checklist} />
             <ListBlock title="Risk Flags" items={proposal.risk_flags.length ? proposal.risk_flags : ["No major automated risk flags."]} />
           </>
+        ) : proposalLoading ? (
+          <div className="empty-state">Generating proposal package...</div>
         ) : null}
       </section>
 
@@ -188,6 +226,43 @@ export function OpportunityDetail() {
             <h2>Draft Executive Summary</h2>
             <p>{proposal.draft_executive_summary}</p>
           </section>
+          <section className="panel">
+            <h2>Bid / No-Bid Memo</h2>
+            <p>{proposal.bid_no_bid_memo}</p>
+          </section>
+        </section>
+      ) : null}
+
+      {proposal ? (
+        <section className="panel">
+          <h2>Compliance Matrix</h2>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Requirement</th>
+                  <th>Status</th>
+                  <th>Evidence</th>
+                  <th>Owner</th>
+                </tr>
+              </thead>
+              <tbody>
+                {proposal.compliance_matrix.map((row) => (
+                  <tr key={`${row.requirement}-${row.owner}`}>
+                    <td>{row.requirement}</td>
+                    <td>{row.status}</td>
+                    <td>{row.evidence}</td>
+                    <td>{row.owner}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
+      {proposal ? (
+        <section className="panel-grid">
           <section className="panel">
             <h2>Partner Email</h2>
             <pre className="email-box">{proposal.partner_email_template}</pre>

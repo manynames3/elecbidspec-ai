@@ -49,11 +49,19 @@ export type Proposal = {
   required_documents_checklist: string[];
   risk_flags: string[];
   draft_executive_summary: string;
+  compliance_matrix: Array<{
+    requirement: string;
+    status: string;
+    evidence: string;
+    owner: string;
+  }>;
+  bid_no_bid_memo: string;
   partner_email_template: string;
 };
 
 export type CompanyProfile = {
   id: number;
+  tenant_id: string;
   name: string;
   states_served: string[];
   bonding_capacity: MoneyValue;
@@ -78,8 +86,10 @@ export type SourceHealth = {
   category: string;
   coverage: string;
   adapter: string;
+  source_url?: string;
+  directory_only?: boolean;
   requires_setting?: string;
-  status: "healthy" | "stale" | "failed" | "no_records" | "missing_config" | string;
+  status: "healthy" | "stale" | "failed" | "no_records" | "missing_config" | "needs_adapter" | string;
   count: number;
   target_matches: number;
   last_seen_at: string | null;
@@ -105,4 +115,18 @@ export type IngestionSummary = {
 
 export type IngestionRefreshResult = {
   jobs: IngestionJobStatus[];
+};
+
+export type AuthUser = {
+  id: number;
+  email: string;
+  role: "admin" | "user" | string;
+  tenant_id: string;
+  is_active: boolean;
+};
+
+export type LoginResponse = {
+  token: string;
+  user: AuthUser;
+  expires_at: string;
 };

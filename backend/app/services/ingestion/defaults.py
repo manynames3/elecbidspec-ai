@@ -32,72 +32,67 @@ DEFAULT_ELECTRICAL_SOURCE_KEYWORDS = [
     "lighting infrastructure",
 ]
 
+
+def _catalog_entry(
+    source: str,
+    label: str,
+    category: str,
+    coverage: str,
+    adapter: str,
+    source_url: str | None = None,
+    directory_only: bool = False,
+    requires_setting: str | None = None,
+) -> dict[str, Any]:
+    entry: dict[str, Any] = {
+        "source": source,
+        "label": label,
+        "category": category,
+        "coverage": coverage,
+        "adapter": adapter,
+    }
+    if source_url:
+        entry["source_url"] = source_url
+    if directory_only:
+        entry["directory_only"] = True
+    if requires_setting:
+        entry["requires_setting"] = requires_setting
+    return entry
+
+
 DEFAULT_SOURCE_CATALOG = [
-    {
-        "source": "sam_gov",
-        "label": "SAM.gov",
-        "category": "federal",
-        "coverage": "Nationwide federal opportunities",
-        "adapter": "sam_gov",
-        "requires_setting": "sam_gov_api_key",
-    },
-    {
-        "source": "txdot_bid_items",
-        "label": "TxDOT",
-        "category": "state_dot",
-        "coverage": "Texas statewide DOT lettings",
-        "adapter": "txdot_bid_items",
-    },
-    {
-        "source": "nypa",
-        "label": "NY Power Authority",
-        "category": "utility",
-        "coverage": "New York utility RFQ/RFPs",
-        "adapter": "nypa",
-        "requires_setting": "nypa_api_subscription_key",
-    },
-    {
-        "source": "nyc_city_record",
-        "label": "NYC City Record",
-        "category": "state_local",
-        "coverage": "New York City public solicitations",
-        "adapter": "nyc_city_record",
-    },
-    {
-        "source": "nyc_school_construction_authority",
-        "label": "NYC School Construction",
-        "category": "education",
-        "coverage": "NYC School Construction Authority solicitations",
-        "adapter": "nyc_city_record",
-    },
-    {
-        "source": "la_ramp",
-        "label": "Los Angeles RAMP",
-        "category": "state_local",
-        "coverage": "Los Angeles city/county and LADWP-linked postings",
-        "adapter": "public_json_feed",
-    },
-    {
-        "source": "chicago_solicitations",
-        "label": "Chicago/CTA",
-        "category": "state_local",
-        "coverage": "City of Chicago and CTA solicitations",
-        "adapter": "chicago_solicitations",
-    },
-    {
-        "source": "sf_open_bids",
-        "label": "San Francisco",
-        "category": "state_local",
-        "coverage": "San Francisco open bid opportunities",
-        "adapter": "sf_open_bids",
-    },
-    {
-        "source": "montgomery_md_solicitations",
-        "label": "Montgomery County",
-        "category": "state_local",
-        "coverage": "Montgomery County, MD active solicitations",
-        "adapter": "public_json_feed",
-    },
+    _catalog_entry("sam_gov", "SAM.gov", "federal", "Nationwide federal opportunities", "sam_gov", requires_setting="sam_gov_api_key"),
+    _catalog_entry("txdot_bid_items", "TxDOT", "state_dot", "Texas statewide DOT lettings", "txdot_bid_items", "https://data.texas.gov/Transportation/Official-and-Unofficial-Bid-Items/qh8x-rm8r"),
+    _catalog_entry("pa_emarketplace", "PA eMarketplace", "state_local", "Pennsylvania statewide open solicitations", "pa_emarketplace", "https://www.emarketplace.state.pa.us/Search.aspx/Home.aspx"),
+    _catalog_entry("nypa", "NY Power Authority", "utility", "New York utility RFQ/RFPs", "nypa", "https://rfp.nypa.gov/", requires_setting="nypa_api_subscription_key"),
+    _catalog_entry("nyc_city_record", "NYC City Record", "state_local", "New York City public solicitations", "nyc_city_record"),
+    _catalog_entry("nyc_school_construction_authority", "NYC School Construction", "education", "NYC School Construction Authority solicitations", "nyc_city_record"),
+    _catalog_entry("la_ramp", "Los Angeles RAMP", "state_local", "Los Angeles city/county and LADWP-linked postings", "public_json_feed", "https://data.lacity.org/"),
+    _catalog_entry("chicago_solicitations", "Chicago/CTA", "state_local", "City of Chicago and CTA solicitations", "chicago_solicitations"),
+    _catalog_entry("sf_open_bids", "San Francisco", "state_local", "San Francisco open bid opportunities", "sf_open_bids"),
+    _catalog_entry("montgomery_md_solicitations", "Montgomery County", "state_local", "Montgomery County, MD active solicitations", "public_json_feed"),
+    _catalog_entry("ca_dot", "Caltrans", "state_dot", "California state transportation bid opportunities", "portal_directory", "https://caleprocure.ca.gov/", True),
+    _catalog_entry("fl_dot", "FDOT", "state_dot", "Florida transportation lettings and procurement", "portal_directory", "https://www.fdot.gov/contracts/", True),
+    _catalog_entry("ny_dot", "NYSDOT", "state_dot", "New York transportation contract opportunities", "portal_directory", "https://www.dot.ny.gov/doing-business/opportunities/const-notices", True),
+    _catalog_entry("ga_dot", "GDOT", "state_dot", "Georgia transportation bid opportunities", "portal_directory", "https://www.dot.ga.gov/GDOT/Pages/Contractors.aspx", True),
+    _catalog_entry("il_dot", "IDOT", "state_dot", "Illinois transportation lettings and bids", "portal_directory", "https://idot.illinois.gov/doing-business/procurements.html", True),
+    _catalog_entry("oh_dot", "ODOT", "state_dot", "Ohio transportation bid opportunities", "portal_directory", "https://www.transportation.ohio.gov/working/engineering/estimator/contract-letting", True),
+    _catalog_entry("nc_evp", "NC eVP", "state_local", "North Carolina statewide public solicitations including schools, utilities, airports, and authorities", "portal_directory", "https://evp.nc.gov/solicitations/", True),
+    _catalog_entry("va_dot", "VDOT", "state_dot", "Virginia transportation bids and proposals", "portal_directory", "https://www.virginiadot.org/business/const/default.asp", True),
+    _catalog_entry("az_dot", "ADOT", "state_dot", "Arizona transportation procurement and construction opportunities", "portal_directory", "https://azdot.gov/business/contracts-and-specifications", True),
+    _catalog_entry("tva_procurement", "TVA", "utility", "Tennessee Valley Authority supplier and sourcing opportunities", "portal_directory", "https://www.tva.com/information/suppliers", True),
+    _catalog_entry("bpa_procurement", "BPA", "utility", "Bonneville Power Administration acquisition opportunities", "portal_directory", "https://www.bpa.gov/doing-business", True),
+    _catalog_entry("ladwp", "LADWP", "utility", "Los Angeles Department of Water and Power opportunities through regional procurement portals", "portal_directory", "https://www.ladwp.com/", True),
+    _catalog_entry("austin_energy", "Austin Energy", "utility", "Austin Energy and City of Austin procurement", "portal_directory", "https://financeonline.austintexas.gov/afo/account_services/solicitation/solicitation.cfm", True),
+    _catalog_entry("cps_energy", "CPS Energy", "utility", "San Antonio CPS Energy procurement opportunities", "portal_directory", "https://www.cpsenergy.com/en/about-us/procurement-and-suppliers.html", True),
+    _catalog_entry("jea", "JEA", "utility", "Jacksonville JEA procurement opportunities", "portal_directory", "https://www.jea.com/about/procurement/", True),
+    _catalog_entry("srp", "SRP", "utility", "Salt River Project procurement and supplier opportunities", "portal_directory", "https://www.srpnet.com/about/suppliers", True),
+    _catalog_entry("port_authority_ny_nj", "Port Authority NY/NJ", "airport_authority", "Airport, port, and transit authority bid opportunities", "portal_directory", "https://www.panynj.gov/port-authority/en/business-opportunities/solicitations-advertisements.html", True),
+    _catalog_entry("la_metro", "LA Metro", "transit", "Los Angeles Metro procurement opportunities", "portal_directory", "https://business.metro.net/VendorPortal/faces/home/solicitations/openSolicitations", True),
+    _catalog_entry("septa", "SEPTA", "transit", "Southeastern Pennsylvania Transportation Authority procurement", "portal_directory", "https://www5.septa.org/business/procurement/", True),
+    _catalog_entry("ny_mta", "MTA", "transit", "New York MTA procurement opportunities", "portal_directory", "https://new.mta.info/doing-business-with-us/procurement", True),
+    _catalog_entry("dfw_airport", "DFW Airport", "airport_authority", "Dallas Fort Worth Airport procurement opportunities", "portal_directory", "https://www.dfwairport.com/business/opportunities/solicitations/", True),
+    _catalog_entry("uc_procurement", "University of California", "university", "University of California construction and procurement opportunities", "portal_directory", "https://www.ucop.edu/procurement-services/", True),
+    _catalog_entry("houston_water", "Houston Public Works", "water_authority", "Houston water, wastewater, and public works solicitations", "portal_directory", "https://www.houstontx.gov/bizwithhou/", True),
 ]
 
 DEFAULT_PUBLIC_BID_JOBS = [
@@ -120,6 +115,15 @@ DEFAULT_PUBLIC_BID_JOBS = [
             "job_label": "txdot_bid_items",
             "limit": 50,
             "source_limit": 5000,
+            "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
+            "update_existing": True,
+        },
+    },
+    {
+        "adapter": "pa_emarketplace",
+        "params": {
+            "job_label": "pa_emarketplace",
+            "limit": 50,
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,
         },

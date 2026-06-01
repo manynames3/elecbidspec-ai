@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     database_disable_pool: bool = Field(default=False, validation_alias="DATABASE_DISABLE_POOL")
     frontend_origin: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_ORIGIN")
     admin_api_token: str | None = Field(default=None, validation_alias="ADMIN_API_TOKEN")
+    auth_required: bool = Field(default=False, validation_alias="AUTH_REQUIRED")
+    auth_session_ttl_hours: int = Field(default=168, validation_alias="AUTH_SESSION_TTL_HOURS")
+    auth_admin_email: str | None = Field(default=None, validation_alias="AUTH_ADMIN_EMAIL")
+    auth_admin_password: str | None = Field(default=None, validation_alias="AUTH_ADMIN_PASSWORD")
+    auth_user_email: str | None = Field(default=None, validation_alias="AUTH_USER_EMAIL")
+    auth_user_password: str | None = Field(default=None, validation_alias="AUTH_USER_PASSWORD")
 
     sam_gov_api_key: str | None = Field(default=None, validation_alias="SAM_GOV_API_KEY")
     sam_gov_api_base_url: str = Field(

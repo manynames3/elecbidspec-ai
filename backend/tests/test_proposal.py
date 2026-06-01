@@ -1,8 +1,11 @@
 import sys
+import zipfile
+from io import BytesIO
 from types import SimpleNamespace
 
 from app.core.config import get_settings
 from app.services.proposal import generate_bedrock_proposal, generate_deterministic_proposal
+from app.services.proposal_docx import generate_proposal_docx
 
 
 def _opportunity():
@@ -39,6 +42,8 @@ def test_deterministic_proposal_uses_company_profile_context():
 
     assert "Taihan Cable & Solution" in proposal["draft_executive_summary"]
     assert any("Taihan Cable & Solution" in item for item in proposal["required_documents_checklist"])
+    assert proposal["compliance_matrix"][0]["requirement"] == "Technical scope"
+    assert "Recommendation:" in proposal["bid_no_bid_memo"]
 
 
 def test_bedrock_proposal_parses_structured_response(monkeypatch):
@@ -61,6 +66,8 @@ def test_bedrock_proposal_parses_structured_response(monkeypatch):
                                   "required_documents_checklist": ["Taihan capability statement."],
                                   "risk_flags": ["Validate outage window."],
                                   "draft_executive_summary": "Taihan Cable & Solution offers an optimized response.",
+                                  "compliance_matrix": [{"requirement":"Cable schedule","status":"Review required","evidence":"Spec section","owner":"Taihan"}],
+                                  "bid_no_bid_memo": "Recommendation: pursue.",
                                   "partner_email_template": "Subject: Partner support"
                                 }
                                 """
@@ -104,6 +111,15 @@ def test_bedrock_proposal_parses_tool_use_response(monkeypatch):
                                         "required_documents_checklist": ["Taihan capability statement."],
                                         "risk_flags": ["Validate bonding requirement."],
                                         "draft_executive_summary": "Taihan Cable & Solution can support compliant cable supply.",
+                                        "compliance_matrix": [
+                                            {
+                                                "requirement": "Cable supply",
+                                                "status": "Review required",
+                                                "evidence": "High-voltage cable schedule",
+                                                "owner": "Taihan",
+                                            }
+                                        ],
+                                        "bid_no_bid_memo": "Recommendation: pursue.",
                                         "partner_email_template": "Subject: Partner support",
                                     },
                                 }
@@ -127,3 +143,13 @@ def test_bedrock_proposal_parses_tool_use_response(monkeypatch):
     assert proposal["scope_checklist"] == ["Review high-voltage cable schedule."]
 
     get_settings.cache_clear()
+
+
+def test_proposal_docx_contains_word_package_parts():
+    proposal = generate_deterministic_proposal(_opportunity(), _taihan_profile())
+    content = generate_proposal_docx(_opportunity(), proposal, _taihan_profile())
+
+    assert content.startswith(b"PK")
+    with zipfile.ZipFile(BytesIO(content)) as docx:
+        assert "word/document.xml" in docx.namelist()
+        assert "Taihan Cable &amp; Solution" in docx.read("word/document.xml").decode("utf-8")

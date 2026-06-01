@@ -5,23 +5,27 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, Response, UploadFile
 from sqlalchemy import Integer, func
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.session import get_db
-from app.models import CompanyProfile, IngestionJob, Opportunity
+from app.models import AuthSession, CompanyProfile, IngestionJob, Opportunity, User
 from app.schemas import (
     CompanyProfileCreate,
     CompanyProfileRead,
     IngestionJobCreate,
     IngestionJobRead,
+    LoginRequest,
+    LoginResponse,
     OpportunityCreate,
     OpportunityRead,
     ProposalRead,
     SearchRequest,
+    UserRead,
 )
+from app.services.auth import create_session_token, hash_session_token, session_expiry, verify_password
 from app.services.classification import classify_bid
 from app.services.extraction import extract_specs, parse_attachment
 from app.services.fit_scoring import score_fit
@@ -32,6 +36,7 @@ from app.services.ingestion.defaults import (
     skipped_default_public_bid_jobs,
 )
 from app.services.proposal import generate_proposal_package
+from app.services.proposal_docx import generate_proposal_docx
 from app.services.search import search_opportunities
 from app.services.storage import store_upload
 from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
@@ -40,17 +45,69 @@ from app.worker import process_job
 router = APIRouter()
 
 
+def _bearer_token(authorization: str | None) -> str | None:
+    if authorization and authorization.lower().startswith("bearer "):
+        return authorization[7:].strip()
+    return None
+
+
+def _aware(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+def _user_from_token(db: Session, token: str | None) -> User | None:
+    if not token:
+        return None
+    token_hash = hash_session_token(token)
+    session = (
+        db.query(AuthSession)
+        .filter(AuthSession.token_hash == token_hash, AuthSession.revoked_at.is_(None))
+        .order_by(AuthSession.created_at.desc())
+        .first()
+    )
+    if not session or _aware(session.expires_at) <= datetime.now(timezone.utc):
+        return None
+    user = db.get(User, session.user_id)
+    if not user or not user.is_active:
+        return None
+    return user
+
+
+def get_current_user_optional(
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+) -> User | None:
+    token = _bearer_token(authorization)
+    if not token:
+        return None
+    user = _user_from_token(db, token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired session.")
+    return user
+
+
+def require_user(current_user: User | None = Depends(get_current_user_optional)) -> User:
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Login required.")
+    return current_user
+
+
 def require_admin(
     authorization: str | None = Header(default=None),
     x_admin_token: str | None = Header(default=None),
+    db: Session = Depends(get_db),
 ) -> None:
     settings = get_settings()
+    bearer = _bearer_token(authorization)
+    session_user = _user_from_token(db, bearer)
+    if session_user and session_user.role == "admin":
+        return
+
     expected = settings.admin_api_token
     if not expected:
         raise HTTPException(status_code=503, detail="Admin API token is not configured.")
-    bearer = None
-    if authorization and authorization.lower().startswith("bearer "):
-        bearer = authorization[7:].strip()
     provided = x_admin_token or bearer
     if not provided or not hmac.compare_digest(provided, expected):
         raise HTTPException(status_code=401, detail="Admin token required.")
@@ -90,6 +147,23 @@ def get_profile_data(db: Session) -> dict | None:
     profile = db.query(CompanyProfile).first()
     if not profile:
         return None
+    return {
+        "name": profile.name,
+        "states_served": profile.states_served,
+        "bonding_capacity": float(profile.bonding_capacity) if profile.bonding_capacity is not None else None,
+        "cable_types_supplied": profile.cable_types_supplied,
+        "installation_capabilities": profile.installation_capabilities,
+        "labor_type": profile.labor_type,
+        "experience": profile.experience,
+    }
+
+
+def get_profile_data_for_user(db: Session, current_user: User | None) -> dict | None:
+    if not current_user:
+        return get_profile_data(db)
+    profile = db.query(CompanyProfile).filter(CompanyProfile.tenant_id == current_user.tenant_id).first()
+    if not profile:
+        return get_profile_data(db)
     return {
         "name": profile.name,
         "states_served": profile.states_served,
@@ -157,6 +231,8 @@ def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[d
             status = "missing_config"
         elif latest_job and latest_job.status == "failed":
             status = "failed"
+        elif catalog.get("directory_only") and (not count_row or not count_row["count"]):
+            status = "needs_adapter"
         elif not count_row or not count_row["count"]:
             status = "no_records"
         else:
@@ -183,6 +259,40 @@ def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[d
 @router.get("/health")
 def health() -> dict:
     return {"status": "ok", "service": "ElecBidSpec AI"}
+
+
+@router.post("/auth/login", response_model=LoginResponse)
+def login(payload: LoginRequest, db: Session = Depends(get_db)) -> dict:
+    user = db.query(User).filter(User.email == payload.email.strip().lower()).first()
+    if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    raw_token = create_session_token()
+    expires_at = session_expiry(get_settings().auth_session_ttl_hours)
+    db.add(AuthSession(user_id=user.id, token_hash=hash_session_token(raw_token), expires_at=expires_at))
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(user)
+    return {"token": raw_token, "user": user, "expires_at": expires_at}
+
+
+@router.get("/auth/me", response_model=UserRead)
+def get_me(current_user: User = Depends(require_user)) -> User:
+    return current_user
+
+
+@router.post("/auth/logout")
+def logout(
+    authorization: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_user),
+) -> dict:
+    token = _bearer_token(authorization)
+    if token:
+        session = db.query(AuthSession).filter(AuthSession.token_hash == hash_session_token(token), AuthSession.revoked_at.is_(None)).first()
+        if session:
+            session.revoked_at = datetime.now(timezone.utc)
+            db.commit()
+    return {"status": "ok"}
 
 
 @router.get("/opportunities", response_model=list[OpportunityRead])
@@ -265,11 +375,36 @@ def rescore_opportunity(opportunity_id: int, db: Session = Depends(get_db)) -> O
 
 
 @router.get("/opportunities/{opportunity_id}/proposal", response_model=ProposalRead)
-def get_proposal(opportunity_id: int, db: Session = Depends(get_db)) -> dict:
+def get_proposal(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> dict:
     opportunity = db.get(Opportunity, opportunity_id)
     if not opportunity:
         raise HTTPException(status_code=404, detail="Opportunity not found")
-    return generate_proposal_package(opportunity_to_dict(opportunity), get_profile_data(db))
+    return generate_proposal_package(opportunity_to_dict(opportunity), get_profile_data_for_user(db, current_user))
+
+
+@router.get("/opportunities/{opportunity_id}/proposal.docx")
+def download_proposal_docx(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> Response:
+    opportunity = db.get(Opportunity, opportunity_id)
+    if not opportunity:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    opportunity_data = opportunity_to_dict(opportunity)
+    profile = get_profile_data_for_user(db, current_user)
+    proposal = generate_proposal_package(opportunity_data, profile)
+    content = generate_proposal_docx(opportunity_data, proposal, profile)
+    filename = "".join(char if char.isalnum() else "-" for char in opportunity.title.lower()).strip("-")[:80] or "proposal"
+    return Response(
+        content,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}-proposal.docx"'},
+    )
 
 
 @router.post("/search")
@@ -321,28 +456,53 @@ async def upload_opportunity_document(
 
 
 @router.get("/company-profile", response_model=CompanyProfileRead)
-def get_company_profile(db: Session = Depends(get_db)) -> CompanyProfile:
-    profile = db.query(CompanyProfile).first()
+def get_company_profile(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> CompanyProfile:
+    if get_settings().auth_required and not current_user:
+        raise HTTPException(status_code=401, detail="Login required.")
+    profile = (
+        db.query(CompanyProfile).filter(CompanyProfile.tenant_id == current_user.tenant_id).first()
+        if current_user
+        else db.query(CompanyProfile).first()
+    )
     if not profile:
         raise HTTPException(status_code=404, detail="Company profile not found. Seed or create a profile first.")
     return profile
 
 
 @router.put("/company-profile", response_model=CompanyProfileRead)
-def upsert_company_profile(payload: CompanyProfileCreate, db: Session = Depends(get_db)) -> CompanyProfile:
-    profile = db.query(CompanyProfile).first()
+def upsert_company_profile(
+    payload: CompanyProfileCreate,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> CompanyProfile:
+    if get_settings().auth_required and not current_user:
+        raise HTTPException(status_code=401, detail="Login required.")
+    tenant_id = current_user.tenant_id if current_user else payload.tenant_id or "default"
+    profile = db.query(CompanyProfile).filter(CompanyProfile.tenant_id == tenant_id).first()
     if profile:
-        for key, value in payload.model_dump().items():
+        for key, value in {**payload.model_dump(), "tenant_id": tenant_id}.items():
             setattr(profile, key, value)
     else:
-        profile = CompanyProfile(**payload.model_dump())
+        profile = CompanyProfile(**{**payload.model_dump(), "tenant_id": tenant_id})
         db.add(profile)
     db.commit()
     db.refresh(profile)
+    profile_data = {
+        "name": profile.name,
+        "states_served": profile.states_served,
+        "bonding_capacity": float(profile.bonding_capacity) if profile.bonding_capacity is not None else None,
+        "cable_types_supplied": profile.cable_types_supplied,
+        "installation_capabilities": profile.installation_capabilities,
+        "labor_type": profile.labor_type,
+        "experience": profile.experience,
+    }
     for opportunity in db.query(Opportunity).all():
-        enriched = enrich_opportunity_data(opportunity_to_dict(opportunity), db)
-        opportunity.fit_score = enriched.get("fit_score")
-        opportunity.fit_explanation = enriched.get("fit_explanation")
+        fit = score_fit(opportunity_to_dict(opportunity), profile_data)
+        opportunity.fit_score = fit.get("fit_score")
+        opportunity.fit_explanation = fit.get("fit_explanation")
     db.commit()
     db.refresh(profile)
     return profile

@@ -128,6 +128,9 @@ Required production inputs:
 - `DATABASE_URL`, preferably Neon pooled Postgres
 - `FRONTEND_ORIGIN=https://elecbidspec-ai.pages.dev`
 - `ADMIN_API_TOKEN`, required for manual refresh and custom ingestion job endpoints
+- `AUTH_ADMIN_EMAIL` and `AUTH_ADMIN_PASSWORD` if you want a seeded admin login
+- `AUTH_USER_EMAIL` and `AUTH_USER_PASSWORD` if you want a seeded standard user login
+- `AUTH_REQUIRED=true` when profile/proposal endpoints should require login
 - `SAM_GOV_API_KEY` only if live SAM.gov ingestion is enabled
 - `NYPA_API_SUBSCRIPTION_KEY` only if live NYPA utility RFQ ingestion is enabled
 - `BEDROCK_PROPOSALS_ENABLED=true` only if AI-written proposal drafts should call Bedrock
@@ -136,7 +139,7 @@ Required production inputs:
 
 ## Admin Refresh Controls
 
-Manual ingestion refreshes can create outbound requests and mutate production opportunity records, so they are protected by `ADMIN_API_TOKEN`.
+Manual ingestion refreshes can create outbound requests and mutate production opportunity records, so they are protected. A logged-in user with role `admin` can refresh sources from the dashboard. `ADMIN_API_TOKEN` remains available as a bootstrap or break-glass token.
 
 Protected endpoints accept either:
 
@@ -152,11 +155,26 @@ X-Admin-Token: $ADMIN_API_TOKEN
 
 The dashboard prompts for this token before running an admin refresh and stores it only in the browser's local storage for that workstation. Public read-only endpoints such as dashboard data, opportunity search, and source health summaries do not require the token.
 
+## Auth
+
+The MVP includes first-party email/password login with hashed passwords, bearer session tokens, `admin` and `user` roles, and tenant-aware company profiles. Seed users are created only from environment variables:
+
+```bash
+AUTH_ADMIN_EMAIL=admin@example.com
+AUTH_ADMIN_PASSWORD=use-a-generated-password
+AUTH_USER_EMAIL=user@example.com
+AUTH_USER_PASSWORD=use-a-generated-password
+AUTH_SESSION_TTL_HOURS=168
+```
+
+Passwords are stored as salted PBKDF2 hashes. Session tokens are stored only as SHA-256 hashes. Set `AUTH_REQUIRED=true` to require login for tenant-specific profile/proposal operations; leave it `false` for public demo mode while still allowing users to sign in.
+
 ## Public Bid Sources
 
 SAM.gov is optional. The backend now treats SAM.gov as one source in a nationwide source registry, not as the whole product. Default no-key sources include:
 
 - `txdot_bid_items` for Texas DOT official bid item projects with electrical, lighting, conduit, cable, fiber, signal, and related scope
+- `pa_emarketplace` for Pennsylvania eMarketplace open solicitations
 - `nyc_city_record` for current NYC City Record/Open Data solicitations
 - `nyc_school_construction_authority` for NYC School Construction Authority opportunities filtered from the City Record feed
 - `sf_open_bids` for San Francisco Open Bid Opportunities
@@ -169,7 +187,9 @@ Keyed sources can also run when the corresponding environment variable is config
 - `sam_gov` through the SAM.gov Contract Opportunities API using `SAM_GOV_API_KEY`
 - `nypa` through the New York Power Authority public RFQ API using `NYPA_API_SUBSCRIPTION_KEY`
 
-`GET /api/ingestion/summary` reports source health for every configured default source. Statuses include `healthy`, `stale`, `failed`, `no_records`, and `missing_config`, so the dashboard can show whether coverage is active or waiting on credentials.
+The source catalog also tracks identified official portals for Caltrans, FDOT, NYSDOT, GDOT, IDOT, ODOT, NC eVP, VDOT, ADOT, TVA, BPA, LADWP, Austin Energy, CPS Energy, JEA, SRP, Port Authority NY/NJ, LA Metro, SEPTA, MTA, DFW Airport, University of California, and Houston Public Works. These show as `needs_adapter` until a safe live importer is built for each portal.
+
+`GET /api/ingestion/summary` reports source health for every configured source. Statuses include `healthy`, `stale`, `failed`, `no_records`, `missing_config`, and `needs_adapter`, so the dashboard can distinguish live coverage from known coverage targets.
 
 The app also keeps generic `public_json_feed` and `public_html_scrape` adapters for state, local, utility, school, authority, or other public bid portals. New official feeds can be added by registering another default job in `backend/app/services/ingestion/defaults.py`; most Socrata-style portals only need a URL, field mapping, source label, keyword fields, and status filter.
 
@@ -209,6 +229,7 @@ Available adapters:
 - `montgomery_md_solicitations` for Montgomery County, MD active solicitations
 - `nypa` for New York Power Authority public RFQs
 - `nyc_city_record` for NYC City Record solicitations
+- `pa_emarketplace` for Pennsylvania eMarketplace open solicitations
 - `sf_open_bids` for San Francisco Open Bid Opportunities
 - `txdot_bid_items` for Texas DOT official bid item projects
 - `sam_gov` for federal Contract Opportunities
@@ -275,13 +296,28 @@ Claude Sonnet 4.6 uses a Bedrock inference profile ID here because direct on-dem
 
 The seed profile is configured for Taihan Cable & Solution so proposal drafts are grounded in its cable and power infrastructure capability profile instead of a generic contractor profile.
 
+Proposal output includes:
+
+- Bid summary
+- Scope checklist
+- Missing information checklist
+- Required documents checklist
+- Risk flags
+- Draft executive summary
+- Compliance matrix
+- Bid/no-bid memo
+- Partner outreach email
+- Downloadable DOCX package from `GET /api/opportunities/{id}/proposal.docx`
+
 ## Key API Surfaces
 
 - `GET /api/opportunities` with filters for due date, state, project type, fit score, estimated value, $5M target match, bid status, source type, and source
 - `POST /api/uploads` for manual PDF/text intake
 - `POST /api/search` for natural-language opportunity search
 - `GET /api/opportunities/{id}/proposal` for proposal-prep output
+- `GET /api/opportunities/{id}/proposal.docx` for downloadable proposal package
 - `GET/PUT /api/company-profile` for fit-scoring capabilities
+- `POST /api/auth/login`, `GET /api/auth/me`, and `POST /api/auth/logout` for pilot authentication
 - `POST /api/ingestion/jobs` for background ingestion, protected by `ADMIN_API_TOKEN`
 - `POST /api/ingestion/refresh-defaults` for protected refresh of all default public sources
 - `GET /api/ingestion/summary` for public source coverage and source health counts

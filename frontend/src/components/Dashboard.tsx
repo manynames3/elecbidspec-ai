@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { DatabaseZap, Filter, RefreshCw, Search } from "lucide-react";
-import { apiFetch, sourceLabel } from "@/lib/api";
+import { apiFetch, authHeaders, getAuthToken, sourceLabel } from "@/lib/api";
 import type { IngestionRefreshResult, IngestionSummary, Opportunity, SearchResult } from "@/lib/types";
 import { OpportunityCard } from "@/components/OpportunityCard";
 
@@ -111,6 +111,9 @@ export function Dashboard() {
   }, []);
 
   function adminHeaders() {
+    if (getAuthToken()) {
+      return authHeaders();
+    }
     let token = adminToken || window.localStorage.getItem(adminTokenStorageKey) || "";
     if (!token) {
       token = window.prompt("Enter the admin refresh token")?.trim() ?? "";
@@ -240,7 +243,11 @@ export function Dashboard() {
         {sourceHealth.length ? (
           <div className="source-health-list" aria-label="Official source health">
             {sourceHealth.map((source) => (
-              <span className={`source-pill ${source.status === "healthy" ? "live" : source.status === "missing_config" ? "sample" : ""}`} key={source.source} title={source.coverage}>
+              <span
+                className={`source-pill ${source.status === "healthy" ? "live" : source.status === "missing_config" ? "sample" : source.status === "needs_adapter" ? "pending" : ""}`}
+                key={source.source}
+                title={source.source_url ? `${source.coverage} - ${source.source_url}` : source.coverage}
+              >
                 {sourceLabel(source.source)}: {source.count} · {source.status.replaceAll("_", " ")}
               </span>
             ))}
@@ -328,6 +335,11 @@ export function Dashboard() {
               <option value="state_local">State/local</option>
               <option value="utility">Utility</option>
               <option value="education">Education</option>
+              <option value="state_dot">State DOT</option>
+              <option value="airport_authority">Airport authority</option>
+              <option value="transit">Transit</option>
+              <option value="university">University</option>
+              <option value="water_authority">Water authority</option>
               <option value="manual">Manual</option>
             </select>
           </label>
@@ -361,6 +373,7 @@ export function Dashboard() {
               <option value="nypa">NY Power Authority</option>
               <option value="nyc_city_record">NYC City Record</option>
               <option value="nyc_school_construction_authority">NYC School Construction</option>
+              <option value="pa_emarketplace">PA eMarketplace</option>
               <option value="sf_open_bids">San Francisco</option>
               <option value="txdot_bid_items">TxDOT</option>
             </select>
