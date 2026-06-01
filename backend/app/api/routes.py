@@ -119,6 +119,7 @@ def list_opportunities(
     source_type: str | None = Query(default=None),
     bid_status: str | None = Query(default=None),
     open_only: bool = Query(default=False),
+    real_only: bool = Query(default=False),
 ) -> list[Opportunity]:
     query = db.query(Opportunity)
     if due_before:
@@ -145,6 +146,8 @@ def list_opportunities(
         query = query.filter(Opportunity.bid_status == bid_status)
     if open_only:
         query = query.filter(Opportunity.bid_status == "open")
+    if real_only:
+        query = query.filter(Opportunity.source != "seed")
     return query.order_by(Opportunity.due_date.asc().nullslast(), Opportunity.fit_score.desc().nullslast()).all()
 
 
@@ -346,7 +349,12 @@ def refresh_default_ingestion(db: Session = Depends(get_db)) -> dict:
         db.add(job)
         db.commit()
         db.refresh(job)
-        process_job(db, job)
+        try:
+            process_job(db, job)
+        except Exception as exc:  # noqa: BLE001 - source refresh should report per-source failures
+            job.status = "failed"
+            job.error = str(exc)
+            db.commit()
         db.refresh(job)
         jobs.append(
             {

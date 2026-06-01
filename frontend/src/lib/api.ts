@@ -42,3 +42,27 @@ export function labelize(value: string | null | undefined): string {
   return value.replaceAll("_", " ");
 }
 
+export function sourceLabel(source: string): string {
+  if (source === "chicago_solicitations") {
+    return "Chicago/CTA";
+  }
+  if (source === "la_ramp") {
+    return "Los Angeles RAMP";
+  }
+  if (source === "montgomery_md_solicitations") {
+    return "Montgomery County";
+  }
+  if (source === "nyc_city_record") {
+    return "NYC City Record";
+  }
+  if (source === "sf_open_bids") {
+    return "San Francisco";
+  }
+  if (source === "sam_gov") {
+    return "SAM.gov";
+  }
+  if (source === "seed") {
+    return "Sample";
+  }
+  return labelize(source);
+}

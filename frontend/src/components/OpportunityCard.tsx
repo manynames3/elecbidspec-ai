@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CalendarDays, ExternalLink, MapPin, TrendingUp } from "lucide-react";
-import { formatCurrency, formatDate, labelize } from "@/lib/api";
+import { formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
 import type { Opportunity } from "@/lib/types";
 
 type OpportunityCardProps = {
@@ -22,19 +22,6 @@ function fitClass(score: number | null) {
     return "watch";
   }
   return "poor";
-}
-
-function sourceLabel(source: string) {
-  if (source === "nyc_city_record") {
-    return "NYC City Record";
-  }
-  if (source === "sam_gov") {
-    return "SAM.gov";
-  }
-  if (source === "seed") {
-    return "Sample";
-  }
-  return labelize(source);
 }
 
 export function OpportunityCard({ opportunity, explanation, rankScore }: OpportunityCardProps) {

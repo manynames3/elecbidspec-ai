@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, ExternalLink, FileText, RefreshCw } from "lucide-react";
-import { apiFetch, formatCurrency, formatDate, labelize } from "@/lib/api";
+import { apiFetch, formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
 import type { Opportunity, Proposal } from "@/lib/types";
 
 function ListBlock({ title, items }: { title: string; items: string[] }) {
@@ -94,6 +94,7 @@ export function OpportunityDetail() {
               {formatDate(opportunity.due_date)}
             </span>
             <span>{opportunity.location ?? opportunity.state ?? "Location TBD"}</span>
+            <span>{sourceLabel(opportunity.source)}</span>
             <span>{labelize(opportunity.project_type)}</span>
             <span>{opportunity.bid_status}</span>
           </div>

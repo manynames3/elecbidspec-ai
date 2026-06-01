@@ -14,9 +14,12 @@ HIGH_VALUE_SCOPE_TERMS = {
     "transmission": 4,
     "high voltage": 3,
     "medium voltage": 2,
+    "electrical": 2,
     "low voltage": 2,
     "transformer": 2,
     "switchgear": 2,
+    "conduit": 2,
+    "underground": 2,
     "duct bank": 2,
     "shore power": 3,
     "power hub": 3,
@@ -87,6 +90,8 @@ def infer_estimated_value(text: str) -> Decimal | None:
 
 
 def normalize_bid_status(raw_status: str | None, due_date: date | None) -> str:
+    if due_date and due_date < date.today():
+        return "closed"
     normalized = (raw_status or "").strip().lower().replace(" ", "_").replace("-", "_")
     if normalized:
         if normalized in CLOSED_STATUS_TERMS:
@@ -94,8 +99,6 @@ def normalize_bid_status(raw_status: str | None, due_date: date | None) -> str:
         if normalized in OPEN_STATUS_TERMS:
             return "open"
         return normalized
-    if due_date and due_date < date.today():
-        return "closed"
     return "open"
 
 
@@ -129,7 +132,10 @@ def high_value_scope_score(data: dict) -> int:
             " ".join(specs.get("bonding_insurance_requirements", [])),
         ]
     ).lower()
-    return sum(weight for term, weight in HIGH_VALUE_SCOPE_TERMS.items() if term in text)
+    score = sum(weight for term, weight in HIGH_VALUE_SCOPE_TERMS.items() if term in text)
+    if re.search(r"\b\d{2,4}\s?kv\b", text, flags=re.IGNORECASE):
+        score += 3
+    return score
 
 
 def assess_value(data: dict, minimum_value: Decimal = DEFAULT_MINIMUM_VALUE) -> dict:

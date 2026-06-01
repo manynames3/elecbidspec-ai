@@ -134,7 +134,15 @@ Required production inputs:
 
 ## Public Bid Sources
 
-SAM.gov is optional. The backend also includes `nyc_city_record`, a no-key adapter for current NYC City Record/Open Data solicitations, plus generic `public_json_feed` and `public_html_scrape` adapters for state, local, utility, school, authority, or other public bid portals.
+SAM.gov is optional. The backend now treats SAM.gov as one source in a nationwide source registry, not as the whole product. Default no-key sources include:
+
+- `nyc_city_record` for current NYC City Record/Open Data solicitations
+- `sf_open_bids` for San Francisco Open Bid Opportunities
+- `la_ramp` through the Los Angeles RAMP Open Bid Opportunities Socrata feed
+- `montgomery_md_solicitations` through Montgomery County, MD active solicitations
+- `chicago_solicitations` through the public City of Chicago/CTA solicitation table
+
+The app also keeps generic `public_json_feed` and `public_html_scrape` adapters for state, local, utility, school, authority, or other public bid portals. New official feeds can be added by registering another default job in `backend/app/services/ingestion/defaults.py`; most Socrata-style portals only need a URL, field mapping, source label, keyword fields, and status filter.
 
 The Lambda worker refreshes default public sources on a schedule, and the dashboard exposes a manual refresh for the same source set. Existing source URLs are updated in place so stale records can be reclassified and rescored without duplicating cards.
 
@@ -166,6 +174,9 @@ Available adapters:
 
 - `public_json_feed` for configurable public JSON bid feeds
 - `public_html_scrape` for configurable public HTML bid listings
+- `chicago_solicitations` for City of Chicago/CTA public solicitations
+- `nyc_city_record` for NYC City Record solicitations
+- `sf_open_bids` for San Francisco Open Bid Opportunities
 - `sam_gov` for federal Contract Opportunities
 
 Example HTML scrape job:

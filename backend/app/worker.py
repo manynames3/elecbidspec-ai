@@ -18,6 +18,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elecbidspec.worker")
 
 
+def _default_job_label(adapter: str, params: dict | None) -> str:
+    job_params = params or {}
+    return str(job_params.get("job_label") or job_params.get("source") or adapter)
+
+
+def _same_default_job(job: IngestionJob, adapter: str, label: str) -> bool:
+    return job.adapter == adapter and _default_job_label(job.adapter, job.params) == label
+
+
 def _profile_data(db: Session) -> dict | None:
     profile = db.query(CompanyProfile).first()
     if not profile:
@@ -80,20 +89,27 @@ def enqueue_default_jobs_if_due(db: Session, refresh_hours: int | None = None) -
     queued = 0
     for job_spec in DEFAULT_PUBLIC_BID_JOBS:
         adapter = job_spec["adapter"]
-        active_job = (
+        label = _default_job_label(adapter, job_spec.get("params"))
+        active_jobs = (
             db.query(IngestionJob)
             .filter(IngestionJob.adapter == adapter, IngestionJob.status.in_(["queued", "running"]))
             .order_by(IngestionJob.created_at.desc())
-            .first()
+            .limit(25)
+            .all()
         )
-        if active_job:
+        if any(_same_default_job(job, adapter, label) for job in active_jobs):
             continue
 
-        last_complete = (
+        recent_complete_jobs = (
             db.query(IngestionJob)
             .filter(IngestionJob.adapter == adapter, IngestionJob.status == "complete")
             .order_by(IngestionJob.updated_at.desc())
-            .first()
+            .limit(50)
+            .all()
+        )
+        last_complete = next(
+            (job for job in recent_complete_jobs if _same_default_job(job, adapter, label)),
+            None,
         )
         if last_complete and last_complete.updated_at:
             last_updated = last_complete.updated_at
