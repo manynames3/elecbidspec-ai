@@ -18,12 +18,14 @@ class Settings(BaseSettings):
     )
     database_disable_pool: bool = Field(default=False, validation_alias="DATABASE_DISABLE_POOL")
     frontend_origin: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_ORIGIN")
+    admin_api_token: str | None = Field(default=None, validation_alias="ADMIN_API_TOKEN")
 
     sam_gov_api_key: str | None = Field(default=None, validation_alias="SAM_GOV_API_KEY")
     sam_gov_api_base_url: str = Field(
         default="https://api.sam.gov/opportunities/v2/search",
         validation_alias="SAM_GOV_API_BASE_URL",
     )
+    nypa_api_subscription_key: str | None = Field(default=None, validation_alias="NYPA_API_SUBSCRIPTION_KEY")
 
     bedrock_proposals_enabled: bool = Field(default=False, validation_alias="BEDROCK_PROPOSALS_ENABLED")
     bedrock_model_id: str = Field(

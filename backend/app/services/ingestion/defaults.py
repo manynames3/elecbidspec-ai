@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 DEFAULT_ELECTRICAL_SOURCE_KEYWORDS = [
     "electrical",
     "electric",
@@ -30,13 +32,126 @@ DEFAULT_ELECTRICAL_SOURCE_KEYWORDS = [
     "lighting infrastructure",
 ]
 
+DEFAULT_SOURCE_CATALOG = [
+    {
+        "source": "sam_gov",
+        "label": "SAM.gov",
+        "category": "federal",
+        "coverage": "Nationwide federal opportunities",
+        "adapter": "sam_gov",
+        "requires_setting": "sam_gov_api_key",
+    },
+    {
+        "source": "txdot_bid_items",
+        "label": "TxDOT",
+        "category": "state_dot",
+        "coverage": "Texas statewide DOT lettings",
+        "adapter": "txdot_bid_items",
+    },
+    {
+        "source": "nypa",
+        "label": "NY Power Authority",
+        "category": "utility",
+        "coverage": "New York utility RFQ/RFPs",
+        "adapter": "nypa",
+        "requires_setting": "nypa_api_subscription_key",
+    },
+    {
+        "source": "nyc_city_record",
+        "label": "NYC City Record",
+        "category": "state_local",
+        "coverage": "New York City public solicitations",
+        "adapter": "nyc_city_record",
+    },
+    {
+        "source": "nyc_school_construction_authority",
+        "label": "NYC School Construction",
+        "category": "education",
+        "coverage": "NYC School Construction Authority solicitations",
+        "adapter": "nyc_city_record",
+    },
+    {
+        "source": "la_ramp",
+        "label": "Los Angeles RAMP",
+        "category": "state_local",
+        "coverage": "Los Angeles city/county and LADWP-linked postings",
+        "adapter": "public_json_feed",
+    },
+    {
+        "source": "chicago_solicitations",
+        "label": "Chicago/CTA",
+        "category": "state_local",
+        "coverage": "City of Chicago and CTA solicitations",
+        "adapter": "chicago_solicitations",
+    },
+    {
+        "source": "sf_open_bids",
+        "label": "San Francisco",
+        "category": "state_local",
+        "coverage": "San Francisco open bid opportunities",
+        "adapter": "sf_open_bids",
+    },
+    {
+        "source": "montgomery_md_solicitations",
+        "label": "Montgomery County",
+        "category": "state_local",
+        "coverage": "Montgomery County, MD active solicitations",
+        "adapter": "public_json_feed",
+    },
+]
+
 DEFAULT_PUBLIC_BID_JOBS = [
+    {
+        "adapter": "sam_gov",
+        "requires_setting": "sam_gov_api_key",
+        "params": {
+            "job_label": "sam_gov",
+            "limit": 50,
+            "posted_window_days": 90,
+            "ptype": "o",
+            "status": "active",
+            "keyword": "electrical cable OR high voltage OR medium voltage OR substation OR conduit OR transformer",
+            "update_existing": True,
+        },
+    },
+    {
+        "adapter": "txdot_bid_items",
+        "params": {
+            "job_label": "txdot_bid_items",
+            "limit": 50,
+            "source_limit": 5000,
+            "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
+            "update_existing": True,
+        },
+    },
+    {
+        "adapter": "nypa",
+        "requires_setting": "nypa_api_subscription_key",
+        "params": {
+            "job_label": "nypa",
+            "limit": 50,
+            "update_existing": True,
+        },
+    },
     {
         "adapter": "nyc_city_record",
         "params": {
             "job_label": "nyc_city_record",
             "limit": 25,
             "source_limit": 300,
+            "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
+            "update_existing": True,
+        },
+    },
+    {
+        "adapter": "nyc_city_record",
+        "params": {
+            "job_label": "nyc_school_construction_authority",
+            "source": "nyc_school_construction_authority",
+            "source_type": "education",
+            "limit": 25,
+            "source_limit": 300,
+            "agency_keywords": ["School Construction Authority"],
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,
         },
@@ -136,3 +251,18 @@ DEFAULT_PUBLIC_BID_JOBS = [
         },
     },
 ]
+
+
+def missing_required_setting(settings: Any, job_spec: dict[str, Any]) -> str | None:
+    required = job_spec.get("requires_setting")
+    if required and not getattr(settings, str(required), None):
+        return str(required)
+    return None
+
+
+def available_default_public_bid_jobs(settings: Any) -> list[dict[str, Any]]:
+    return [job for job in DEFAULT_PUBLIC_BID_JOBS if missing_required_setting(settings, job) is None]
+
+
+def skipped_default_public_bid_jobs(settings: Any) -> list[dict[str, Any]]:
+    return [job for job in DEFAULT_PUBLIC_BID_JOBS if missing_required_setting(settings, job) is not None]

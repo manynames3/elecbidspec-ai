@@ -16,6 +16,8 @@ BEDROCK_MODEL_ID="${BEDROCK_MODEL_ID:-anthropic.claude-3-haiku-20240307-v1:0}"
 BEDROCK_MAX_TOKENS="${BEDROCK_MAX_TOKENS:-2500}"
 BEDROCK_TEMPERATURE="${BEDROCK_TEMPERATURE:-0.2}"
 SAM_GOV_API_KEY="${SAM_GOV_API_KEY:-}"
+ADMIN_API_TOKEN="${ADMIN_API_TOKEN:-}"
+NYPA_API_SUBSCRIPTION_KEY="${NYPA_API_SUBSCRIPTION_KEY:-}"
 
 : "${DATABASE_URL:?Set DATABASE_URL to the Neon pooled Postgres connection string before deploying.}"
 
@@ -67,6 +69,8 @@ export TF_VAR_bedrock_model_id="$BEDROCK_MODEL_ID"
 export TF_VAR_bedrock_max_tokens="$BEDROCK_MAX_TOKENS"
 export TF_VAR_bedrock_temperature="$BEDROCK_TEMPERATURE"
 export TF_VAR_sam_gov_api_key="$SAM_GOV_API_KEY"
+export TF_VAR_admin_api_token="$ADMIN_API_TOKEN"
+export TF_VAR_nypa_api_subscription_key="$NYPA_API_SUBSCRIPTION_KEY"
 
 terraform -chdir="$TF_DIR" init
 terraform -chdir="$TF_DIR" apply -auto-approve

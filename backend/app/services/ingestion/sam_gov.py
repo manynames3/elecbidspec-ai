@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -24,6 +24,17 @@ def parse_sam_date(value: str | None) -> date | None:
         except ValueError:
             continue
     return None
+
+
+def _sam_date(value: Any, fallback: date) -> str:
+    if isinstance(value, date):
+        return value.strftime("%m/%d/%Y")
+    if isinstance(value, str) and value.strip():
+        parsed = parse_sam_date(value)
+        if parsed:
+            return parsed.strftime("%m/%d/%Y")
+        return value
+    return fallback.strftime("%m/%d/%Y")
 
 
 def _get_nested(data: dict, path: list[str]) -> Any:
@@ -60,7 +71,7 @@ def normalize_sam_notice(notice: dict[str, Any]) -> dict[str, Any]:
         "source": "sam_gov",
         "source_type": "federal",
         "source_url": notice.get("uiLink") or notice.get("link"),
-        "bid_status": "open",
+        "bid_status": "open" if str(notice.get("active") or "").lower() in {"yes", "true", "active", ""} else "closed",
         "estimated_value": None,
         "attachments": attachments,
         "extracted_specs": specs,
@@ -83,10 +94,11 @@ class SamGovAdapter(IngestionAdapter):
         request_params = {
             "api_key": api_key,
             "limit": params.get("limit", 25),
-            "postedFrom": params.get("posted_from"),
-            "postedTo": params.get("posted_to"),
+            "postedFrom": _sam_date(params.get("posted_from"), date.today() - timedelta(days=int(params.get("posted_window_days") or 60))),
+            "postedTo": _sam_date(params.get("posted_to"), date.today()),
             "ptype": params.get("ptype", "o"),
             "ncode": params.get("naics_code"),
+            "status": params.get("status", "active"),
             "keyword": params.get("keyword", "electrical cable OR substation OR conduit"),
         }
         request_params = {key: value for key, value in request_params.items() if value}

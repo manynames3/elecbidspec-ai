@@ -169,7 +169,7 @@ select {
 
 .source-health {
   display: grid;
-  grid-template-columns: repeat(4, minmax(130px, 1fr)) auto;
+  grid-template-columns: repeat(5, minmax(118px, 1fr)) auto auto;
   gap: 10px;
   align-items: stretch;
 }
@@ -189,7 +189,7 @@ select {
   overflow-wrap: anywhere;
 }
 
-.source-list {
+.source-health-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;

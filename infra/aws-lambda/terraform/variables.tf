@@ -128,6 +128,20 @@ variable "sam_gov_api_key" {
   sensitive   = true
 }
 
+variable "admin_api_token" {
+  description = "Bearer token required for admin ingestion refresh and job endpoints."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "nypa_api_subscription_key" {
+  description = "Optional NYPA public RFQ API subscription key."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "artifact_expiration_days" {
   description = "Days to retain uploaded Lambda deployment zips."
   type        = number

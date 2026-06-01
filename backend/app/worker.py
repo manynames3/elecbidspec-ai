@@ -10,7 +10,7 @@ from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models import CompanyProfile, IngestionJob, Opportunity
 from app.services.fit_scoring import score_fit
-from app.services.ingestion.defaults import DEFAULT_PUBLIC_BID_JOBS
+from app.services.ingestion.defaults import available_default_public_bid_jobs
 from app.services.ingestion.registry import ADAPTERS
 from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
 
@@ -87,7 +87,7 @@ def enqueue_default_jobs_if_due(db: Session, refresh_hours: int | None = None) -
 
     cutoff = datetime.now(timezone.utc) - timedelta(hours=refresh_hours or settings.default_ingestion_refresh_hours)
     queued = 0
-    for job_spec in DEFAULT_PUBLIC_BID_JOBS:
+    for job_spec in available_default_public_bid_jobs(settings):
         adapter = job_spec["adapter"]
         label = _default_job_label(adapter, job_spec.get("params"))
         active_jobs = (

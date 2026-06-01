@@ -83,6 +83,10 @@ def _matches_keywords(text: str, keywords: list[str]) -> bool:
     return False
 
 
+def _matches_any_text(text: str, terms: list[str]) -> bool:
+    return any(term.lower() in text.lower() for term in terms)
+
+
 class NycCityRecordAdapter(IngestionAdapter):
     name = "nyc_city_record"
     description = "No-key NYC City Record/Open Data adapter for current public solicitations."
@@ -92,6 +96,9 @@ class NycCityRecordAdapter(IngestionAdapter):
         source_limit = int(params.get("source_limit") or max(limit * 8, 100))
         due_after = params.get("due_after") or date.today().isoformat()
         keywords = _keyword_terms(params)
+        agency_terms = params.get("agency_keywords") or []
+        if isinstance(agency_terms, str):
+            agency_terms = [part.strip() for part in agency_terms.split(",")]
 
         query_params = {
             "$limit": min(source_limit, 500),
@@ -125,6 +132,8 @@ class NycCityRecordAdapter(IngestionAdapter):
             request_id = record.get("request_id")
             due_date = _parse_date(record.get("due_date"))
             agency = record.get("agency_name")
+            if agency_terms and not _matches_any_text(str(agency or ""), [str(term) for term in agency_terms]):
+                continue
             full_description = "\n".join(
                 part
                 for part in [
@@ -147,8 +156,8 @@ class NycCityRecordAdapter(IngestionAdapter):
                     "due_date": due_date,
                     "naics_code": None,
                     "description": full_description,
-                    "source": self.name,
-                    "source_type": "state_local",
+                    "source": params.get("source") or self.name,
+                    "source_type": params.get("source_type") or "state_local",
                     "source_url": NYC_CITY_RECORD_DETAIL_URL.format(request_id=request_id) if request_id else None,
                     "bid_status": normalize_bid_status("open", due_date),
                     "estimated_value": None,

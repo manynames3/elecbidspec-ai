@@ -43,6 +43,12 @@ export function labelize(value: string | null | undefined): string {
 }
 
 export function sourceLabel(source: string): string {
+  if (source === "txdot_bid_items") {
+    return "TxDOT";
+  }
+  if (source === "nypa") {
+    return "NY Power Authority";
+  }
   if (source === "chicago_solicitations") {
     return "Chicago/CTA";
   }
@@ -54,6 +60,9 @@ export function sourceLabel(source: string): string {
   }
   if (source === "nyc_city_record") {
     return "NYC City Record";
+  }
+  if (source === "nyc_school_construction_authority") {
+    return "NYC School Construction";
   }
   if (source === "sf_open_bids") {
     return "San Francisco";

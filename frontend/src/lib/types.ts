@@ -72,6 +72,22 @@ export type IngestionJobStatus = {
   updated_at: string;
 };
 
+export type SourceHealth = {
+  source: string;
+  label: string;
+  category: string;
+  coverage: string;
+  adapter: string;
+  requires_setting?: string;
+  status: "healthy" | "stale" | "failed" | "no_records" | "missing_config" | string;
+  count: number;
+  target_matches: number;
+  last_seen_at: string | null;
+  last_job_status: string | null;
+  last_job_error: string | null;
+  last_job_at: string | null;
+};
+
 export type IngestionSummary = {
   real_opportunity_count: number;
   sample_opportunity_count: number;
@@ -84,6 +100,7 @@ export type IngestionSummary = {
     last_seen_at: string | null;
   }>;
   latest_jobs: IngestionJobStatus[];
+  source_health: SourceHealth[];
 };
 
 export type IngestionRefreshResult = {

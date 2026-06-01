@@ -6,6 +6,8 @@ import { apiFetch, sourceLabel } from "@/lib/api";
 import type { IngestionRefreshResult, IngestionSummary, Opportunity, SearchResult } from "@/lib/types";
 import { OpportunityCard } from "@/components/OpportunityCard";
 
+const adminTokenStorageKey = "elecbidspec_admin_token";
+
 const projectTypes = [
   "data_center_power",
   "utility_replacement",
@@ -54,11 +56,13 @@ export function Dashboard() {
   const [ingestionSummary, setIngestionSummary] = useState<IngestionSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sourceMessage, setSourceMessage] = useState<string | null>(null);
+  const [adminToken, setAdminToken] = useState("");
 
   const visibleCount = searchResults ? searchResults.length : opportunities.length;
   const latestPublicRefresh = ingestionSummary?.latest_jobs.find((job) => job.adapter !== "sam_gov");
-  const publicSourceCount = ingestionSummary?.sources.filter((source) => source.source !== "seed" && source.source !== "manual_upload").length ?? 0;
-  const officialSources = ingestionSummary?.sources.filter((source) => source.source !== "seed") ?? [];
+  const sourceHealth = ingestionSummary?.source_health ?? [];
+  const publicSourceCount = sourceHealth.length || ingestionSummary?.sources.filter((source) => source.source !== "seed" && source.source !== "manual_upload").length || 0;
+  const healthySourceCount = sourceHealth.filter((source) => source.status === "healthy").length;
   const averageFit = useMemo(() => {
     const scores = opportunities.map((item) => item.fit_score).filter((score): score is number => score !== null);
     if (!scores.length) {
@@ -102,8 +106,27 @@ export function Dashboard() {
   }
 
   useEffect(() => {
+    setAdminToken(window.localStorage.getItem(adminTokenStorageKey) ?? "");
     void loadOpportunities(emptyFilters);
   }, []);
+
+  function adminHeaders() {
+    let token = adminToken || window.localStorage.getItem(adminTokenStorageKey) || "";
+    if (!token) {
+      token = window.prompt("Enter the admin refresh token")?.trim() ?? "";
+    }
+    if (token) {
+      window.localStorage.setItem(adminTokenStorageKey, token);
+      setAdminToken(token);
+    }
+    return token ? { Authorization: `Bearer ${token}` } : null;
+  }
+
+  function forgetAdminToken() {
+    window.localStorage.removeItem(adminTokenStorageKey);
+    setAdminToken("");
+    setSourceMessage("Admin token cleared for this browser.");
+  }
 
   async function handleFilter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,13 +160,22 @@ export function Dashboard() {
     setError(null);
     setSourceMessage(null);
     try {
-      const result = await apiFetch<IngestionRefreshResult>("/ingestion/refresh-defaults", { method: "POST" });
+      const headers = adminHeaders();
+      if (!headers) {
+        throw new Error("Admin token required to refresh public sources.");
+      }
+      const result = await apiFetch<IngestionRefreshResult>("/ingestion/refresh-defaults", { method: "POST", headers });
       const imported = result.jobs.reduce((sum, job) => sum + Number(job.result.imported ?? 0), 0);
       const updated = result.jobs.reduce((sum, job) => sum + Number(job.result.updated ?? 0), 0);
       const failed = result.jobs.filter((job) => job.status === "failed").length;
-      setSourceMessage(`Public sources refreshed: ${imported} imported, ${updated} updated${failed ? `, ${failed} failed` : ""}.`);
+      const skipped = result.jobs.filter((job) => job.status === "skipped").length;
+      setSourceMessage(`Public sources refreshed: ${imported} imported, ${updated} updated${failed ? `, ${failed} failed` : ""}${skipped ? `, ${skipped} skipped` : ""}.`);
       await loadOpportunities(filters);
     } catch (err) {
+      if (err instanceof Error && err.message.includes("401")) {
+        window.localStorage.removeItem(adminTokenStorageKey);
+        setAdminToken("");
+      }
       setError(err instanceof Error ? err.message : "Unable to refresh public sources");
     } finally {
       setRefreshingSources(false);
@@ -180,6 +212,10 @@ export function Dashboard() {
             <strong>{publicSourceCount || "--"}</strong>
           </div>
           <div className="source-card">
+            <span className="field-label">Healthy sources</span>
+            <strong>{sourceHealth.length ? `${healthySourceCount}/${sourceHealth.length}` : "--"}</strong>
+          </div>
+          <div className="source-card">
             <span className="field-label">Real records</span>
             <strong>{ingestionSummary?.real_opportunity_count ?? "--"}</strong>
           </div>
@@ -193,14 +229,19 @@ export function Dashboard() {
           </div>
           <button className="secondary-button" type="button" onClick={() => void refreshPublicSources()} disabled={refreshingSources}>
             <DatabaseZap size={17} />
-            {refreshingSources ? "Refreshing" : "Refresh public sources"}
+            {refreshingSources ? "Refreshing" : "Admin refresh"}
           </button>
+          {adminToken ? (
+            <button className="secondary-button" type="button" onClick={forgetAdminToken}>
+              Clear token
+            </button>
+          ) : null}
         </div>
-        {officialSources.length ? (
-          <div className="source-list" aria-label="Official source coverage">
-            {officialSources.map((source) => (
-              <span className="source-pill live" key={`${source.source}-${source.source_type}`}>
-                {sourceLabel(source.source)}: {source.count}
+        {sourceHealth.length ? (
+          <div className="source-health-list" aria-label="Official source health">
+            {sourceHealth.map((source) => (
+              <span className={`source-pill ${source.status === "healthy" ? "live" : source.status === "missing_config" ? "sample" : ""}`} key={source.source} title={source.coverage}>
+                {sourceLabel(source.source)}: {source.count} · {source.status.replaceAll("_", " ")}
               </span>
             ))}
           </div>
@@ -317,8 +358,11 @@ export function Dashboard() {
               <option value="chicago_solicitations">Chicago/CTA</option>
               <option value="la_ramp">Los Angeles RAMP</option>
               <option value="montgomery_md_solicitations">Montgomery County</option>
+              <option value="nypa">NY Power Authority</option>
               <option value="nyc_city_record">NYC City Record</option>
+              <option value="nyc_school_construction_authority">NYC School Construction</option>
               <option value="sf_open_bids">San Francisco</option>
+              <option value="txdot_bid_items">TxDOT</option>
             </select>
           </label>
           <button className="secondary-button" type="submit">

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from datetime import date
+import hmac
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import Integer, func
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.db.session import get_db
 from app.models import CompanyProfile, IngestionJob, Opportunity
 from app.schemas import (
@@ -23,7 +25,12 @@ from app.schemas import (
 from app.services.classification import classify_bid
 from app.services.extraction import extract_specs, parse_attachment
 from app.services.fit_scoring import score_fit
-from app.services.ingestion.defaults import DEFAULT_PUBLIC_BID_JOBS
+from app.services.ingestion.defaults import (
+    DEFAULT_SOURCE_CATALOG,
+    available_default_public_bid_jobs,
+    missing_required_setting,
+    skipped_default_public_bid_jobs,
+)
 from app.services.proposal import generate_proposal_package
 from app.services.search import search_opportunities
 from app.services.storage import store_upload
@@ -31,6 +38,22 @@ from app.services.value_assessment import assess_value, infer_source_type, norma
 from app.worker import process_job
 
 router = APIRouter()
+
+
+def require_admin(
+    authorization: str | None = Header(default=None),
+    x_admin_token: str | None = Header(default=None),
+) -> None:
+    settings = get_settings()
+    expected = settings.admin_api_token
+    if not expected:
+        raise HTTPException(status_code=503, detail="Admin API token is not configured.")
+    bearer = None
+    if authorization and authorization.lower().startswith("bearer "):
+        bearer = authorization[7:].strip()
+    provided = x_admin_token or bearer
+    if not provided or not hmac.compare_digest(provided, expected):
+        raise HTTPException(status_code=401, detail="Admin token required.")
 
 
 def opportunity_to_dict(opportunity: Opportunity) -> dict:
@@ -97,6 +120,64 @@ def enrich_opportunity_data(data: dict, db: Session) -> dict:
     if profile:
         enriched.update(score_fit(enriched, profile))
     return enriched
+
+
+def _job_label(job: IngestionJob) -> str:
+    params = job.params or {}
+    return str(params.get("job_label") or params.get("source") or job.adapter)
+
+
+def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[dict]:
+    settings = get_settings()
+    refresh_hours = settings.default_ingestion_refresh_hours
+    stale_cutoff = datetime.now(timezone.utc) - timedelta(hours=max(refresh_hours * 2, 12))
+    counts_by_source = {
+        source: {
+            "source": source,
+            "source_type": source_type,
+            "count": int(count or 0),
+            "target_matches": int(target_matches or 0),
+            "last_seen_at": last_seen_at,
+        }
+        for source, source_type, count, target_matches, last_seen_at in source_rows
+    }
+    jobs_by_label: dict[str, IngestionJob] = {}
+    for job in latest_jobs:
+        label = _job_label(job)
+        if label not in jobs_by_label:
+            jobs_by_label[label] = job
+
+    health = []
+    for catalog in DEFAULT_SOURCE_CATALOG:
+        source = catalog["source"]
+        latest_job = jobs_by_label.get(source)
+        count_row = counts_by_source.get(source)
+        missing_setting = catalog.get("requires_setting")
+        if missing_setting and not getattr(settings, str(missing_setting), None):
+            status = "missing_config"
+        elif latest_job and latest_job.status == "failed":
+            status = "failed"
+        elif not count_row or not count_row["count"]:
+            status = "no_records"
+        else:
+            last_seen = count_row.get("last_seen_at")
+            if last_seen and last_seen.tzinfo is None:
+                last_seen = last_seen.replace(tzinfo=timezone.utc)
+            status = "stale" if last_seen and last_seen < stale_cutoff else "healthy"
+
+        health.append(
+            {
+                **catalog,
+                "status": status,
+                "count": count_row["count"] if count_row else 0,
+                "target_matches": count_row["target_matches"] if count_row else 0,
+                "last_seen_at": count_row.get("last_seen_at") if count_row else None,
+                "last_job_status": latest_job.status if latest_job else None,
+                "last_job_error": latest_job.error if latest_job else None,
+                "last_job_at": latest_job.updated_at if latest_job else None,
+            }
+        )
+    return health
 
 
 @router.get("/health")
@@ -268,7 +349,11 @@ def upsert_company_profile(payload: CompanyProfileCreate, db: Session = Depends(
 
 
 @router.post("/ingestion/jobs", response_model=IngestionJobRead, status_code=202)
-def create_ingestion_job(payload: IngestionJobCreate, db: Session = Depends(get_db)) -> IngestionJob:
+def create_ingestion_job(
+    payload: IngestionJobCreate,
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+) -> IngestionJob:
     from app.services.ingestion.registry import ADAPTERS
 
     if payload.adapter not in ADAPTERS:
@@ -281,7 +366,10 @@ def create_ingestion_job(payload: IngestionJobCreate, db: Session = Depends(get_
 
 
 @router.get("/ingestion/jobs", response_model=list[IngestionJobRead])
-def list_ingestion_jobs(db: Session = Depends(get_db)) -> list[IngestionJob]:
+def list_ingestion_jobs(
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+) -> list[IngestionJob]:
     return db.query(IngestionJob).order_by(IngestionJob.created_at.desc()).limit(50).all()
 
 
@@ -306,7 +394,7 @@ def ingestion_summary(db: Session = Depends(get_db)) -> dict:
         .order_by(func.count(Opportunity.id).desc())
         .all()
     )
-    latest_jobs = db.query(IngestionJob).order_by(IngestionJob.updated_at.desc()).limit(10).all()
+    latest_jobs = db.query(IngestionJob).order_by(IngestionJob.updated_at.desc()).limit(50).all()
     real_count = db.query(Opportunity).filter(Opportunity.source != "seed").count()
     target_count = db.query(Opportunity).filter(Opportunity.source != "seed", Opportunity.minimum_value_match == True).count()  # noqa: E712
     return {
@@ -334,13 +422,29 @@ def ingestion_summary(db: Session = Depends(get_db)) -> dict:
             }
             for job in latest_jobs
         ],
+        "source_health": _source_health(source_counts, latest_jobs),
     }
 
 
 @router.post("/ingestion/refresh-defaults")
-def refresh_default_ingestion(db: Session = Depends(get_db)) -> dict:
+def refresh_default_ingestion(
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+) -> dict:
     jobs = []
-    for job_spec in DEFAULT_PUBLIC_BID_JOBS:
+    settings = get_settings()
+    for skipped_spec in skipped_default_public_bid_jobs(settings):
+        jobs.append(
+            {
+                "id": 0,
+                "adapter": skipped_spec["adapter"],
+                "status": "skipped",
+                "result": {"skipped": 1},
+                "error": f"Missing required setting: {missing_required_setting(settings, skipped_spec)}",
+                "updated_at": datetime.now(timezone.utc),
+            }
+        )
+    for job_spec in available_default_public_bid_jobs(settings):
         job = IngestionJob(
             adapter=job_spec["adapter"],
             params={**job_spec["params"], "manual_refresh": True, "update_existing": True},

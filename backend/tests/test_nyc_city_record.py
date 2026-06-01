@@ -42,3 +42,46 @@ def test_nyc_city_record_adapter_filters_and_normalizes_electrical_notices(monke
     assert records[0]["source_url"] == "https://a856-cityrecord.nyc.gov/RequestDetail/20260514007"
     assert records[0]["state"] == "NY"
     assert records[0]["bid_status"] == "open"
+
+
+def test_nyc_city_record_adapter_can_scope_school_authority_source(monkeypatch):
+    payload = [
+        {
+            "request_id": "20260514007",
+            "agency_name": "School Construction Authority",
+            "short_title": "Low Voltage Electrical Systems",
+            "due_date": "2026-06-04T10:30:00.000",
+            "category_description": "Construction/Construction Services",
+            "selection_method_description": "Competitive Sealed Bids",
+            "additional_description_1": "<p>Bid opening for low voltage electrical systems.</p>",
+        },
+        {
+            "request_id": "20260514008",
+            "agency_name": "Department of Parks and Recreation",
+            "short_title": "Low Voltage Electrical Systems",
+            "due_date": "2026-06-04T10:30:00.000",
+            "category_description": "Construction/Construction Services",
+            "selection_method_description": "Competitive Sealed Bids",
+            "additional_description_1": "<p>Bid opening for low voltage electrical systems.</p>",
+        },
+    ]
+
+    def handler(request):
+        return httpx.Response(200, json=payload)
+
+    real_client = httpx.Client
+    monkeypatch.setattr(httpx, "Client", lambda **kwargs: real_client(transport=httpx.MockTransport(handler)))
+
+    records = NycCityRecordAdapter().fetch(
+        {
+            "limit": 5,
+            "due_after": "2026-06-01",
+            "source": "nyc_school_construction_authority",
+            "source_type": "education",
+            "agency_keywords": ["School Construction Authority"],
+        }
+    )
+
+    assert len(records) == 1
+    assert records[0]["source"] == "nyc_school_construction_authority"
+    assert records[0]["source_type"] == "education"

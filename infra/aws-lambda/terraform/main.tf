@@ -5,17 +5,19 @@ locals {
   lambda_zip_hash = filesha256(var.lambda_zip_path)
 
   common_environment = {
-    ENVIRONMENT           = "production"
-    DATABASE_URL          = var.database_url
-    DATABASE_DISABLE_POOL = "true"
-    FRONTEND_ORIGIN       = var.frontend_origin
-    UPLOAD_BUCKET         = aws_s3_bucket.uploads.bucket
-    UPLOAD_PREFIX         = var.upload_prefix
-    BEDROCK_MODEL_ID      = var.bedrock_model_id
-    BEDROCK_REGION        = var.aws_region
-    BEDROCK_MAX_TOKENS    = tostring(var.bedrock_max_tokens)
-    BEDROCK_TEMPERATURE   = tostring(var.bedrock_temperature)
-    SAM_GOV_API_KEY       = var.sam_gov_api_key
+    ENVIRONMENT               = "production"
+    DATABASE_URL              = var.database_url
+    DATABASE_DISABLE_POOL     = "true"
+    FRONTEND_ORIGIN           = var.frontend_origin
+    UPLOAD_BUCKET             = aws_s3_bucket.uploads.bucket
+    UPLOAD_PREFIX             = var.upload_prefix
+    BEDROCK_MODEL_ID          = var.bedrock_model_id
+    BEDROCK_REGION            = var.aws_region
+    BEDROCK_MAX_TOKENS        = tostring(var.bedrock_max_tokens)
+    BEDROCK_TEMPERATURE       = tostring(var.bedrock_temperature)
+    SAM_GOV_API_KEY           = var.sam_gov_api_key
+    ADMIN_API_TOKEN           = var.admin_api_token
+    NYPA_API_SUBSCRIPTION_KEY = var.nypa_api_subscription_key
   }
 }
 
