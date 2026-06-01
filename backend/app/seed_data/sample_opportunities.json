@@ -1,0 +1,123 @@
+[
+  {
+    "title": "Medium Voltage Underground Feeder Replacement at Civic Center",
+    "agency": "City of Riverside Public Works",
+    "location": "Riverside, CA",
+    "state": "CA",
+    "due_date": "2026-06-18",
+    "naics_code": "237130",
+    "description": "Replace aging medium voltage underground cable feeders, furnish conduit, pull boxes, cable terminations, trenching, testing, and commissioning. Bid bond and performance bond required. Submit sealed bids through the city procurement portal by June 18, 2026.",
+    "source": "seed",
+    "source_url": "https://example.gov/riverside-mv-feeder",
+    "estimated_value": 4200000
+  },
+  {
+    "title": "Data Center Campus Critical Power Distribution Phase 2",
+    "agency": "Virginia Economic Development Partnership",
+    "location": "Loudoun County, VA",
+    "state": "VA",
+    "due_date": "2026-07-02",
+    "naics_code": "238210",
+    "description": "Furnish and install medium voltage cable, switchgear, transformers, fiber controls, duct bank, and UPS distribution for a data center campus. Requires supply and installation coordination, insurance certificates, and manufacturer cut sheets. Estimated value exceeds $18,000,000.",
+    "source": "seed",
+    "source_url": "https://example.gov/loudoun-data-center-power",
+    "estimated_value": 18000000
+  },
+  {
+    "title": "Wildfire Fire Damage Rebuild for Distribution Pole Line",
+    "agency": "California Department of Forestry and Fire Protection",
+    "location": "Butte County, CA",
+    "state": "CA",
+    "due_date": "2026-06-12",
+    "naics_code": "237130",
+    "description": "Emergency repair and rebuild of burned overhead distribution pole line, replacement conductors, crossarms, transformers, and fiber communications. Contractor must provide payment bond, performance bond, traffic control, and weekend outage support.",
+    "source": "seed",
+    "source_url": "https://example.gov/butte-fire-rebuild",
+    "estimated_value": 8700000
+  },
+  {
+    "title": "Substation Transformer Replacement and Relay Upgrades",
+    "agency": "Austin Energy",
+    "location": "Austin, TX",
+    "state": "TX",
+    "due_date": "2026-07-15",
+    "naics_code": "237130",
+    "description": "Replace 138kV transformer, install substation steel, breaker controls, relay panels, fiber, grounding, testing, commissioning, and energization support. Insurance and bonding are mandatory.",
+    "source": "seed",
+    "source_url": "https://example.gov/austin-substation-transformer",
+    "estimated_value": 12400000
+  },
+  {
+    "title": "Overhead Pole Line Hardening for Rural Feeder",
+    "agency": "Nevada Rural Electric Cooperative",
+    "location": "Elko County, NV",
+    "state": "NV",
+    "due_date": "2026-06-29",
+    "naics_code": "237130",
+    "description": "Overhead pole replacement, reconductoring, recloser installation, transformer replacement, and distribution feeder hardening. Submission instructions require pricing schedule, safety plan, and bid bond.",
+    "source": "seed",
+    "source_url": "https://example.gov/elko-pole-hardening",
+    "estimated_value": 6200000
+  },
+  {
+    "title": "Airport Terminal Conduit and Fiber Backbone Expansion",
+    "agency": "Port of Seattle",
+    "location": "Seattle, WA",
+    "state": "WA",
+    "due_date": "2026-08-03",
+    "naics_code": "238210",
+    "description": "Install conduit, fiber backbone, pull boxes, data center room terminations, testing, and labeling for airport terminal network expansion. Includes night work, insurance requirements, and portal submission.",
+    "source": "seed",
+    "source_url": "https://example.gov/sea-airport-fiber",
+    "estimated_value": 3500000
+  },
+  {
+    "title": "Municipal Water Plant Electrical Distribution Upgrade",
+    "agency": "City of Phoenix",
+    "location": "Phoenix, AZ",
+    "state": "AZ",
+    "due_date": "2026-07-23",
+    "naics_code": "238210",
+    "description": "General electrical replacement for plant distribution panels, underground conduit, medium voltage cable, transformers, generator connections, and commissioning. Requires insurance, bid form, and performance bond.",
+    "source": "seed",
+    "source_url": "https://example.gov/phoenix-water-electrical",
+    "estimated_value": 5100000
+  },
+  {
+    "title": "State University Underground Duct Bank and Cable Installation",
+    "agency": "Oregon State University",
+    "location": "Corvallis, OR",
+    "state": "OR",
+    "due_date": "2026-06-25",
+    "naics_code": "237130",
+    "description": "Construct underground duct bank, trenching, medium voltage cable pulling, splicing, terminations, manholes, and site restoration. Submit proposal, schedule, safety plan, insurance certificate, and bid bond.",
+    "source": "seed",
+    "source_url": "https://example.edu/osu-duct-bank",
+    "estimated_value": 7400000
+  },
+  {
+    "title": "Transmission Line Fiber and Shield Wire Replacement",
+    "agency": "Bonneville Power Administration",
+    "location": "Vancouver, WA",
+    "state": "WA",
+    "due_date": "2026-08-17",
+    "naics_code": "237130",
+    "description": "Replace transmission shield wire with fiber optic ground wire, install splice boxes, perform high voltage safety planning, outage coordination, testing, and closeout documentation.",
+    "source": "seed",
+    "source_url": "https://example.gov/bpa-fiber-shield-wire",
+    "estimated_value": 9600000
+  },
+  {
+    "title": "Emergency Repair of Flood-Damaged Underground Electrical Service",
+    "agency": "Harris County Facilities",
+    "location": "Houston, TX",
+    "state": "TX",
+    "due_date": "2026-06-09",
+    "naics_code": "238210",
+    "description": "Emergency repair and replacement of flood-damaged underground cable, conduit, transformers, and service entrance equipment at county facilities. Requires rapid mobilization, insurance, bonding, and email submission.",
+    "source": "seed",
+    "source_url": "https://example.gov/harris-emergency-underground",
+    "estimated_value": 2900000
+  }
+]
+

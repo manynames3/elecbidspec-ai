@@ -1,0 +1,2 @@
+"""ElecBidSpec AI backend package."""
+

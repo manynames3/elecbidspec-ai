@@ -1,0 +1,32 @@
+{
+  "name": "Tri-State Cable & Power Services",
+  "states_served": ["CA", "NV", "AZ", "OR", "WA", "TX", "VA"],
+  "bonding_capacity": 25000000,
+  "cable_types_supplied": [
+    "medium_voltage",
+    "high_voltage",
+    "fiber",
+    "conduit",
+    "switchgear",
+    "transformer"
+  ],
+  "installation_capabilities": [
+    "underground",
+    "trenching",
+    "distribution",
+    "overhead",
+    "pole_line",
+    "substation",
+    "data_center",
+    "emergency_repair"
+  ],
+  "labor_type": "union",
+  "experience": {
+    "data_center_power": true,
+    "utility_replacement": true,
+    "underground_installation": true,
+    "pole_overhead_installation": true,
+    "substation_related": true
+  }
+}
+

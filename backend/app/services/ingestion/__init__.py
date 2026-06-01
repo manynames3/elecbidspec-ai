@@ -1,0 +1,2 @@
+"""Bid ingestion adapters."""
+

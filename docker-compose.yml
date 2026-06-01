@@ -1,0 +1,72 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: elecbidspec
+      POSTGRES_USER: elecbidspec
+      POSTGRES_PASSWORD: elecbidspec
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elecbidspec -d elecbidspec"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://elecbidspec:elecbidspec@db:5432/elecbidspec}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      SAM_GOV_API_KEY: ${SAM_GOV_API_KEY:-}
+      SAM_GOV_API_BASE_URL: ${SAM_GOV_API_BASE_URL:-https://api.sam.gov/opportunities/v2/search}
+      UPLOAD_DIR: /tmp/elecbidspec_uploads
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_uploads:/tmp/elecbidspec_uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "alembic -c alembic.ini upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  worker:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://elecbidspec:elecbidspec@db:5432/elecbidspec}
+      SAM_GOV_API_KEY: ${SAM_GOV_API_KEY:-}
+      SAM_GOV_API_BASE_URL: ${SAM_GOV_API_BASE_URL:-https://api.sam.gov/opportunities/v2/search}
+      UPLOAD_DIR: /tmp/elecbidspec_uploads
+    volumes:
+      - ./backend:/app
+      - backend_uploads:/tmp/elecbidspec_uploads
+    depends_on:
+      backend:
+        condition: service_started
+    command: python -m app.worker
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      backend:
+        condition: service_started
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  backend_uploads:
+  frontend_node_modules:
+
