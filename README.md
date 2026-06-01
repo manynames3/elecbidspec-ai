@@ -14,6 +14,7 @@ The default dashboard view is tuned for open public electrical opportunities tha
 - SQLAlchemy + Alembic migrations
 - Docker Compose for local development
 - Background worker for queued ingestion jobs
+- Terraform-managed AWS Lambda backend for low-idle pilot deployment
 
 ## Quick Start
 
@@ -68,21 +69,66 @@ Recommended Pages settings:
 
 The frontend cannot call `http://localhost:8000/api` after deployment. Deploy the FastAPI backend to a public host first, then set `NEXT_PUBLIC_API_URL` in Cloudflare Pages production and preview environments.
 
-## Backend Deployment
+## Low-Idle Production Backend
 
-The backend Docker image now runs migrations, seeds sample data, and starts FastAPI using the host-provided `PORT` variable:
+For the MVP pilot, avoid ECS Fargate, RDS, EC2, and Lightsail unless traffic justifies always-on services. The low-idle path is:
 
-```bash
-alembic -c alembic.ini upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+```text
+Cloudflare Pages -> AWS Lambda Function URL -> Neon pooled Postgres
+                                      |
+                                      +-> S3 uploads
+                                      +-> EventBridge scheduled Lambda worker
+                                      +-> Bedrock on demand
 ```
 
-Required production environment variables:
+The FastAPI app runs unchanged on Lambda through Mangum. Terraform manages the AWS resources under `infra/aws-lambda/terraform`:
 
-- `DATABASE_URL`
+- Lambda Function URL for the public HTTPS API
+- API Lambda for FastAPI
+- Scheduled worker Lambda for queued ingestion jobs
+- Private S3 bucket for uploaded RFP/spec files
+- Private S3 bucket for Lambda deployment artifacts
+- IAM role/policies for CloudWatch Logs, S3 uploads, and optional Bedrock calls
+
+Use a Neon pooled connection string for `DATABASE_URL`, especially on Lambda. Neon pooler hostnames usually include `-pooler`; the app also sets `DATABASE_DISABLE_POOL=true` in Lambda so SQLAlchemy does not hold idle local pools across invocations.
+
+Terraform state will contain Lambda environment variables, including `DATABASE_URL` and any optional API keys. Keep local `.tfstate` files out of git and use an encrypted remote state backend before sharing this deployment with a team.
+
+Deploy:
+
+```bash
+export DATABASE_URL='postgresql+psycopg://USER:PASSWORD@HOST-pooler.REGION.aws.neon.tech/DB?sslmode=require'
+export FRONTEND_ORIGIN='https://elecbidspec-ai.pages.dev'
+export AWS_REGION='us-east-1'
+
+./scripts/deploy_lambda_backend.sh
+```
+
+The script builds `.build/elecbidspec-ai-backend.zip`, runs `terraform init`, applies the stack, and prints outputs. Set the Cloudflare Pages environment variable to the Terraform output:
+
+```bash
+terraform -chdir=infra/aws-lambda/terraform output -raw api_base_url
+```
+
+Then set:
+
+```bash
+NEXT_PUBLIC_API_URL=<api_base_url>
+```
+
+First deploy defaults `BOOTSTRAP_DATABASE_ON_STARTUP=true`, which runs Alembic migrations and seeds the Taihan profile plus sample opportunities on Lambda cold start. After the database is initialized, you can reduce cold-start work:
+
+```bash
+export BOOTSTRAP_DATABASE_ON_STARTUP=false
+./scripts/deploy_lambda_backend.sh
+```
+
+Required production inputs:
+
+- `DATABASE_URL`, preferably Neon pooled Postgres
 - `FRONTEND_ORIGIN=https://elecbidspec-ai.pages.dev`
-- `UPLOAD_DIR=/tmp/elecbidspec_uploads`
 - `SAM_GOV_API_KEY` only if live SAM.gov ingestion is enabled
-- `BEDROCK_PROPOSALS_ENABLED=true` plus AWS Bedrock credentials/role if AI-written proposal drafts are enabled
+- `BEDROCK_PROPOSALS_ENABLED=true` only if AI-written proposal drafts should call Bedrock
 
 ## Public Bid Sources
 
@@ -168,7 +214,7 @@ The proposal assistant can use Amazon Bedrock to write company-specific proposal
 
 ```bash
 BEDROCK_PROPOSALS_ENABLED=true
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 BEDROCK_REGION=us-east-1
 ```
 

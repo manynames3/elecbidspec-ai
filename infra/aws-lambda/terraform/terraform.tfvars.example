@@ -1,0 +1,12 @@
+aws_region      = "us-east-1"
+app_name        = "elecbidspec-ai"
+frontend_origin = "https://elecbidspec-ai.pages.dev"
+
+# Do not commit real tfvars. Use a Neon pooled connection string for Lambda.
+database_url    = "postgresql+psycopg://USER:PASSWORD@HOST-pooler.REGION.aws.neon.tech/DB?sslmode=require"
+lambda_zip_path = "/absolute/path/to/.build/elecbidspec-ai-backend.zip"
+
+bootstrap_database_on_startup = true
+bedrock_proposals_enabled     = false
+bedrock_model_id              = "anthropic.claude-3-haiku-20240307-v1:0"
+sam_gov_api_key               = ""

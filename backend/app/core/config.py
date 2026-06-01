@@ -16,6 +16,7 @@ class Settings(BaseSettings):
         default="postgresql+psycopg://elecbidspec:elecbidspec@db:5432/elecbidspec",
         validation_alias="DATABASE_URL",
     )
+    database_disable_pool: bool = Field(default=False, validation_alias="DATABASE_DISABLE_POOL")
     frontend_origin: str = Field(default="http://localhost:3000", validation_alias="FRONTEND_ORIGIN")
 
     sam_gov_api_key: str | None = Field(default=None, validation_alias="SAM_GOV_API_KEY")
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
 
     bedrock_proposals_enabled: bool = Field(default=False, validation_alias="BEDROCK_PROPOSALS_ENABLED")
     bedrock_model_id: str = Field(
-        default="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        default="anthropic.claude-3-haiku-20240307-v1:0",
         validation_alias="BEDROCK_MODEL_ID",
     )
     bedrock_region: str = Field(default="us-east-1", validation_alias=AliasChoices("BEDROCK_REGION", "AWS_REGION", "AWS_DEFAULT_REGION"))
@@ -34,6 +35,13 @@ class Settings(BaseSettings):
     bedrock_temperature: float = Field(default=0.2, validation_alias="BEDROCK_TEMPERATURE")
 
     upload_dir: Path = Field(default=Path("/tmp/elecbidspec_uploads"), validation_alias="UPLOAD_DIR")
+    upload_bucket: str | None = Field(default=None, validation_alias="UPLOAD_BUCKET")
+    upload_prefix: str = Field(default="uploads", validation_alias="UPLOAD_PREFIX")
+
+    bootstrap_database_on_startup: bool = Field(default=False, validation_alias="BOOTSTRAP_DATABASE_ON_STARTUP")
+    run_migrations_on_startup: bool = Field(default=True, validation_alias="RUN_MIGRATIONS_ON_STARTUP")
+    seed_database_on_startup: bool = Field(default=True, validation_alias="SEED_DATABASE_ON_STARTUP")
+    worker_max_jobs_per_run: int = Field(default=5, validation_alias="WORKER_MAX_JOBS_PER_RUN")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

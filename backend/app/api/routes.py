@@ -3,12 +3,10 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
 from app.db.session import get_db
 from app.models import CompanyProfile, IngestionJob, Opportunity
 from app.schemas import (
@@ -26,6 +24,7 @@ from app.services.extraction import extract_specs, parse_attachment
 from app.services.fit_scoring import score_fit
 from app.services.proposal import generate_proposal_package
 from app.services.search import search_opportunities
+from app.services.storage import store_upload
 from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
 
 router = APIRouter()
@@ -206,13 +205,10 @@ async def upload_opportunity_document(
     estimated_value: Decimal | None = Form(default=None),
     source_url: str | None = Form(default=None),
 ) -> Opportunity:
-    settings = get_settings()
     content = await file.read()
-    storage_name = f"{uuid4()}-{Path(file.filename or 'upload').name}"
-    storage_path = settings.upload_dir / storage_name
-    storage_path.write_bytes(content)
+    attachment = store_upload(content, file.filename, file.content_type)
 
-    text = parse_attachment(content, file.filename or storage_name)
+    text = parse_attachment(content, file.filename or attachment["stored_path"])
     specs = extract_specs(text)
     data = {
         "title": title or Path(file.filename or "Uploaded RFP").stem,
@@ -227,7 +223,7 @@ async def upload_opportunity_document(
         "source_url": source_url,
         "bid_status": "open",
         "estimated_value": estimated_value,
-        "attachments": [{"name": file.filename, "stored_path": str(storage_path)}],
+        "attachments": [attachment],
         "extracted_specs": specs,
     }
     opportunity = Opportunity(**enrich_opportunity_data(data, db))

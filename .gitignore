@@ -8,6 +8,13 @@ node_modules/
 .next/
 dist/
 coverage/
+out/
+.build/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!.env.example
+!terraform.tfvars.example
+.terraform/
 postgres_data/
 uploads/
-
