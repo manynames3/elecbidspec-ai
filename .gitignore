@@ -16,5 +16,7 @@ out/
 !.env.example
 !terraform.tfvars.example
 .terraform/
+.wrangler/
+.neon
 postgres_data/
 uploads/
