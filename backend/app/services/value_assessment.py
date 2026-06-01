@@ -14,9 +14,18 @@ HIGH_VALUE_SCOPE_TERMS = {
     "transmission": 4,
     "high voltage": 3,
     "medium voltage": 2,
+    "low voltage": 2,
     "transformer": 2,
     "switchgear": 2,
     "duct bank": 2,
+    "shore power": 3,
+    "power hub": 3,
+    "electric work": 3,
+    "electrical installations": 3,
+    "job order contract": 2,
+    "requirements contract": 2,
+    "water filtration plant": 2,
+    "fire alarm": 2,
     "campus": 2,
     "airport": 2,
     "utility": 2,
@@ -147,7 +156,7 @@ def assess_value(data: dict, minimum_value: Decimal = DEFAULT_MINIMUM_VALUE) -> 
         }
 
     score = high_value_scope_score(data)
-    if score >= 6:
+    if score >= 5:
         return {
             "estimated_value": None,
             "value_confidence": "likely",

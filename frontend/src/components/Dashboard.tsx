@@ -214,6 +214,7 @@ export function Dashboard() {
               <option value="seed">Seed</option>
               <option value="manual_upload">Manual upload</option>
               <option value="sam_gov">SAM.gov</option>
+              <option value="nyc_city_record">NYC City Record</option>
               <option value="public_json_feed">Public JSON feed</option>
             </select>
           </label>

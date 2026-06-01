@@ -21,6 +21,19 @@ def test_assess_value_marks_scope_likely_when_value_missing():
     assert result["value_confidence"] == "likely"
 
 
+def test_assess_value_marks_public_power_hub_scope_likely_when_value_missing():
+    result = assess_value(
+        {
+            "title": "Hunts Point shore power hub infrastructure delivery",
+            "description": "Design, construction, installation, energization, shore power connections, and yard infrastructure.",
+            "extracted_specs": {"installation_scope": ["installation", "energization"]},
+        }
+    )
+
+    assert result["minimum_value_match"] is True
+    assert result["value_confidence"] == "likely"
+
+
 def test_infer_estimated_value_from_notice_text():
     value = infer_estimated_value("Estimated value exceeds $12.5M for the project.")
 

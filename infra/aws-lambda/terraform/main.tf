@@ -165,14 +165,6 @@ resource "aws_lambda_function" "api" {
 resource "aws_lambda_function_url" "api" {
   function_name      = aws_lambda_function.api.function_name
   authorization_type = "NONE"
-
-  cors {
-    allow_credentials = false
-    allow_headers     = ["*"]
-    allow_methods     = ["*"]
-    allow_origins     = var.cors_allowed_origins
-    max_age           = 86400
-  }
 }
 
 resource "aws_lambda_permission" "api_function_url_public" {

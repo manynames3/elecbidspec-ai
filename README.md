@@ -134,7 +134,7 @@ Required production inputs:
 
 ## Public Bid Sources
 
-SAM.gov is optional. For state, local, utility, school, authority, or other public bid portals, use `public_json_feed` when a portal exposes JSON and `public_html_scrape` when a portal only exposes public HTML listing/detail pages.
+SAM.gov is optional. The backend also includes `nyc_city_record`, a no-key adapter for current NYC City Record/Open Data solicitations, plus generic `public_json_feed` and `public_html_scrape` adapters for state, local, utility, school, authority, or other public bid portals.
 
 The scraper adapter is intentionally conservative: public pages only, HTTP GET requests, configurable selectors, optional detail-page fetches, and no login, captcha bypass, or browser automation.
 
