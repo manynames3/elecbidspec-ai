@@ -8,5 +8,7 @@ lambda_zip_path = "/absolute/path/to/.build/elecbidspec-ai-backend.zip"
 
 bootstrap_database_on_startup = true
 bedrock_proposals_enabled     = false
-bedrock_model_id              = "anthropic.claude-3-haiku-20240307-v1:0"
+bedrock_model_id              = "us.anthropic.claude-sonnet-4-6"
+bedrock_max_tokens            = 1800
+bedrock_temperature           = 0.2
 sam_gov_api_key               = ""

@@ -21,6 +21,30 @@ PROPOSAL_KEYS = {
     "draft_executive_summary",
     "partner_email_template",
 }
+PROPOSAL_TEXT_KEYS = {"bid_summary", "draft_executive_summary", "partner_email_template"}
+PROPOSAL_LIST_KEYS = PROPOSAL_KEYS - PROPOSAL_TEXT_KEYS
+PROPOSAL_TOOL_NAME = "create_proposal_package"
+
+
+def _proposal_schema() -> dict[str, Any]:
+    properties: dict[str, Any] = {
+        key: {"type": "string", "minLength": 1} for key in sorted(PROPOSAL_TEXT_KEYS)
+    }
+    properties.update(
+        {
+            key: {
+                "type": "array",
+                "items": {"type": "string", "minLength": 1},
+            }
+            for key in sorted(PROPOSAL_LIST_KEYS)
+        }
+    )
+    return {
+        "type": "object",
+        "properties": properties,
+        "required": sorted(PROPOSAL_KEYS),
+        "additionalProperties": False,
+    }
 
 
 def _json_safe(value: Any) -> Any:
@@ -131,16 +155,15 @@ def _proposal_prompt(opportunity: Mapping, company_profile: Mapping | None, base
         "company_profile": _json_safe(company_profile or {}),
         "opportunity": _json_safe(opportunity),
         "baseline_proposal": _json_safe(baseline),
-        "output_schema": {key: "string" if key in {"bid_summary", "draft_executive_summary", "partner_email_template"} else "array of strings" for key in sorted(PROPOSAL_KEYS)},
+        "output_schema": {key: "string" if key in PROPOSAL_TEXT_KEYS else "array of strings" for key in sorted(PROPOSAL_KEYS)},
     }
     return (
         "Create an optimized bid-readiness and proposal-prep package for the company profile and public bid opportunity below. "
         "Use the company profile as authoritative context. Do not invent certifications, factory locations, project references, "
         "bonding limits, installation crews, or legal commitments that are not in the profile or opportunity. If something is needed "
         "but not provided, place it in missing_information_checklist or risk_flags. Tailor the executive summary to the named company, "
-        "especially cable supply, material compliance, schedule reliability, and any partner/self-perform boundary. Return only valid JSON "
-        "with exactly these keys: bid_summary, scope_checklist, missing_information_checklist, required_documents_checklist, risk_flags, "
-        "draft_executive_summary, partner_email_template.\n\n"
+        "especially cable supply, material compliance, schedule reliability, and any partner/self-perform boundary. Use concise, "
+        "proposal-ready language. Return only the requested structured fields.\n\n"
         f"{json.dumps(payload, indent=2)}"
     )
 
@@ -165,12 +188,47 @@ def _normalize_proposal_payload(payload: Mapping, fallback: Mapping) -> dict:
     normalized = dict(fallback)
     for key in PROPOSAL_KEYS:
         value = payload.get(key)
-        if key in {"bid_summary", "draft_executive_summary", "partner_email_template"}:
+        if key in PROPOSAL_TEXT_KEYS:
             if isinstance(value, str) and value.strip():
                 normalized[key] = value.strip()
         elif isinstance(value, list):
             normalized[key] = [str(item).strip() for item in value if str(item).strip()]
     return normalized
+
+
+def _proposal_tool_config() -> dict:
+    return {
+        "tools": [
+            {
+                "toolSpec": {
+                    "name": PROPOSAL_TOOL_NAME,
+                    "description": "Create the bid-readiness and proposal-prep package for the opportunity.",
+                    "inputSchema": {"json": _proposal_schema()},
+                }
+            }
+        ],
+        "toolChoice": {"tool": {"name": PROPOSAL_TOOL_NAME}},
+    }
+
+
+def _bedrock_response_text(content: list[dict]) -> str:
+    return "\n".join(block.get("text", "") for block in content if isinstance(block, dict))
+
+
+def _extract_bedrock_payload(content: list[dict]) -> dict:
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        tool_use = block.get("toolUse")
+        if isinstance(tool_use, dict) and tool_use.get("name") == PROPOSAL_TOOL_NAME:
+            tool_input = tool_use.get("input")
+            if isinstance(tool_input, dict):
+                return tool_input
+
+    text = _bedrock_response_text(content)
+    if not text.strip():
+        raise RuntimeError("Bedrock returned an empty proposal response")
+    return _extract_json_object(text)
 
 
 def generate_bedrock_proposal(opportunity: Mapping, company_profile: Mapping | None, baseline: Mapping) -> dict:
@@ -190,18 +248,17 @@ def generate_bedrock_proposal(opportunity: Mapping, company_profile: Mapping | N
             {
                 "text": (
                     "You are an expert proposal strategist for electrical cable supply, power infrastructure, utilities, "
-                    "data centers, substations, and installation teaming. You write concise, compliant, bid-ready content."
+                    "data centers, substations, and installation teaming. You write concise, compliant, bid-ready content. "
+                    "Use the provided tool to return the structured proposal package."
                 )
             }
         ],
         messages=[{"role": "user", "content": [{"text": _proposal_prompt(opportunity, company_profile, baseline)}]}],
         inferenceConfig={"maxTokens": settings.bedrock_max_tokens, "temperature": settings.bedrock_temperature},
+        toolConfig=_proposal_tool_config(),
     )
     content = response.get("output", {}).get("message", {}).get("content", [])
-    text = "\n".join(block.get("text", "") for block in content if isinstance(block, dict))
-    if not text.strip():
-        raise RuntimeError("Bedrock returned an empty proposal response")
-    return _normalize_proposal_payload(_extract_json_object(text), baseline)
+    return _normalize_proposal_payload(_extract_bedrock_payload(content), baseline)
 
 
 def generate_proposal_package(opportunity: Mapping, company_profile: Mapping | None = None) -> dict:

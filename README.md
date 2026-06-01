@@ -129,6 +129,8 @@ Required production inputs:
 - `FRONTEND_ORIGIN=https://elecbidspec-ai.pages.dev`
 - `SAM_GOV_API_KEY` only if live SAM.gov ingestion is enabled
 - `BEDROCK_PROPOSALS_ENABLED=true` only if AI-written proposal drafts should call Bedrock
+- `BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6` for Claude Sonnet proposal drafting
+- `API_TIMEOUT_SECONDS=120` when deploying Lambda with Sonnet, because proposal generation can take 30-45 seconds
 
 ## Public Bid Sources
 
@@ -214,11 +216,13 @@ The proposal assistant can use Amazon Bedrock to write company-specific proposal
 
 ```bash
 BEDROCK_PROPOSALS_ENABLED=true
-BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6
 BEDROCK_REGION=us-east-1
+BEDROCK_MAX_TOKENS=1800
+BEDROCK_TEMPERATURE=0.2
 ```
 
-AWS credentials are not stored in the app. `boto3` uses the normal AWS credential chain, such as environment variables, workload identity, or an instance/container role. If Bedrock is disabled or unavailable, the endpoint falls back to deterministic proposal generation.
+Claude Sonnet 4.6 uses a Bedrock inference profile ID here because direct on-demand invocation is not supported for this model in the current AWS account. AWS credentials are not stored in the app. `boto3` uses the normal AWS credential chain, such as environment variables, workload identity, or an instance/container role. If Bedrock is disabled or unavailable, the endpoint falls back to deterministic proposal generation.
 
 The seed profile is configured for Taihan Cable & Solution so proposal drafts are grounded in its cable and power infrastructure capability profile instead of a generic contractor profile.
 
