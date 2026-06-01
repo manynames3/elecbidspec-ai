@@ -226,6 +226,62 @@ select {
   gap: 8px;
 }
 
+.alert-digest-panel {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.alert-digest-header,
+.panel-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.alert-digest-header strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+}
+
+.alert-controls {
+  display: grid;
+  grid-template-columns: 92px 92px minmax(180px, 1fr) auto auto auto auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.alert-checkbox {
+  min-height: 38px;
+}
+
+.digest-list {
+  display: grid;
+  gap: 6px;
+}
+
+.digest-link {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 9px;
+  background: #fffefa;
+  color: var(--text);
+}
+
+.digest-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .search-row {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto auto;
@@ -256,7 +312,8 @@ label span,
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   min-height: 38px;
   border: 1px solid var(--border);
@@ -267,9 +324,15 @@ select {
 }
 
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   outline: 2px solid rgba(36, 99, 166, 0.22);
   border-color: var(--blue);
+}
+
+textarea {
+  min-height: 76px;
+  resize: vertical;
 }
 
 .wide-control {
@@ -318,6 +381,11 @@ select:focus {
 
 .secondary-button:hover {
   background: var(--surface-muted);
+}
+
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .text-link {
@@ -502,6 +570,14 @@ select:focus {
   font-size: 17px;
 }
 
+.panel-title-row h2 {
+  margin: 0;
+}
+
+.compact-form-grid {
+  margin-top: 10px;
+}
+
 .panel p {
   line-height: 1.58;
 }
@@ -664,6 +740,7 @@ select:focus {
 
   .summary-strip,
   .source-health,
+  .alert-controls,
   .search-row,
   .filter-grid,
   .form-grid,

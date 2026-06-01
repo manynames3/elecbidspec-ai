@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, Download, ExternalLink, FileText, RefreshCw } from "lucide-react";
+import { ArrowLeft, CalendarDays, Download, ExternalLink, FileSearch, FileText, RefreshCw, Save, Sparkles } from "lucide-react";
 import { apiFetch, apiUrl, authHeaders, formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
-import type { Opportunity, Proposal } from "@/lib/types";
+import type { AttachmentExtraction, AttachmentIngestionResult, Opportunity, OpportunityWorkflow, Proposal } from "@/lib/types";
 
 function ListBlock({ title, items }: { title: string; items: string[] }) {
   return (
@@ -25,10 +25,17 @@ export function OpportunityDetail() {
   const id = searchParams.get("id");
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [workflow, setWorkflow] = useState<OpportunityWorkflow | null>(null);
+  const [workflowDraft, setWorkflowDraft] = useState<OpportunityWorkflow | null>(null);
+  const [attachmentExtractions, setAttachmentExtractions] = useState<AttachmentExtraction[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [proposalError, setProposalError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [proposalLoading, setProposalLoading] = useState(false);
+  const [enhancing, setEnhancing] = useState(false);
+  const [ingesting, setIngesting] = useState(false);
+  const [workflowSaving, setWorkflowSaving] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -40,9 +47,21 @@ export function OpportunityDetail() {
     }
     try {
       setProposalError(null);
+      setActionMessage(null);
       const nextOpportunity = await apiFetch<Opportunity>(`/opportunities/${id}`);
       setOpportunity(nextOpportunity);
       setLoading(false);
+      const [nextWorkflow, nextExtractions] = await Promise.allSettled([
+        apiFetch<OpportunityWorkflow>(`/opportunities/${id}/workflow`),
+        apiFetch<AttachmentExtraction[]>(`/opportunities/${id}/attachments/extractions`)
+      ]);
+      if (nextWorkflow.status === "fulfilled") {
+        setWorkflow(nextWorkflow.value);
+        setWorkflowDraft(nextWorkflow.value);
+      }
+      if (nextExtractions.status === "fulfilled") {
+        setAttachmentExtractions(nextExtractions.value);
+      }
       setProposalLoading(true);
       try {
         setProposal(await apiFetch<Proposal>(`/opportunities/${id}/proposal`));
@@ -65,6 +84,82 @@ export function OpportunityDetail() {
     }
     setOpportunity(await apiFetch<Opportunity>(`/opportunities/${opportunity.id}/rescore`, { method: "POST" }));
     setProposal(await apiFetch<Proposal>(`/opportunities/${opportunity.id}/proposal`));
+  }
+
+  function patchWorkflowDraft(patch: Partial<OpportunityWorkflow>) {
+    if (!workflowDraft) {
+      return;
+    }
+    setWorkflowDraft({ ...workflowDraft, ...patch });
+  }
+
+  async function saveWorkflow() {
+    if (!opportunity || !workflowDraft) {
+      return;
+    }
+    setWorkflowSaving(true);
+    setError(null);
+    setActionMessage(null);
+    try {
+      const saved = await apiFetch<OpportunityWorkflow>(`/opportunities/${opportunity.id}/workflow`, {
+        method: "PUT",
+        body: JSON.stringify({
+          saved: workflowDraft.saved,
+          watched: workflowDraft.watched,
+          hidden: workflowDraft.hidden,
+          status: workflowDraft.status,
+          owner: workflowDraft.owner,
+          priority: workflowDraft.priority,
+          notes: workflowDraft.notes
+        })
+      });
+      setWorkflow(saved);
+      setWorkflowDraft(saved);
+      setActionMessage("Workflow saved.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save workflow");
+    } finally {
+      setWorkflowSaving(false);
+    }
+  }
+
+  async function enhanceProposal() {
+    if (!opportunity) {
+      return;
+    }
+    setEnhancing(true);
+    setProposalError(null);
+    setActionMessage(null);
+    try {
+      setProposal(await apiFetch<Proposal>(`/opportunities/${opportunity.id}/proposal/enhance`, { method: "POST" }));
+      setActionMessage("Proposal package enhanced and cached.");
+    } catch (err) {
+      setProposalError(err instanceof Error ? err.message : "Unable to enhance proposal");
+    } finally {
+      setEnhancing(false);
+    }
+  }
+
+  async function ingestDocuments() {
+    if (!opportunity) {
+      return;
+    }
+    setIngesting(true);
+    setError(null);
+    setActionMessage(null);
+    try {
+      const result = await apiFetch<AttachmentIngestionResult>(`/opportunities/${opportunity.id}/attachments/ingest`, { method: "POST" });
+      setOpportunity(result.opportunity);
+      setAttachmentExtractions(result.extractions);
+      setProposal(await apiFetch<Proposal>(`/opportunities/${opportunity.id}/proposal`));
+      const completed = result.extractions.filter((item) => item.status === "complete").length;
+      const failed = result.extractions.filter((item) => item.status === "failed").length;
+      setActionMessage(`Document ingestion complete: ${completed} extracted${failed ? `, ${failed} failed` : ""}.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to ingest documents");
+    } finally {
+      setIngesting(false);
+    }
   }
 
   async function downloadProposal() {
@@ -116,6 +211,14 @@ export function OpportunityDetail() {
           <Download size={16} />
           DOCX
         </button>
+        <button className="secondary-button" onClick={() => void enhanceProposal()} type="button" disabled={enhancing}>
+          <Sparkles size={16} />
+          {enhancing ? "Enhancing" : "AI enhance"}
+        </button>
+        <button className="secondary-button" onClick={() => void ingestDocuments()} type="button" disabled={ingesting}>
+          <FileSearch size={16} />
+          {ingesting ? "Ingesting" : "Ingest docs"}
+        </button>
       </div>
 
       <section className="detail-header">
@@ -140,6 +243,65 @@ export function OpportunityDetail() {
           <span>{opportunity.value_confidence.replaceAll("_", " ")} value</span>
         </div>
       </section>
+
+      {actionMessage ? <div className="success">{actionMessage}</div> : null}
+
+      {workflowDraft ? (
+        <section className="panel">
+          <div className="panel-title-row">
+            <h2>Bid Workflow</h2>
+            {workflow ? <span className="source-pill">updated {formatDate(workflow.updated_at.slice(0, 10))}</span> : null}
+          </div>
+          <div className="checkbox-grid">
+            <label className="checkbox-label">
+              <input type="checkbox" checked={workflowDraft.saved} onChange={(event) => patchWorkflowDraft({ saved: event.target.checked })} />
+              <span>Saved</span>
+            </label>
+            <label className="checkbox-label">
+              <input type="checkbox" checked={workflowDraft.watched} onChange={(event) => patchWorkflowDraft({ watched: event.target.checked })} />
+              <span>Watched</span>
+            </label>
+            <label className="checkbox-label">
+              <input type="checkbox" checked={workflowDraft.hidden} onChange={(event) => patchWorkflowDraft({ hidden: event.target.checked })} />
+              <span>Hidden</span>
+            </label>
+          </div>
+          <div className="form-grid compact-form-grid">
+            <label>
+              <span>Status</span>
+              <select value={workflowDraft.status} onChange={(event) => patchWorkflowDraft({ status: event.target.value })}>
+                <option value="reviewing">Reviewing</option>
+                <option value="bid">Bid</option>
+                <option value="teaming">Teaming</option>
+                <option value="waiting_on_docs">Waiting on docs</option>
+                <option value="no_bid">No bid</option>
+                <option value="submitted">Submitted</option>
+              </select>
+            </label>
+            <label>
+              <span>Priority</span>
+              <select value={workflowDraft.priority} onChange={(event) => patchWorkflowDraft({ priority: event.target.value })}>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+                <option value="low">Low</option>
+              </select>
+            </label>
+            <label>
+              <span>Owner</span>
+              <input value={workflowDraft.owner ?? ""} onChange={(event) => patchWorkflowDraft({ owner: event.target.value })} placeholder="Estimator or BD owner" />
+            </label>
+            <button className="primary-button" type="button" onClick={() => void saveWorkflow()} disabled={workflowSaving}>
+              <Save size={16} />
+              {workflowSaving ? "Saving" : "Save workflow"}
+            </button>
+            <label className="wide-control">
+              <span>Notes</span>
+              <textarea value={workflowDraft.notes ?? ""} onChange={(event) => patchWorkflowDraft({ notes: event.target.value })} placeholder="Teaming notes, exclusions, addenda, next step" />
+            </label>
+          </div>
+        </section>
+      ) : null}
 
       <section className="panel-grid">
         <section className="panel">
@@ -267,6 +429,44 @@ export function OpportunityDetail() {
             <h2>Partner Email</h2>
             <pre className="email-box">{proposal.partner_email_template}</pre>
           </section>
+        </section>
+      ) : null}
+
+      {attachmentExtractions.length ? (
+        <section className="panel">
+          <h2>Document Intelligence</h2>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Status</th>
+                  <th>Keywords</th>
+                  <th>Materials</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attachmentExtractions.map((item) => {
+                  const extracted = item.extracted_specs ?? {};
+                  const keywords = Array.isArray(extracted.keywords) ? extracted.keywords.join(", ") : "";
+                  const materials = Array.isArray(extracted.required_materials) ? extracted.required_materials.join(", ") : "";
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <a className="text-link" href={item.source_url} target="_blank" rel="noreferrer">
+                          {item.filename ?? String(item.attachment.name ?? "Source document")}
+                        </a>
+                        {item.error ? <p className="compact-copy">{item.error}</p> : null}
+                      </td>
+                      <td>{item.status}</td>
+                      <td>{keywords || "--"}</td>
+                      <td>{materials || "--"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
 

@@ -11,8 +11,23 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.session import get_db
-from app.models import AuthSession, CompanyProfile, IngestionJob, Opportunity, User
+from app.models import (
+    AlertPreference,
+    AlertRun,
+    AuthSession,
+    CompanyProfile,
+    IngestionJob,
+    Opportunity,
+    OpportunityAttachmentExtraction,
+    OpportunityWorkflow,
+    User,
+)
 from app.schemas import (
+    AlertPreferenceRead,
+    AlertPreferenceUpdate,
+    AlertRunRead,
+    AttachmentExtractionRead,
+    AttachmentIngestionResult,
     CompanyProfileCreate,
     CompanyProfileRead,
     IngestionJobCreate,
@@ -21,11 +36,15 @@ from app.schemas import (
     LoginResponse,
     OpportunityCreate,
     OpportunityRead,
+    OpportunityWorkflowRead,
+    OpportunityWorkflowUpdate,
     ProposalRead,
     SearchRequest,
     UserRead,
 )
 from app.services.auth import create_session_token, hash_session_token, session_expiry, verify_password
+from app.services.alerts import build_alert_digest, get_or_create_alert_preference
+from app.services.attachment_ingestion import ingest_opportunity_attachments
 from app.services.classification import classify_bid
 from app.services.extraction import extract_specs, parse_attachment
 from app.services.fit_scoring import score_fit
@@ -35,7 +54,7 @@ from app.services.ingestion.defaults import (
     missing_required_setting,
     skipped_default_public_bid_jobs,
 )
-from app.services.proposal import generate_proposal_package
+from app.services.proposal_cache import enhance_proposal, get_or_create_fast_proposal
 from app.services.proposal_docx import generate_proposal_docx
 from app.services.search import search_opportunities
 from app.services.storage import store_upload
@@ -92,6 +111,14 @@ def require_user(current_user: User | None = Depends(get_current_user_optional))
     if not current_user:
         raise HTTPException(status_code=401, detail="Login required.")
     return current_user
+
+
+def request_tenant_id(current_user: User | None) -> str:
+    if current_user:
+        return current_user.tenant_id
+    if get_settings().auth_required:
+        raise HTTPException(status_code=401, detail="Login required.")
+    return "default"
 
 
 def require_admin(
@@ -231,7 +258,7 @@ def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[d
             status = "missing_config"
         elif latest_job and latest_job.status == "failed":
             status = "failed"
-        elif catalog.get("directory_only") and (not count_row or not count_row["count"]):
+        elif catalog.get("directory_only") and not latest_job and (not count_row or not count_row["count"]):
             status = "needs_adapter"
         elif not count_row or not count_row["count"]:
             status = "no_records"
@@ -298,6 +325,7 @@ def logout(
 @router.get("/opportunities", response_model=list[OpportunityRead])
 def list_opportunities(
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
     due_before: date | None = Query(default=None),
     due_after: date | None = Query(default=None),
     state: str | None = Query(default=None, min_length=2, max_length=2),
@@ -311,8 +339,26 @@ def list_opportunities(
     bid_status: str | None = Query(default=None),
     open_only: bool = Query(default=False),
     real_only: bool = Query(default=False),
+    saved_only: bool = Query(default=False),
+    watched_only: bool = Query(default=False),
+    include_hidden: bool = Query(default=False),
 ) -> list[Opportunity]:
     query = db.query(Opportunity)
+    tenant_id = current_user.tenant_id if current_user else "default"
+    if not include_hidden:
+        hidden_subquery = (
+            db.query(OpportunityWorkflow.opportunity_id)
+            .filter(OpportunityWorkflow.tenant_id == tenant_id, OpportunityWorkflow.hidden == True)  # noqa: E712
+            .subquery()
+        )
+        query = query.filter(Opportunity.id.notin_(hidden_subquery))
+    if saved_only or watched_only:
+        workflow_query = db.query(OpportunityWorkflow.opportunity_id).filter(OpportunityWorkflow.tenant_id == tenant_id)
+        if saved_only:
+            workflow_query = workflow_query.filter(OpportunityWorkflow.saved == True)  # noqa: E712
+        if watched_only:
+            workflow_query = workflow_query.filter(OpportunityWorkflow.watched == True)  # noqa: E712
+        query = query.filter(Opportunity.id.in_(workflow_query.subquery()))
     if due_before:
         query = query.filter(Opportunity.due_date <= due_before)
     if due_after:
@@ -360,6 +406,73 @@ def get_opportunity(opportunity_id: int, db: Session = Depends(get_db)) -> Oppor
     return opportunity
 
 
+def _get_or_create_workflow(db: Session, opportunity_id: int, tenant_id: str) -> OpportunityWorkflow:
+    workflow = (
+        db.query(OpportunityWorkflow)
+        .filter(OpportunityWorkflow.opportunity_id == opportunity_id, OpportunityWorkflow.tenant_id == tenant_id)
+        .first()
+    )
+    if workflow:
+        return workflow
+    workflow = OpportunityWorkflow(opportunity_id=opportunity_id, tenant_id=tenant_id)
+    db.add(workflow)
+    db.commit()
+    db.refresh(workflow)
+    return workflow
+
+
+@router.get("/opportunities/{opportunity_id}/workflow", response_model=OpportunityWorkflowRead)
+def get_opportunity_workflow(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> OpportunityWorkflow:
+    if not db.get(Opportunity, opportunity_id):
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    return _get_or_create_workflow(db, opportunity_id, request_tenant_id(current_user))
+
+
+@router.put("/opportunities/{opportunity_id}/workflow", response_model=OpportunityWorkflowRead)
+def update_opportunity_workflow(
+    opportunity_id: int,
+    payload: OpportunityWorkflowUpdate,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> OpportunityWorkflow:
+    if not db.get(Opportunity, opportunity_id):
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    workflow = _get_or_create_workflow(db, opportunity_id, request_tenant_id(current_user))
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(workflow, key, value)
+    db.commit()
+    db.refresh(workflow)
+    return workflow
+
+
+@router.get("/workflow/opportunities")
+def list_workflow_opportunities(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+    saved_only: bool = Query(default=True),
+    watched_only: bool = Query(default=False),
+) -> list[dict]:
+    tenant_id = request_tenant_id(current_user)
+    workflow_query = db.query(OpportunityWorkflow).filter(OpportunityWorkflow.tenant_id == tenant_id, OpportunityWorkflow.hidden == False)  # noqa: E712
+    if saved_only:
+        workflow_query = workflow_query.filter(OpportunityWorkflow.saved == True)  # noqa: E712
+    if watched_only:
+        workflow_query = workflow_query.filter(OpportunityWorkflow.watched == True)  # noqa: E712
+    rows = workflow_query.order_by(OpportunityWorkflow.updated_at.desc()).limit(100).all()
+    if not rows:
+        return []
+    opportunities_by_id = {item.id: item for item in db.query(Opportunity).filter(Opportunity.id.in_([row.opportunity_id for row in rows])).all()}
+    return [
+        {"workflow": row, "opportunity": opportunity_to_dict(opportunities_by_id[row.opportunity_id])}
+        for row in rows
+        if row.opportunity_id in opportunities_by_id
+    ]
+
+
 @router.post("/opportunities/{opportunity_id}/rescore", response_model=OpportunityRead)
 def rescore_opportunity(opportunity_id: int, db: Session = Depends(get_db)) -> Opportunity:
     opportunity = db.get(Opportunity, opportunity_id)
@@ -383,7 +496,31 @@ def get_proposal(
     opportunity = db.get(Opportunity, opportunity_id)
     if not opportunity:
         raise HTTPException(status_code=404, detail="Opportunity not found")
-    return generate_proposal_package(opportunity_to_dict(opportunity), get_profile_data_for_user(db, current_user))
+    return get_or_create_fast_proposal(
+        db,
+        opportunity,
+        get_profile_data_for_user(db, current_user),
+        request_tenant_id(current_user),
+        opportunity_to_dict,
+    )
+
+
+@router.post("/opportunities/{opportunity_id}/proposal/enhance", response_model=ProposalRead)
+def enhance_opportunity_proposal(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+) -> dict:
+    opportunity = db.get(Opportunity, opportunity_id)
+    if not opportunity:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    return enhance_proposal(
+        db,
+        opportunity,
+        get_profile_data_for_user(db, current_user),
+        current_user.tenant_id,
+        opportunity_to_dict,
+    )
 
 
 @router.get("/opportunities/{opportunity_id}/proposal.docx")
@@ -397,7 +534,7 @@ def download_proposal_docx(
         raise HTTPException(status_code=404, detail="Opportunity not found")
     opportunity_data = opportunity_to_dict(opportunity)
     profile = get_profile_data_for_user(db, current_user)
-    proposal = generate_proposal_package(opportunity_data, profile)
+    proposal = get_or_create_fast_proposal(db, opportunity, profile, request_tenant_id(current_user), opportunity_to_dict)
     content = generate_proposal_docx(opportunity_data, proposal, profile)
     filename = "".join(char if char.isalnum() else "-" for char in opportunity.title.lower()).strip("-")[:80] or "proposal"
     return Response(
@@ -455,6 +592,39 @@ async def upload_opportunity_document(
     return opportunity
 
 
+@router.post("/opportunities/{opportunity_id}/attachments/ingest", response_model=AttachmentIngestionResult)
+def ingest_opportunity_documents(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+    max_links: int = Query(default=8, ge=1, le=20),
+) -> dict:
+    request_tenant_id(current_user)
+    opportunity = db.get(Opportunity, opportunity_id)
+    if not opportunity:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    extractions = ingest_opportunity_attachments(db, opportunity, max_links=max_links)
+    enriched = enrich_opportunity_data(opportunity_to_dict(opportunity), db)
+    for key, value in enriched.items():
+        if hasattr(opportunity, key) and key not in {"id", "created_at", "updated_at"}:
+            setattr(opportunity, key, value)
+    db.commit()
+    db.refresh(opportunity)
+    return {"opportunity": opportunity, "extractions": extractions}
+
+
+@router.get("/opportunities/{opportunity_id}/attachments/extractions", response_model=list[AttachmentExtractionRead])
+def list_attachment_extractions(opportunity_id: int, db: Session = Depends(get_db)) -> list[OpportunityAttachmentExtraction]:
+    if not db.get(Opportunity, opportunity_id):
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    return (
+        db.query(OpportunityAttachmentExtraction)
+        .filter(OpportunityAttachmentExtraction.opportunity_id == opportunity_id)
+        .order_by(OpportunityAttachmentExtraction.updated_at.desc())
+        .all()
+    )
+
+
 @router.get("/company-profile", response_model=CompanyProfileRead)
 def get_company_profile(
     db: Session = Depends(get_db),
@@ -506,6 +676,64 @@ def upsert_company_profile(
     db.commit()
     db.refresh(profile)
     return profile
+
+
+@router.get("/alerts/preferences", response_model=AlertPreferenceRead)
+def get_alert_preferences(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> AlertPreference:
+    return get_or_create_alert_preference(db, request_tenant_id(current_user))
+
+
+@router.put("/alerts/preferences", response_model=AlertPreferenceRead)
+def update_alert_preferences(
+    payload: AlertPreferenceUpdate,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> AlertPreference:
+    preference = get_or_create_alert_preference(db, request_tenant_id(current_user))
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(preference, key, value)
+    db.commit()
+    db.refresh(preference)
+    return preference
+
+
+@router.post("/alerts/run", response_model=AlertRunRead)
+def run_alert_digest(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> AlertRun:
+    tenant_id = request_tenant_id(current_user)
+    preference = get_or_create_alert_preference(db, tenant_id)
+    digest = build_alert_digest(db, tenant_id, preference)
+    run = AlertRun(
+        tenant_id=tenant_id,
+        status="complete",
+        digest=digest,
+        sent_to=preference.email_to if preference.enabled and preference.email_to else None,
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+    return run
+
+
+@router.get("/alerts/latest", response_model=AlertRunRead)
+def get_latest_alert_digest(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> AlertRun:
+    run = (
+        db.query(AlertRun)
+        .filter(AlertRun.tenant_id == request_tenant_id(current_user))
+        .order_by(AlertRun.created_at.desc())
+        .first()
+    )
+    if not run:
+        raise HTTPException(status_code=404, detail="No alert digest has been generated yet.")
+    return run
 
 
 @router.post("/ingestion/jobs", response_model=IngestionJobRead, status_code=202)
@@ -589,6 +817,7 @@ def ingestion_summary(db: Session = Depends(get_db)) -> dict:
 @router.post("/ingestion/refresh-defaults")
 def refresh_default_ingestion(
     db: Session = Depends(get_db),
+    process_portals_inline: bool = Query(default=False),
     _: None = Depends(require_admin),
 ) -> dict:
     jobs = []
@@ -613,12 +842,16 @@ def refresh_default_ingestion(
         db.add(job)
         db.commit()
         db.refresh(job)
-        try:
-            process_job(db, job)
-        except Exception as exc:  # noqa: BLE001 - source refresh should report per-source failures
-            job.status = "failed"
-            job.error = str(exc)
+        if job.adapter == "public_portal_links" and not process_portals_inline:
+            job.result = {"queued": 1}
             db.commit()
+        else:
+            try:
+                process_job(db, job)
+            except Exception as exc:  # noqa: BLE001 - source refresh should report per-source failures
+                job.status = "failed"
+                job.error = str(exc)
+                db.commit()
         db.refresh(job)
         jobs.append(
             {

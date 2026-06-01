@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { DatabaseZap, Filter, RefreshCw, Search } from "lucide-react";
+import Link from "next/link";
+import { Bell, DatabaseZap, Filter, RefreshCw, Save, Search } from "lucide-react";
 import { apiFetch, authHeaders, getAuthToken, sourceLabel } from "@/lib/api";
-import type { IngestionRefreshResult, IngestionSummary, Opportunity, SearchResult } from "@/lib/types";
+import type { AlertPreference, AlertRun, IngestionRefreshResult, IngestionSummary, Opportunity, SearchResult } from "@/lib/types";
 import { OpportunityCard } from "@/components/OpportunityCard";
 
 const adminTokenStorageKey = "elecbidspec_admin_token";
@@ -18,6 +19,44 @@ const projectTypes = [
   "general_electrical"
 ];
 
+const sourceFilterOptions = [
+  "seed",
+  "manual_upload",
+  "sam_gov",
+  "chicago_solicitations",
+  "la_ramp",
+  "montgomery_md_solicitations",
+  "nypa",
+  "nyc_city_record",
+  "nyc_school_construction_authority",
+  "pa_emarketplace",
+  "sf_open_bids",
+  "txdot_bid_items",
+  "ca_dot",
+  "fl_dot",
+  "ny_dot",
+  "ga_dot",
+  "il_dot",
+  "oh_dot",
+  "nc_evp",
+  "va_dot",
+  "az_dot",
+  "tva_procurement",
+  "bpa_procurement",
+  "ladwp",
+  "austin_energy",
+  "cps_energy",
+  "jea",
+  "srp",
+  "port_authority_ny_nj",
+  "la_metro",
+  "septa",
+  "ny_mta",
+  "dfw_airport",
+  "uc_procurement",
+  "houston_water"
+];
+
 type Filters = {
   due_before: string;
   state: string;
@@ -30,6 +69,9 @@ type Filters = {
   source: string;
   open_only: string;
   real_only: string;
+  saved_only: string;
+  watched_only: string;
+  include_hidden: string;
 };
 
 const emptyFilters: Filters = {
@@ -43,7 +85,10 @@ const emptyFilters: Filters = {
   bid_status: "open",
   source: "",
   open_only: "true",
-  real_only: "true"
+  real_only: "true",
+  saved_only: "",
+  watched_only: "",
+  include_hidden: ""
 };
 
 export function Dashboard() {
@@ -54,8 +99,13 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshingSources, setRefreshingSources] = useState(false);
   const [ingestionSummary, setIngestionSummary] = useState<IngestionSummary | null>(null);
+  const [alertPreference, setAlertPreference] = useState<AlertPreference | null>(null);
+  const [alertRun, setAlertRun] = useState<AlertRun | null>(null);
+  const [alertForm, setAlertForm] = useState({ email_to: "", min_fit_score: "70", due_within_days: "30", enabled: true, include_source_failures: true });
+  const [alertLoading, setAlertLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceMessage, setSourceMessage] = useState<string | null>(null);
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [adminToken, setAdminToken] = useState("");
 
   const visibleCount = searchResults ? searchResults.length : opportunities.length;
@@ -63,6 +113,7 @@ export function Dashboard() {
   const sourceHealth = ingestionSummary?.source_health ?? [];
   const publicSourceCount = sourceHealth.length || ingestionSummary?.sources.filter((source) => source.source !== "seed" && source.source !== "manual_upload").length || 0;
   const healthySourceCount = sourceHealth.filter((source) => source.status === "healthy").length;
+  const alertCounts = alertRun?.digest.counts;
   const averageFit = useMemo(() => {
     const scores = opportunities.map((item) => item.fit_score).filter((score): score is number => score !== null);
     if (!scores.length) {
@@ -105,9 +156,31 @@ export function Dashboard() {
     }
   }
 
+  async function loadAlerts() {
+    try {
+      const preference = await apiFetch<AlertPreference>("/alerts/preferences");
+      setAlertPreference(preference);
+      setAlertForm({
+        email_to: preference.email_to ?? "",
+        min_fit_score: String(preference.min_fit_score),
+        due_within_days: String(preference.due_within_days),
+        enabled: preference.enabled,
+        include_source_failures: preference.include_source_failures
+      });
+      try {
+        setAlertRun(await apiFetch<AlertRun>("/alerts/latest"));
+      } catch {
+        setAlertRun(null);
+      }
+    } catch {
+      setAlertPreference(null);
+    }
+  }
+
   useEffect(() => {
     setAdminToken(window.localStorage.getItem(adminTokenStorageKey) ?? "");
     void loadOpportunities(emptyFilters);
+    void loadAlerts();
   }, []);
 
   function adminHeaders() {
@@ -170,9 +243,10 @@ export function Dashboard() {
       const result = await apiFetch<IngestionRefreshResult>("/ingestion/refresh-defaults", { method: "POST", headers });
       const imported = result.jobs.reduce((sum, job) => sum + Number(job.result.imported ?? 0), 0);
       const updated = result.jobs.reduce((sum, job) => sum + Number(job.result.updated ?? 0), 0);
+      const queued = result.jobs.reduce((sum, job) => sum + Number(job.result.queued ?? 0), 0);
       const failed = result.jobs.filter((job) => job.status === "failed").length;
       const skipped = result.jobs.filter((job) => job.status === "skipped").length;
-      setSourceMessage(`Public sources refreshed: ${imported} imported, ${updated} updated${failed ? `, ${failed} failed` : ""}${skipped ? `, ${skipped} skipped` : ""}.`);
+      setSourceMessage(`Public sources refreshed: ${imported} imported, ${updated} updated${queued ? `, ${queued} queued` : ""}${failed ? `, ${failed} failed` : ""}${skipped ? `, ${skipped} skipped` : ""}.`);
       await loadOpportunities(filters);
     } catch (err) {
       if (err instanceof Error && err.message.includes("401")) {
@@ -182,6 +256,44 @@ export function Dashboard() {
       setError(err instanceof Error ? err.message : "Unable to refresh public sources");
     } finally {
       setRefreshingSources(false);
+    }
+  }
+
+  async function saveAlertPreferences() {
+    setAlertLoading(true);
+    setAlertMessage(null);
+    setError(null);
+    try {
+      const saved = await apiFetch<AlertPreference>("/alerts/preferences", {
+        method: "PUT",
+        body: JSON.stringify({
+          email_to: alertForm.email_to || null,
+          min_fit_score: Number(alertForm.min_fit_score || 70),
+          due_within_days: Number(alertForm.due_within_days || 30),
+          enabled: alertForm.enabled,
+          include_source_failures: alertForm.include_source_failures
+        })
+      });
+      setAlertPreference(saved);
+      setAlertMessage("Alert preferences saved.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save alert preferences");
+    } finally {
+      setAlertLoading(false);
+    }
+  }
+
+  async function runAlertDigest() {
+    setAlertLoading(true);
+    setAlertMessage(null);
+    setError(null);
+    try {
+      setAlertRun(await apiFetch<AlertRun>("/alerts/run", { method: "POST" }));
+      setAlertMessage("Alert digest generated.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to generate alert digest");
+    } finally {
+      setAlertLoading(false);
     }
   }
 
@@ -255,6 +367,60 @@ export function Dashboard() {
         ) : null}
         {sourceMessage ? <div className="success">{sourceMessage}</div> : null}
 
+        <section className="alert-digest-panel">
+          <div className="alert-digest-header">
+            <div>
+              <span className="field-label">Opportunity alerts</span>
+              <strong>{alertRun ? `${alertCounts?.high_fit ?? 0} high fit · ${alertCounts?.due_soon ?? 0} due soon` : "No digest yet"}</strong>
+            </div>
+            <div className="card-meta">
+              <span>{alertPreference ? `tenant ${alertPreference.tenant_id}` : "default settings"}</span>
+              {alertRun ? <span>last run {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(alertRun.created_at))}</span> : null}
+            </div>
+          </div>
+          <div className="alert-controls">
+            <label>
+              <span>Min fit</span>
+              <input type="number" min="0" max="100" value={alertForm.min_fit_score} onChange={(event) => setAlertForm({ ...alertForm, min_fit_score: event.target.value })} />
+            </label>
+            <label>
+              <span>Due days</span>
+              <input type="number" min="1" max="365" value={alertForm.due_within_days} onChange={(event) => setAlertForm({ ...alertForm, due_within_days: event.target.value })} />
+            </label>
+            <label className="wide-control">
+              <span>Email target</span>
+              <input value={alertForm.email_to} onChange={(event) => setAlertForm({ ...alertForm, email_to: event.target.value })} placeholder="pilot@example.com" />
+            </label>
+            <label className="checkbox-label alert-checkbox">
+              <input type="checkbox" checked={alertForm.enabled} onChange={(event) => setAlertForm({ ...alertForm, enabled: event.target.checked })} />
+              <span>Enabled</span>
+            </label>
+            <label className="checkbox-label alert-checkbox">
+              <input type="checkbox" checked={alertForm.include_source_failures} onChange={(event) => setAlertForm({ ...alertForm, include_source_failures: event.target.checked })} />
+              <span>Source failures</span>
+            </label>
+            <button className="secondary-button" type="button" onClick={() => void saveAlertPreferences()} disabled={alertLoading}>
+              <Save size={17} />
+              Save alerts
+            </button>
+            <button className="primary-button" type="button" onClick={() => void runAlertDigest()} disabled={alertLoading}>
+              <Bell size={17} />
+              {alertLoading ? "Working" : "Generate digest"}
+            </button>
+          </div>
+          {alertRun?.digest.high_fit?.length ? (
+            <div className="digest-list">
+              {alertRun.digest.high_fit.slice(0, 3).map((item) => (
+                <Link href={`/opportunities?id=${item.id}`} key={item.id} className="digest-link">
+                  <strong>{item.fit_score ?? "--"} fit</strong>
+                  <span>{item.title}</span>
+                </Link>
+              ))}
+            </div>
+          ) : null}
+          {alertMessage ? <div className="success">{alertMessage}</div> : null}
+        </section>
+
         <form className="search-row" onSubmit={handleSearch}>
           <label className="wide-control">
             <span>Natural-language search</span>
@@ -290,6 +456,26 @@ export function Dashboard() {
               <option value="">Real + sample</option>
               <option value="real">Official only</option>
               <option value="sample">Sample only</option>
+            </select>
+          </label>
+          <label>
+            <span>Workflow</span>
+            <select
+              value={filters.saved_only ? "saved" : filters.watched_only ? "watched" : filters.include_hidden ? "hidden" : ""}
+              onChange={(event) => {
+                const value = event.target.value;
+                setFilters({
+                  ...filters,
+                  saved_only: value === "saved" ? "true" : "",
+                  watched_only: value === "watched" ? "true" : "",
+                  include_hidden: value === "hidden" ? "true" : ""
+                });
+              }}
+            >
+              <option value="">All visible</option>
+              <option value="saved">Saved</option>
+              <option value="watched">Watched</option>
+              <option value="hidden">Include hidden</option>
             </select>
           </label>
           <label>
@@ -364,18 +550,11 @@ export function Dashboard() {
               }
             >
               <option value="">Any</option>
-              <option value="seed">Seed</option>
-              <option value="manual_upload">Manual upload</option>
-              <option value="sam_gov">SAM.gov</option>
-              <option value="chicago_solicitations">Chicago/CTA</option>
-              <option value="la_ramp">Los Angeles RAMP</option>
-              <option value="montgomery_md_solicitations">Montgomery County</option>
-              <option value="nypa">NY Power Authority</option>
-              <option value="nyc_city_record">NYC City Record</option>
-              <option value="nyc_school_construction_authority">NYC School Construction</option>
-              <option value="pa_emarketplace">PA eMarketplace</option>
-              <option value="sf_open_bids">San Francisco</option>
-              <option value="txdot_bid_items">TxDOT</option>
+              {sourceFilterOptions.map((source) => (
+                <option value={source} key={source}>
+                  {sourceLabel(source)}
+                </option>
+              ))}
             </select>
           </label>
           <button className="secondary-button" type="submit">

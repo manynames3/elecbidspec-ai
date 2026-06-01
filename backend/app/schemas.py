@@ -61,6 +61,36 @@ class OpportunityRead(OpportunityBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class OpportunityWorkflowBase(BaseModel):
+    saved: bool = False
+    watched: bool = False
+    hidden: bool = False
+    status: str = "reviewing"
+    owner: str | None = None
+    priority: str = "normal"
+    notes: str | None = None
+
+
+class OpportunityWorkflowUpdate(BaseModel):
+    saved: bool | None = None
+    watched: bool | None = None
+    hidden: bool | None = None
+    status: str | None = None
+    owner: str | None = None
+    priority: str | None = None
+    notes: str | None = None
+
+
+class OpportunityWorkflowRead(OpportunityWorkflowBase):
+    id: int
+    opportunity_id: int
+    tenant_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SearchRequest(BaseModel):
     query: str
 
@@ -96,6 +126,64 @@ class ProposalRead(BaseModel):
     compliance_matrix: list[dict[str, str]]
     bid_no_bid_memo: str
     partner_email_template: str
+
+
+class AttachmentExtractionRead(BaseModel):
+    id: int
+    opportunity_id: int
+    source_url: str
+    filename: str | None = None
+    status: str
+    attachment: dict = Field(default_factory=dict)
+    extracted_specs: dict = Field(default_factory=dict)
+    error: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AttachmentIngestionResult(BaseModel):
+    opportunity: OpportunityRead
+    extractions: list[AttachmentExtractionRead]
+
+
+class AlertPreferenceBase(BaseModel):
+    email_to: str | None = None
+    min_fit_score: int = Field(default=70, ge=0, le=100)
+    due_within_days: int = Field(default=30, ge=1, le=365)
+    include_source_failures: bool = True
+    enabled: bool = True
+
+
+class AlertPreferenceUpdate(BaseModel):
+    email_to: str | None = None
+    min_fit_score: int | None = Field(default=None, ge=0, le=100)
+    due_within_days: int | None = Field(default=None, ge=1, le=365)
+    include_source_failures: bool | None = None
+    enabled: bool | None = None
+
+
+class AlertPreferenceRead(AlertPreferenceBase):
+    id: int
+    tenant_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AlertRunRead(BaseModel):
+    id: int
+    tenant_id: str
+    status: str
+    digest: dict
+    error: str | None = None
+    sent_to: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CompanyProfileBase(BaseModel):

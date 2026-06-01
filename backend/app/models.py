@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import Mapped, mapped_column
@@ -102,6 +102,88 @@ class IngestionJob(Base):
     status: Mapped[str] = mapped_column(String(40), default="queued", index=True)
     params: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)
     result: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class OpportunityWorkflow(Base):
+    __tablename__ = "opportunity_workflows"
+    __table_args__ = (UniqueConstraint("opportunity_id", "tenant_id", name="uq_opportunity_workflow_tenant"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    opportunity_id: Mapped[int] = mapped_column(Integer, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(80), default="default", index=True)
+    saved: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    watched: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    status: Mapped[str] = mapped_column(String(40), default="reviewing", index=True)
+    owner: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    priority: Mapped[str] = mapped_column(String(40), default="normal", index=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ProposalArtifact(Base):
+    __tablename__ = "proposal_artifacts"
+    __table_args__ = (UniqueConstraint("opportunity_id", "tenant_id", name="uq_proposal_artifact_tenant"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    opportunity_id: Mapped[int] = mapped_column(Integer, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(80), default="default", index=True)
+    content: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)
+    source: Mapped[str] = mapped_column(String(40), default="deterministic", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="ready", index=True)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class AlertPreference(Base):
+    __tablename__ = "alert_preferences"
+    __table_args__ = (UniqueConstraint("tenant_id", name="uq_alert_preferences_tenant"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(80), default="default", index=True)
+    email_to: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    min_fit_score: Mapped[int] = mapped_column(Integer, default=70)
+    due_within_days: Mapped[int] = mapped_column(Integer, default=30)
+    include_source_failures: Mapped[bool] = mapped_column(Boolean, default=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class AlertRun(Base):
+    __tablename__ = "alert_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(80), default="default", index=True)
+    status: Mapped[str] = mapped_column(String(40), default="complete", index=True)
+    digest: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)
+    error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    sent_to: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class OpportunityAttachmentExtraction(Base):
+    __tablename__ = "opportunity_attachment_extractions"
+    __table_args__ = (UniqueConstraint("opportunity_id", "source_url", name="uq_attachment_extraction_source"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    opportunity_id: Mapped[int] = mapped_column(Integer, index=True)
+    source_url: Mapped[str] = mapped_column(Text)
+    filename: Mapped[Optional[str]] = mapped_column(String(260), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="queued", index=True)
+    attachment: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)
+    extracted_specs: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)
     error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

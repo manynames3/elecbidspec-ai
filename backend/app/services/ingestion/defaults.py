@@ -70,29 +70,29 @@ DEFAULT_SOURCE_CATALOG = [
     _catalog_entry("chicago_solicitations", "Chicago/CTA", "state_local", "City of Chicago and CTA solicitations", "chicago_solicitations"),
     _catalog_entry("sf_open_bids", "San Francisco", "state_local", "San Francisco open bid opportunities", "sf_open_bids"),
     _catalog_entry("montgomery_md_solicitations", "Montgomery County", "state_local", "Montgomery County, MD active solicitations", "public_json_feed"),
-    _catalog_entry("ca_dot", "Caltrans", "state_dot", "California state transportation bid opportunities", "portal_directory", "https://caleprocure.ca.gov/", True),
-    _catalog_entry("fl_dot", "FDOT", "state_dot", "Florida transportation lettings and procurement", "portal_directory", "https://www.fdot.gov/contracts/", True),
-    _catalog_entry("ny_dot", "NYSDOT", "state_dot", "New York transportation contract opportunities", "portal_directory", "https://www.dot.ny.gov/doing-business/opportunities/const-notices", True),
-    _catalog_entry("ga_dot", "GDOT", "state_dot", "Georgia transportation bid opportunities", "portal_directory", "https://www.dot.ga.gov/GDOT/Pages/Contractors.aspx", True),
-    _catalog_entry("il_dot", "IDOT", "state_dot", "Illinois transportation lettings and bids", "portal_directory", "https://idot.illinois.gov/doing-business/procurements.html", True),
-    _catalog_entry("oh_dot", "ODOT", "state_dot", "Ohio transportation bid opportunities", "portal_directory", "https://www.transportation.ohio.gov/working/engineering/estimator/contract-letting", True),
-    _catalog_entry("nc_evp", "NC eVP", "state_local", "North Carolina statewide public solicitations including schools, utilities, airports, and authorities", "portal_directory", "https://evp.nc.gov/solicitations/", True),
-    _catalog_entry("va_dot", "VDOT", "state_dot", "Virginia transportation bids and proposals", "portal_directory", "https://www.virginiadot.org/business/const/default.asp", True),
-    _catalog_entry("az_dot", "ADOT", "state_dot", "Arizona transportation procurement and construction opportunities", "portal_directory", "https://azdot.gov/business/contracts-and-specifications", True),
-    _catalog_entry("tva_procurement", "TVA", "utility", "Tennessee Valley Authority supplier and sourcing opportunities", "portal_directory", "https://www.tva.com/information/suppliers", True),
-    _catalog_entry("bpa_procurement", "BPA", "utility", "Bonneville Power Administration acquisition opportunities", "portal_directory", "https://www.bpa.gov/doing-business", True),
-    _catalog_entry("ladwp", "LADWP", "utility", "Los Angeles Department of Water and Power opportunities through regional procurement portals", "portal_directory", "https://www.ladwp.com/", True),
-    _catalog_entry("austin_energy", "Austin Energy", "utility", "Austin Energy and City of Austin procurement", "portal_directory", "https://financeonline.austintexas.gov/afo/account_services/solicitation/solicitation.cfm", True),
-    _catalog_entry("cps_energy", "CPS Energy", "utility", "San Antonio CPS Energy procurement opportunities", "portal_directory", "https://www.cpsenergy.com/en/about-us/procurement-and-suppliers.html", True),
-    _catalog_entry("jea", "JEA", "utility", "Jacksonville JEA procurement opportunities", "portal_directory", "https://www.jea.com/about/procurement/", True),
-    _catalog_entry("srp", "SRP", "utility", "Salt River Project procurement and supplier opportunities", "portal_directory", "https://www.srpnet.com/about/suppliers", True),
-    _catalog_entry("port_authority_ny_nj", "Port Authority NY/NJ", "airport_authority", "Airport, port, and transit authority bid opportunities", "portal_directory", "https://www.panynj.gov/port-authority/en/business-opportunities/solicitations-advertisements.html", True),
-    _catalog_entry("la_metro", "LA Metro", "transit", "Los Angeles Metro procurement opportunities", "portal_directory", "https://business.metro.net/VendorPortal/faces/home/solicitations/openSolicitations", True),
-    _catalog_entry("septa", "SEPTA", "transit", "Southeastern Pennsylvania Transportation Authority procurement", "portal_directory", "https://www5.septa.org/business/procurement/", True),
-    _catalog_entry("ny_mta", "MTA", "transit", "New York MTA procurement opportunities", "portal_directory", "https://new.mta.info/doing-business-with-us/procurement", True),
-    _catalog_entry("dfw_airport", "DFW Airport", "airport_authority", "Dallas Fort Worth Airport procurement opportunities", "portal_directory", "https://www.dfwairport.com/business/opportunities/solicitations/", True),
-    _catalog_entry("uc_procurement", "University of California", "university", "University of California construction and procurement opportunities", "portal_directory", "https://www.ucop.edu/procurement-services/", True),
-    _catalog_entry("houston_water", "Houston Public Works", "water_authority", "Houston water, wastewater, and public works solicitations", "portal_directory", "https://www.houstontx.gov/bizwithhou/", True),
+    _catalog_entry("ca_dot", "Caltrans", "state_dot", "California state transportation bid opportunities", "public_portal_links", "https://caleprocure.ca.gov/"),
+    _catalog_entry("fl_dot", "FDOT", "state_dot", "Florida transportation lettings and procurement", "public_portal_links", "https://www.fdot.gov/contracts/"),
+    _catalog_entry("ny_dot", "NYSDOT", "state_dot", "New York transportation contract opportunities", "public_portal_links", "https://www.dot.ny.gov/doing-business/opportunities/const-notices"),
+    _catalog_entry("ga_dot", "GDOT", "state_dot", "Georgia transportation bid opportunities", "public_portal_links", "https://www.dot.ga.gov/GDOT/Pages/Contractors.aspx"),
+    _catalog_entry("il_dot", "IDOT", "state_dot", "Illinois transportation lettings and bids", "public_portal_links", "https://idot.illinois.gov/doing-business/procurements.html"),
+    _catalog_entry("oh_dot", "ODOT", "state_dot", "Ohio transportation bid opportunities", "public_portal_links", "https://www.transportation.ohio.gov/working/engineering/estimator/contract-letting"),
+    _catalog_entry("nc_evp", "NC eVP", "state_local", "North Carolina statewide public solicitations including schools, utilities, airports, and authorities", "public_portal_links", "https://evp.nc.gov/solicitations/"),
+    _catalog_entry("va_dot", "VDOT", "state_dot", "Virginia transportation bids and proposals", "public_portal_links", "https://www.virginiadot.org/business/const/default.asp"),
+    _catalog_entry("az_dot", "ADOT", "state_dot", "Arizona transportation procurement and construction opportunities", "public_portal_links", "https://azdot.gov/business/contracts-and-specifications"),
+    _catalog_entry("tva_procurement", "TVA", "utility", "Tennessee Valley Authority supplier and sourcing opportunities", "public_portal_links", "https://www.tva.com/information/suppliers"),
+    _catalog_entry("bpa_procurement", "BPA", "utility", "Bonneville Power Administration acquisition opportunities", "public_portal_links", "https://www.bpa.gov/doing-business"),
+    _catalog_entry("ladwp", "LADWP", "utility", "Los Angeles Department of Water and Power opportunities through regional procurement portals", "public_portal_links", "https://www.ladwp.com/"),
+    _catalog_entry("austin_energy", "Austin Energy", "utility", "Austin Energy and City of Austin procurement", "public_portal_links", "https://financeonline.austintexas.gov/afo/account_services/solicitation/solicitation.cfm"),
+    _catalog_entry("cps_energy", "CPS Energy", "utility", "San Antonio CPS Energy procurement opportunities", "public_portal_links", "https://www.cpsenergy.com/en/about-us/procurement-and-suppliers.html"),
+    _catalog_entry("jea", "JEA", "utility", "Jacksonville JEA procurement opportunities", "public_portal_links", "https://www.jea.com/about/procurement/"),
+    _catalog_entry("srp", "SRP", "utility", "Salt River Project procurement and supplier opportunities", "public_portal_links", "https://www.srpnet.com/about/suppliers"),
+    _catalog_entry("port_authority_ny_nj", "Port Authority NY/NJ", "airport_authority", "Airport, port, and transit authority bid opportunities", "public_portal_links", "https://www.panynj.gov/port-authority/en/business-opportunities/solicitations-advertisements.html"),
+    _catalog_entry("la_metro", "LA Metro", "transit", "Los Angeles Metro procurement opportunities", "public_portal_links", "https://business.metro.net/VendorPortal/faces/home/solicitations/openSolicitations"),
+    _catalog_entry("septa", "SEPTA", "transit", "Southeastern Pennsylvania Transportation Authority procurement", "public_portal_links", "https://www5.septa.org/business/procurement/"),
+    _catalog_entry("ny_mta", "MTA", "transit", "New York MTA procurement opportunities", "public_portal_links", "https://new.mta.info/doing-business-with-us/procurement"),
+    _catalog_entry("dfw_airport", "DFW Airport", "airport_authority", "Dallas Fort Worth Airport procurement opportunities", "public_portal_links", "https://www.dfwairport.com/business/opportunities/solicitations/"),
+    _catalog_entry("uc_procurement", "University of California", "university", "University of California construction and procurement opportunities", "public_portal_links", "https://www.ucop.edu/procurement-services/"),
+    _catalog_entry("houston_water", "Houston Public Works", "water_authority", "Houston water, wastewater, and public works solicitations", "public_portal_links", "https://www.houstontx.gov/bizwithhou/"),
 ]
 
 DEFAULT_PUBLIC_BID_JOBS = [
@@ -255,6 +255,53 @@ DEFAULT_PUBLIC_BID_JOBS = [
         },
     },
 ]
+
+PORTAL_SOURCE_STATES = {
+    "ca_dot": "CA",
+    "fl_dot": "FL",
+    "ny_dot": "NY",
+    "ga_dot": "GA",
+    "il_dot": "IL",
+    "oh_dot": "OH",
+    "nc_evp": "NC",
+    "va_dot": "VA",
+    "az_dot": "AZ",
+    "ladwp": "CA",
+    "austin_energy": "TX",
+    "cps_energy": "TX",
+    "jea": "FL",
+    "srp": "AZ",
+    "port_authority_ny_nj": "NY",
+    "la_metro": "CA",
+    "septa": "PA",
+    "ny_mta": "NY",
+    "dfw_airport": "TX",
+    "uc_procurement": "CA",
+    "houston_water": "TX",
+}
+
+DEFAULT_PUBLIC_BID_JOBS.extend(
+    [
+        {
+            "adapter": "public_portal_links",
+            "params": {
+                "job_label": catalog["source"],
+                "source": catalog["source"],
+                "source_type": catalog["category"],
+                "url": catalog["source_url"],
+                "label": catalog["label"],
+                "agency": catalog["label"],
+                "state": PORTAL_SOURCE_STATES.get(catalog["source"]),
+                "limit": 25,
+                "source_limit": 600,
+                "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
+                "update_existing": True,
+            },
+        }
+        for catalog in DEFAULT_SOURCE_CATALOG
+        if catalog.get("adapter") == "public_portal_links" and catalog.get("source_url")
+    ]
+)
 
 
 def missing_required_setting(settings: Any, job_spec: dict[str, Any]) -> str | None:

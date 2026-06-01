@@ -59,6 +59,92 @@ export type Proposal = {
   partner_email_template: string;
 };
 
+export type OpportunityWorkflow = {
+  id: number;
+  opportunity_id: number;
+  tenant_id: string;
+  saved: boolean;
+  watched: boolean;
+  hidden: boolean;
+  status: string;
+  owner: string | null;
+  priority: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AttachmentExtraction = {
+  id: number;
+  opportunity_id: number;
+  source_url: string;
+  filename: string | null;
+  status: string;
+  attachment: Record<string, unknown>;
+  extracted_specs: Record<string, unknown>;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AttachmentIngestionResult = {
+  opportunity: Opportunity;
+  extractions: AttachmentExtraction[];
+};
+
+export type AlertPreference = {
+  id: number;
+  tenant_id: string;
+  email_to: string | null;
+  min_fit_score: number;
+  due_within_days: number;
+  include_source_failures: boolean;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AlertDigestOpportunity = {
+  id: number;
+  title: string;
+  agency: string | null;
+  state: string | null;
+  location: string | null;
+  due_date: string | null;
+  source: string;
+  source_type: string;
+  source_url: string | null;
+  estimated_value: MoneyValue;
+  value_confidence: string;
+  minimum_value_match: boolean;
+  project_type: string;
+  fit_score: number | null;
+  fit_explanation: string | null;
+};
+
+export type AlertRun = {
+  id: number;
+  tenant_id: string;
+  status: string;
+  digest: {
+    generated_at?: string;
+    counts?: {
+      high_fit?: number;
+      due_soon?: number;
+      watched?: number;
+      source_failures?: number;
+    };
+    high_fit?: AlertDigestOpportunity[];
+    due_soon?: AlertDigestOpportunity[];
+    watched?: AlertDigestOpportunity[];
+    source_failures?: Array<Record<string, unknown>>;
+  };
+  error: string | null;
+  sent_to: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CompanyProfile = {
   id: number;
   tenant_id: string;

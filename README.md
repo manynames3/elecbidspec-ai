@@ -169,6 +169,27 @@ AUTH_SESSION_TTL_HOURS=168
 
 Passwords are stored as salted PBKDF2 hashes. Session tokens are stored only as SHA-256 hashes. Set `AUTH_REQUIRED=true` to require login for tenant-specific profile/proposal operations; leave it `false` for public demo mode while still allowing users to sign in.
 
+## Pilot Workflow, Proposals, Alerts, and Documents
+
+The bid detail page supports tenant-aware workflow state: save, watch, hide, pursuit status, owner, priority, and reviewer notes. The dashboard can filter to saved or watched opportunities.
+
+Proposal generation is split into two paths:
+
+- `GET /api/opportunities/{id}/proposal` returns a fast deterministic draft and caches it per tenant.
+- `POST /api/opportunities/{id}/proposal/enhance` requires login and calls Bedrock only on demand, then caches the enhanced proposal.
+
+DOCX downloads use the cached proposal package when available, so downloads do not trigger slow AI calls.
+
+The dashboard includes an alert digest panel backed by:
+
+- `GET/PUT /api/alerts/preferences`
+- `POST /api/alerts/run`
+- `GET /api/alerts/latest`
+
+The current alert implementation generates an in-app digest with high-fit opportunities, due-soon opportunities, saved/watched opportunities, and recent source refresh failures. Email delivery is intentionally left as a follow-on integration so the low-idle MVP does not need SMTP or another paid service.
+
+For attachment intelligence, `POST /api/opportunities/{id}/attachments/ingest` fetches public linked PDFs/text documents from an opportunity source page, stores the files, extracts electrical scope keywords/materials/deadlines/bonding/submission terms, and reclassifies/rescores the opportunity.
+
 ## Public Bid Sources
 
 SAM.gov is optional. The backend now treats SAM.gov as one source in a nationwide source registry, not as the whole product. Default no-key sources include:
@@ -187,13 +208,13 @@ Keyed sources can also run when the corresponding environment variable is config
 - `sam_gov` through the SAM.gov Contract Opportunities API using `SAM_GOV_API_KEY`
 - `nypa` through the New York Power Authority public RFQ API using `NYPA_API_SUBSCRIPTION_KEY`
 
-The source catalog also tracks identified official portals for Caltrans, FDOT, NYSDOT, GDOT, IDOT, ODOT, NC eVP, VDOT, ADOT, TVA, BPA, LADWP, Austin Energy, CPS Energy, JEA, SRP, Port Authority NY/NJ, LA Metro, SEPTA, MTA, DFW Airport, University of California, and Houston Public Works. These show as `needs_adapter` until a safe live importer is built for each portal.
+The source catalog also tracks identified official portals for Caltrans, FDOT, NYSDOT, GDOT, IDOT, ODOT, NC eVP, VDOT, ADOT, TVA, BPA, LADWP, Austin Energy, CPS Energy, JEA, SRP, Port Authority NY/NJ, LA Metro, SEPTA, MTA, DFW Airport, University of California, and Houston Public Works. A generic `public_portal_links` monitor attempts conservative public HTML link detection for these targets. Sources with no matching records report `no_records`; sources with matching electrical bid/spec links import candidate opportunity cards.
 
 `GET /api/ingestion/summary` reports source health for every configured source. Statuses include `healthy`, `stale`, `failed`, `no_records`, `missing_config`, and `needs_adapter`, so the dashboard can distinguish live coverage from known coverage targets.
 
 The app also keeps generic `public_json_feed` and `public_html_scrape` adapters for state, local, utility, school, authority, or other public bid portals. New official feeds can be added by registering another default job in `backend/app/services/ingestion/defaults.py`; most Socrata-style portals only need a URL, field mapping, source label, keyword fields, and status filter.
 
-The Lambda worker refreshes default public sources on a schedule, and the dashboard exposes a manual refresh for the same source set. Existing source URLs are updated in place so stale records can be reclassified and rescored without duplicating cards.
+The Lambda worker refreshes default public sources on a schedule, and the dashboard exposes a manual refresh for the same source set. Established API/table sources process immediately during manual refresh. Generic portal-link monitors are queued for the background worker by default to avoid long admin requests; call `POST /api/ingestion/refresh-defaults?process_portals_inline=true` when you explicitly want to process portal monitors synchronously. Existing source URLs are updated in place so stale records can be reclassified and rescored without duplicating cards.
 
 The scraper adapter is intentionally conservative: public pages only, HTTP GET requests, configurable selectors, optional detail-page fetches, and no login, captcha bypass, or browser automation.
 
@@ -224,6 +245,7 @@ Available adapters:
 
 - `public_json_feed` for configurable public JSON bid feeds
 - `public_html_scrape` for configurable public HTML bid listings
+- `public_portal_links` for conservative public portal link monitoring
 - `chicago_solicitations` for City of Chicago/CTA public solicitations
 - `la_ramp` for Los Angeles RAMP public bid opportunities
 - `montgomery_md_solicitations` for Montgomery County, MD active solicitations
