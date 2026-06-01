@@ -62,3 +62,30 @@ export type CompanyProfile = {
   labor_type: string | null;
   experience: Record<string, boolean>;
 };
+
+export type IngestionJobStatus = {
+  id: number;
+  adapter: string;
+  status: string;
+  result: Record<string, number>;
+  error: string | null;
+  updated_at: string;
+};
+
+export type IngestionSummary = {
+  real_opportunity_count: number;
+  sample_opportunity_count: number;
+  real_target_match_count: number;
+  sources: Array<{
+    source: string;
+    source_type: string;
+    count: number;
+    target_matches: number;
+    last_seen_at: string | null;
+  }>;
+  latest_jobs: IngestionJobStatus[];
+};
+
+export type IngestionRefreshResult = {
+  jobs: IngestionJobStatus[];
+};

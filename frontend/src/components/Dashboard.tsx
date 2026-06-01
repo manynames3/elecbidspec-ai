@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Filter, RefreshCw, Search } from "lucide-react";
+import { DatabaseZap, Filter, RefreshCw, Search } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import type { Opportunity, SearchResult } from "@/lib/types";
+import type { IngestionRefreshResult, IngestionSummary, Opportunity, SearchResult } from "@/lib/types";
 import { OpportunityCard } from "@/components/OpportunityCard";
 
 const projectTypes = [
@@ -48,9 +48,13 @@ export function Dashboard() {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshingSources, setRefreshingSources] = useState(false);
+  const [ingestionSummary, setIngestionSummary] = useState<IngestionSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sourceMessage, setSourceMessage] = useState<string | null>(null);
 
   const visibleCount = searchResults ? searchResults.length : opportunities.length;
+  const lastRefresh = ingestionSummary?.latest_jobs.find((job) => job.adapter === "nyc_city_record");
   const averageFit = useMemo(() => {
     const scores = opportunities.map((item) => item.fit_score).filter((score): score is number => score !== null);
     if (!scores.length) {
@@ -70,7 +74,12 @@ export function Dashboard() {
         }
       });
       const path = params.size ? `/opportunities?${params.toString()}` : "/opportunities";
-      setOpportunities(await apiFetch<Opportunity[]>(path));
+      const [loadedOpportunities, loadedSummary] = await Promise.all([
+        apiFetch<Opportunity[]>(path),
+        apiFetch<IngestionSummary>("/ingestion/summary")
+      ]);
+      setOpportunities(loadedOpportunities);
+      setIngestionSummary(loadedSummary);
       setSearchResults(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load opportunities");
@@ -110,6 +119,23 @@ export function Dashboard() {
     }
   }
 
+  async function refreshPublicSources() {
+    setRefreshingSources(true);
+    setError(null);
+    setSourceMessage(null);
+    try {
+      const result = await apiFetch<IngestionRefreshResult>("/ingestion/refresh-defaults", { method: "POST" });
+      const imported = result.jobs.reduce((sum, job) => sum + Number(job.result.imported ?? 0), 0);
+      const updated = result.jobs.reduce((sum, job) => sum + Number(job.result.updated ?? 0), 0);
+      setSourceMessage(`Public sources refreshed: ${imported} imported, ${updated} updated.`);
+      await loadOpportunities(filters);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to refresh public sources");
+    } finally {
+      setRefreshingSources(false);
+    }
+  }
+
   return (
     <div className="page-stack">
       <section className="page-header">
@@ -134,6 +160,26 @@ export function Dashboard() {
       </section>
 
       <section className="toolbar-band">
+        <div className="source-health">
+          <div className="source-card">
+            <span className="field-label">Real records</span>
+            <strong>{ingestionSummary?.real_opportunity_count ?? "--"}</strong>
+          </div>
+          <div className="source-card">
+            <span className="field-label">Real target matches</span>
+            <strong>{ingestionSummary?.real_target_match_count ?? "--"}</strong>
+          </div>
+          <div className="source-card">
+            <span className="field-label">Last public refresh</span>
+            <strong>{lastRefresh ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(lastRefresh.updated_at)) : "--"}</strong>
+          </div>
+          <button className="secondary-button" type="button" onClick={() => void refreshPublicSources()} disabled={refreshingSources}>
+            <DatabaseZap size={17} />
+            {refreshingSources ? "Refreshing" : "Refresh public sources"}
+          </button>
+        </div>
+        {sourceMessage ? <div className="success">{sourceMessage}</div> : null}
+
         <form className="search-row" onSubmit={handleSearch}>
           <label className="wide-control">
             <span>Natural-language search</span>

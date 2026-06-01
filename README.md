@@ -136,6 +136,8 @@ Required production inputs:
 
 SAM.gov is optional. The backend also includes `nyc_city_record`, a no-key adapter for current NYC City Record/Open Data solicitations, plus generic `public_json_feed` and `public_html_scrape` adapters for state, local, utility, school, authority, or other public bid portals.
 
+The Lambda worker refreshes default public sources on a schedule, and the dashboard exposes a manual refresh for the same source set. Existing source URLs are updated in place so stale records can be reclassified and rescored without duplicating cards.
+
 The scraper adapter is intentionally conservative: public pages only, HTTP GET requests, configurable selectors, optional detail-page fetches, and no login, captcha bypass, or browser automation.
 
 ```bash

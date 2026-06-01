@@ -3,16 +3,20 @@ from __future__ import annotations
 import logging
 import time
 
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.models import CompanyProfile, IngestionJob, Opportunity
 from app.services.fit_scoring import score_fit
+from app.services.ingestion.defaults import DEFAULT_PUBLIC_BID_JOBS
 from app.services.ingestion.registry import ADAPTERS
 from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elecbidspec.worker")
+
 
 def _profile_data(db: Session) -> dict | None:
     profile = db.query(CompanyProfile).first()
@@ -37,14 +41,13 @@ def process_job(db: Session, job: IngestionJob) -> None:
     db.commit()
     imported = 0
     skipped = 0
+    updated = 0
     profile = _profile_data(db)
+    update_existing = bool((job.params or {}).get("update_existing"))
     for data in adapter.fetch(job.params or {}):
         existing = None
         if data.get("source_url"):
             existing = db.query(Opportunity).filter(Opportunity.source_url == data["source_url"]).first()
-        if existing:
-            skipped += 1
-            continue
         inferred_source_type = infer_source_type(data.get("source"), data.get("agency"))
         if not data.get("source_type") or (data.get("source_type") == "manual" and inferred_source_type != "manual"):
             data["source_type"] = inferred_source_type
@@ -52,11 +55,64 @@ def process_job(db: Session, job: IngestionJob) -> None:
         data.update(assess_value(data))
         if profile:
             data.update(score_fit(data, profile))
+        if existing:
+            if update_existing:
+                for key, value in data.items():
+                    if hasattr(existing, key):
+                        setattr(existing, key, value)
+                updated += 1
+            else:
+                skipped += 1
+            continue
         db.add(Opportunity(**data))
         imported += 1
     job.status = "complete"
-    job.result = {"imported": imported, "skipped": skipped}
+    job.result = {"imported": imported, "updated": updated, "skipped": skipped}
     db.commit()
+
+
+def enqueue_default_jobs_if_due(db: Session, refresh_hours: int | None = None) -> int:
+    settings = get_settings()
+    if not settings.default_ingestion_enabled:
+        return 0
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=refresh_hours or settings.default_ingestion_refresh_hours)
+    queued = 0
+    for job_spec in DEFAULT_PUBLIC_BID_JOBS:
+        adapter = job_spec["adapter"]
+        active_job = (
+            db.query(IngestionJob)
+            .filter(IngestionJob.adapter == adapter, IngestionJob.status.in_(["queued", "running"]))
+            .order_by(IngestionJob.created_at.desc())
+            .first()
+        )
+        if active_job:
+            continue
+
+        last_complete = (
+            db.query(IngestionJob)
+            .filter(IngestionJob.adapter == adapter, IngestionJob.status == "complete")
+            .order_by(IngestionJob.updated_at.desc())
+            .first()
+        )
+        if last_complete and last_complete.updated_at:
+            last_updated = last_complete.updated_at
+            if last_updated.tzinfo is None:
+                last_updated = last_updated.replace(tzinfo=timezone.utc)
+            if last_updated >= cutoff:
+                continue
+
+        db.add(
+            IngestionJob(
+                adapter=adapter,
+                params={**job_spec["params"], "scheduled": True, "update_existing": True},
+                status="queued",
+            )
+        )
+        queued += 1
+    if queued:
+        db.commit()
+    return queued
 
 
 def run_once() -> bool:

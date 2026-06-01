@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     run_migrations_on_startup: bool = Field(default=True, validation_alias="RUN_MIGRATIONS_ON_STARTUP")
     seed_database_on_startup: bool = Field(default=True, validation_alias="SEED_DATABASE_ON_STARTUP")
     worker_max_jobs_per_run: int = Field(default=5, validation_alias="WORKER_MAX_JOBS_PER_RUN")
+    default_ingestion_enabled: bool = Field(default=True, validation_alias="DEFAULT_INGESTION_ENABLED")
+    default_ingestion_refresh_hours: int = Field(default=6, validation_alias="DEFAULT_INGESTION_REFRESH_HOURS")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

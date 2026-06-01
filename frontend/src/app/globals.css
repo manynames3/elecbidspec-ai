@@ -167,6 +167,28 @@ select {
   padding: 14px;
 }
 
+.source-health {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(130px, 1fr)) auto;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.source-card {
+  min-height: 62px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fffefa;
+  padding: 10px 12px;
+}
+
+.source-card strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+
 .search-row {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto auto;
@@ -378,6 +400,18 @@ select:focus {
   color: var(--muted);
 }
 
+.source-pill.live {
+  background: #eaf2fb;
+  border-color: #b9cfe7;
+  color: var(--blue);
+}
+
+.source-pill.sample {
+  background: #f9f1df;
+  border-color: #e4cf9f;
+  color: var(--amber);
+}
+
 .compact-copy {
   color: var(--muted);
   font-size: 14px;
@@ -560,6 +594,7 @@ select:focus {
   }
 
   .summary-strip,
+  .source-health,
   .search-row,
   .filter-grid,
   .form-grid,
@@ -593,4 +628,3 @@ select:focus {
     font-size: 25px;
   }
 }
-

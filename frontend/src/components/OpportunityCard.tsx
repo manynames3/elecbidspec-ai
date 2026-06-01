@@ -24,6 +24,19 @@ function fitClass(score: number | null) {
   return "poor";
 }
 
+function sourceLabel(source: string) {
+  if (source === "nyc_city_record") {
+    return "NYC City Record";
+  }
+  if (source === "sam_gov") {
+    return "SAM.gov";
+  }
+  if (source === "seed") {
+    return "Sample";
+  }
+  return labelize(source);
+}
+
 export function OpportunityCard({ opportunity, explanation, rankScore }: OpportunityCardProps) {
   const keywords = opportunity.extracted_specs?.keywords ?? [];
   return (
@@ -34,6 +47,7 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
           {opportunity.fit_score ?? "--"} fit
         </span>
         <span className="source-pill">{opportunity.bid_status}</span>
+        <span className={`source-pill ${opportunity.source === "seed" ? "sample" : "live"}`}>{sourceLabel(opportunity.source)}</span>
         <span className="source-pill">{opportunity.source_type.replaceAll("_", " ")}</span>
         {rankScore ? <span className="source-pill">rank {rankScore}</span> : null}
       </div>

@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from sqlalchemy import Integer, func
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -22,10 +23,12 @@ from app.schemas import (
 from app.services.classification import classify_bid
 from app.services.extraction import extract_specs, parse_attachment
 from app.services.fit_scoring import score_fit
+from app.services.ingestion.defaults import DEFAULT_PUBLIC_BID_JOBS
 from app.services.proposal import generate_proposal_package
 from app.services.search import search_opportunities
 from app.services.storage import store_upload
 from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
+from app.worker import process_job
 
 router = APIRouter()
 
@@ -284,3 +287,75 @@ def list_ingestion_adapters() -> list[dict]:
     from app.services.ingestion.registry import ADAPTERS
 
     return [{"name": name, "description": adapter.description} for name, adapter in sorted(ADAPTERS.items())]
+
+
+@router.get("/ingestion/summary")
+def ingestion_summary(db: Session = Depends(get_db)) -> dict:
+    source_counts = (
+        db.query(
+            Opportunity.source,
+            Opportunity.source_type,
+            func.count(Opportunity.id).label("count"),
+            func.sum(func.cast(Opportunity.minimum_value_match, Integer)).label("target_matches"),
+            func.max(Opportunity.updated_at).label("last_seen_at"),
+        )
+        .group_by(Opportunity.source, Opportunity.source_type)
+        .order_by(func.count(Opportunity.id).desc())
+        .all()
+    )
+    latest_jobs = db.query(IngestionJob).order_by(IngestionJob.updated_at.desc()).limit(10).all()
+    real_count = db.query(Opportunity).filter(Opportunity.source != "seed").count()
+    target_count = db.query(Opportunity).filter(Opportunity.source != "seed", Opportunity.minimum_value_match == True).count()  # noqa: E712
+    return {
+        "real_opportunity_count": real_count,
+        "sample_opportunity_count": db.query(Opportunity).filter(Opportunity.source == "seed").count(),
+        "real_target_match_count": target_count,
+        "sources": [
+            {
+                "source": source,
+                "source_type": source_type,
+                "count": count,
+                "target_matches": int(target_matches or 0),
+                "last_seen_at": last_seen_at,
+            }
+            for source, source_type, count, target_matches, last_seen_at in source_counts
+        ],
+        "latest_jobs": [
+            {
+                "id": job.id,
+                "adapter": job.adapter,
+                "status": job.status,
+                "result": job.result or {},
+                "error": job.error,
+                "updated_at": job.updated_at,
+            }
+            for job in latest_jobs
+        ],
+    }
+
+
+@router.post("/ingestion/refresh-defaults")
+def refresh_default_ingestion(db: Session = Depends(get_db)) -> dict:
+    jobs = []
+    for job_spec in DEFAULT_PUBLIC_BID_JOBS:
+        job = IngestionJob(
+            adapter=job_spec["adapter"],
+            params={**job_spec["params"], "manual_refresh": True, "update_existing": True},
+            status="queued",
+        )
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        process_job(db, job)
+        db.refresh(job)
+        jobs.append(
+            {
+                "id": job.id,
+                "adapter": job.adapter,
+                "status": job.status,
+                "result": job.result or {},
+                "error": job.error,
+                "updated_at": job.updated_at,
+            }
+        )
+    return {"jobs": jobs}
