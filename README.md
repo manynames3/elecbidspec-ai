@@ -68,6 +68,21 @@ Recommended Pages settings:
 
 The frontend cannot call `http://localhost:8000/api` after deployment. Deploy the FastAPI backend to a public host first, then set `NEXT_PUBLIC_API_URL` in Cloudflare Pages production and preview environments.
 
+## Backend Deployment
+
+The backend Docker image now runs migrations, seeds sample data, and starts FastAPI using the host-provided `PORT` variable:
+
+```bash
+alembic -c alembic.ini upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+Required production environment variables:
+
+- `DATABASE_URL`
+- `FRONTEND_ORIGIN=https://elecbidspec-ai.pages.dev`
+- `UPLOAD_DIR=/tmp/elecbidspec_uploads`
+- `SAM_GOV_API_KEY` only if live SAM.gov ingestion is enabled
+
 ## Public Bid Sources
 
 SAM.gov is optional. For state, local, utility, school, authority, or other public bid portals, use `public_json_feed` when a portal exposes JSON and `public_html_scrape` when a portal only exposes public HTML listing/detail pages.
