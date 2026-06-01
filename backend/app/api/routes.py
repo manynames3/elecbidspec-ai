@@ -20,6 +20,7 @@ from app.models import (
     Opportunity,
     OpportunityAttachmentExtraction,
     OpportunityWorkflow,
+    SavedSearch,
     User,
 )
 from app.schemas import (
@@ -39,6 +40,9 @@ from app.schemas import (
     OpportunityWorkflowRead,
     OpportunityWorkflowUpdate,
     ProposalRead,
+    SavedSearchCreate,
+    SavedSearchRead,
+    SavedSearchUpdate,
     SearchRequest,
     UserRead,
 )
@@ -48,6 +52,7 @@ from app.services.attachment_ingestion import ingest_opportunity_attachments
 from app.services.classification import classify_bid
 from app.services.extraction import extract_specs, parse_attachment
 from app.services.fit_scoring import score_fit
+from app.services.email_alerts import send_alert_digest_email
 from app.services.ingestion.defaults import (
     DEFAULT_SOURCE_CATALOG,
     available_default_public_bid_jobs,
@@ -228,6 +233,26 @@ def _job_label(job: IngestionJob) -> str:
     return str(params.get("job_label") or params.get("source") or job.adapter)
 
 
+def _is_portal_gated_error(error: str | None) -> bool:
+    if not error:
+        return False
+    lower = error.lower()
+    return any(
+        marker in lower
+        for marker in [
+            "403",
+            "forbidden",
+            "cloudflare",
+            "akamai",
+            "captcha",
+            "browser check",
+            "just a moment",
+            "challenge",
+            "certificate_verify_failed",
+        ]
+    )
+
+
 def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[dict]:
     settings = get_settings()
     refresh_hours = settings.default_ingestion_refresh_hours
@@ -256,8 +281,12 @@ def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[d
         missing_setting = catalog.get("requires_setting")
         if missing_setting and not getattr(settings, str(missing_setting), None):
             status = "missing_config"
+        elif latest_job and latest_job.status == "failed" and (_is_portal_gated_error(latest_job.error) or catalog.get("portal_gated")):
+            status = "portal_gated"
         elif latest_job and latest_job.status == "failed":
             status = "failed"
+        elif catalog.get("portal_gated") and (not count_row or not count_row["count"]):
+            status = "portal_gated"
         elif catalog.get("directory_only") and not latest_job and (not count_row or not count_row["count"]):
             status = "needs_adapter"
         elif not count_row or not count_row["count"]:
@@ -700,6 +729,73 @@ def update_alert_preferences(
     return preference
 
 
+@router.get("/saved-searches", response_model=list[SavedSearchRead])
+def list_saved_searches(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> list[SavedSearch]:
+    tenant_id = request_tenant_id(current_user)
+    return db.query(SavedSearch).filter(SavedSearch.tenant_id == tenant_id).order_by(SavedSearch.updated_at.desc()).all()
+
+
+@router.post("/saved-searches", response_model=SavedSearchRead, status_code=201)
+def create_saved_search(
+    payload: SavedSearchCreate,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> SavedSearch:
+    tenant_id = request_tenant_id(current_user)
+    name = payload.name.strip()
+    existing = db.query(SavedSearch).filter(SavedSearch.tenant_id == tenant_id, SavedSearch.name == name).first()
+    data = payload.model_dump()
+    data["name"] = name
+    data["tenant_id"] = tenant_id
+    if existing:
+        for key, value in data.items():
+            setattr(existing, key, value)
+        db.commit()
+        db.refresh(existing)
+        return existing
+    saved_search = SavedSearch(**data)
+    db.add(saved_search)
+    db.commit()
+    db.refresh(saved_search)
+    return saved_search
+
+
+@router.put("/saved-searches/{saved_search_id}", response_model=SavedSearchRead)
+def update_saved_search(
+    saved_search_id: int,
+    payload: SavedSearchUpdate,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> SavedSearch:
+    tenant_id = request_tenant_id(current_user)
+    saved_search = db.query(SavedSearch).filter(SavedSearch.id == saved_search_id, SavedSearch.tenant_id == tenant_id).first()
+    if not saved_search:
+        raise HTTPException(status_code=404, detail="Saved search not found.")
+    for key, value in payload.model_dump(exclude_unset=True).items():
+        setattr(saved_search, key, value.strip() if key == "name" and isinstance(value, str) else value)
+    db.commit()
+    db.refresh(saved_search)
+    return saved_search
+
+
+@router.delete("/saved-searches/{saved_search_id}", status_code=204)
+def delete_saved_search(
+    saved_search_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> Response:
+    tenant_id = request_tenant_id(current_user)
+    saved_search = db.query(SavedSearch).filter(SavedSearch.id == saved_search_id, SavedSearch.tenant_id == tenant_id).first()
+    if not saved_search:
+        raise HTTPException(status_code=404, detail="Saved search not found.")
+    db.delete(saved_search)
+    db.commit()
+    return Response(status_code=204)
+
+
 @router.post("/alerts/run", response_model=AlertRunRead)
 def run_alert_digest(
     db: Session = Depends(get_db),
@@ -708,11 +804,13 @@ def run_alert_digest(
     tenant_id = request_tenant_id(current_user)
     preference = get_or_create_alert_preference(db, tenant_id)
     digest = build_alert_digest(db, tenant_id, preference)
+    delivery = send_alert_digest_email(preference.email_to if preference.enabled else None, digest)
     run = AlertRun(
         tenant_id=tenant_id,
-        status="complete",
+        status=delivery["status"] or "complete",
         digest=digest,
-        sent_to=preference.email_to if preference.enabled and preference.email_to else None,
+        sent_to=preference.email_to if preference.enabled and preference.email_to and delivery["status"] == "sent" else None,
+        error=delivery["error"],
     )
     db.add(run)
     db.commit()
@@ -766,6 +864,51 @@ def list_ingestion_adapters() -> list[dict]:
     from app.services.ingestion.registry import ADAPTERS
 
     return [{"name": name, "description": adapter.description} for name, adapter in sorted(ADAPTERS.items())]
+
+
+@router.get("/ingestion/sam-gov/status")
+def sam_gov_status() -> dict:
+    settings = get_settings()
+    return {
+        "configured": bool(settings.sam_gov_api_key),
+        "key_length": len(settings.sam_gov_api_key or ""),
+        "base_url": settings.sam_gov_api_base_url,
+    }
+
+
+@router.post("/ingestion/sam-gov/verify", response_model=IngestionJobRead)
+def verify_sam_gov(
+    db: Session = Depends(get_db),
+    _: None = Depends(require_admin),
+) -> IngestionJob:
+    settings = get_settings()
+    if not settings.sam_gov_api_key:
+        raise HTTPException(status_code=503, detail="SAM_GOV_API_KEY is not configured.")
+    job = IngestionJob(
+        adapter="sam_gov",
+        params={
+            "job_label": "sam_gov",
+            "limit": 5,
+            "posted_window_days": 30,
+            "ptype": "o",
+            "status": "active",
+            "keyword": "electrical cable OR high voltage OR medium voltage OR substation OR conduit OR transformer",
+            "update_existing": True,
+            "verify": True,
+        },
+        status="queued",
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    try:
+        process_job(db, job)
+    except Exception as exc:  # noqa: BLE001 - persist SAM verification failure for admin inspection
+        job.status = "failed"
+        job.error = str(exc)
+        db.commit()
+    db.refresh(job)
+    return job
 
 
 @router.get("/ingestion/summary")

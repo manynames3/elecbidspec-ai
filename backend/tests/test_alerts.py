@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.db.session import Base
-from app.models import AlertPreference, Opportunity, OpportunityWorkflow
+from app.models import AlertPreference, Opportunity, OpportunityWorkflow, SavedSearch
 from app.services.alerts import build_alert_digest
 
 
@@ -53,7 +53,14 @@ def test_build_alert_digest_filters_high_fit_and_hidden_opportunities():
     db.refresh(hidden)
     db.add(OpportunityWorkflow(opportunity_id=hidden.id, tenant_id="default", hidden=True))
     preference = AlertPreference(tenant_id="default", min_fit_score=70, due_within_days=30)
+    saved_search = SavedSearch(
+        tenant_id="default",
+        name="Data center power",
+        query="data center substation over $10M",
+        filters={"real_only": "true", "bid_status": "open"},
+    )
     db.add(preference)
+    db.add(saved_search)
     db.commit()
     db.refresh(preference)
 
@@ -62,5 +69,8 @@ def test_build_alert_digest_filters_high_fit_and_hidden_opportunities():
     assert digest["counts"]["high_fit"] == 1
     assert digest["high_fit"][0]["id"] == visible.id
     assert digest["counts"]["due_soon"] == 1
+    assert digest["counts"]["saved_searches"] == 1
+    assert digest["counts"]["saved_search_matches"] == 1
+    assert digest["saved_searches"][0]["matches"][0]["opportunity"]["id"] == visible.id
 
     db.close()

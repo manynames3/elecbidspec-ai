@@ -180,6 +180,50 @@ variable "nypa_api_subscription_key" {
   sensitive   = true
 }
 
+variable "smtp_host" {
+  description = "Optional SMTP host for daily alert email delivery."
+  type        = string
+  default     = ""
+}
+
+variable "smtp_port" {
+  description = "SMTP port for daily alert email delivery."
+  type        = number
+  default     = 587
+}
+
+variable "smtp_username" {
+  description = "Optional SMTP username."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "smtp_password" {
+  description = "Optional SMTP password."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "smtp_use_tls" {
+  description = "Use STARTTLS for SMTP alert delivery."
+  type        = bool
+  default     = true
+}
+
+variable "alert_email_from" {
+  description = "From address for daily alert email delivery."
+  type        = string
+  default     = ""
+}
+
+variable "alert_send_cooldown_hours" {
+  description = "Minimum hours between scheduled alert sends for a tenant."
+  type        = number
+  default     = 20
+}
+
 variable "artifact_expiration_days" {
   description = "Days to retain uploaded Lambda deployment zips."
   type        = number

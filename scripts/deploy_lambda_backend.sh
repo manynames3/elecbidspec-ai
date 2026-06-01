@@ -24,6 +24,13 @@ AUTH_ADMIN_PASSWORD="${AUTH_ADMIN_PASSWORD:-}"
 AUTH_USER_EMAIL="${AUTH_USER_EMAIL:-}"
 AUTH_USER_PASSWORD="${AUTH_USER_PASSWORD:-}"
 NYPA_API_SUBSCRIPTION_KEY="${NYPA_API_SUBSCRIPTION_KEY:-}"
+SMTP_HOST="${SMTP_HOST:-}"
+SMTP_PORT="${SMTP_PORT:-587}"
+SMTP_USERNAME="${SMTP_USERNAME:-}"
+SMTP_PASSWORD="${SMTP_PASSWORD:-}"
+SMTP_USE_TLS="${SMTP_USE_TLS:-true}"
+ALERT_EMAIL_FROM="${ALERT_EMAIL_FROM:-}"
+ALERT_SEND_COOLDOWN_HOURS="${ALERT_SEND_COOLDOWN_HOURS:-20}"
 
 : "${DATABASE_URL:?Set DATABASE_URL to the Neon pooled Postgres connection string before deploying.}"
 
@@ -83,6 +90,13 @@ export TF_VAR_auth_admin_password="$AUTH_ADMIN_PASSWORD"
 export TF_VAR_auth_user_email="$AUTH_USER_EMAIL"
 export TF_VAR_auth_user_password="$AUTH_USER_PASSWORD"
 export TF_VAR_nypa_api_subscription_key="$NYPA_API_SUBSCRIPTION_KEY"
+export TF_VAR_smtp_host="$SMTP_HOST"
+export TF_VAR_smtp_port="$SMTP_PORT"
+export TF_VAR_smtp_username="$SMTP_USERNAME"
+export TF_VAR_smtp_password="$SMTP_PASSWORD"
+export TF_VAR_smtp_use_tls="$SMTP_USE_TLS"
+export TF_VAR_alert_email_from="$ALERT_EMAIL_FROM"
+export TF_VAR_alert_send_cooldown_hours="$ALERT_SEND_COOLDOWN_HOURS"
 
 terraform -chdir="$TF_DIR" init
 terraform -chdir="$TF_DIR" apply -auto-approve

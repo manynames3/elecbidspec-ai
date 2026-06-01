@@ -134,8 +134,9 @@ class PublicPortalLinksAdapter(IngestionAdapter):
         limit = int(params.get("limit") or 25)
         source_limit = int(params.get("source_limit") or 400)
 
-        headers = {"User-Agent": params.get("user_agent") or "ElecBidSpecAI/0.1 public-portal-links"}
-        with httpx.Client(timeout=30, follow_redirects=True, headers=headers) as client:
+        verify_tls = bool(params.get("verify_tls", True))
+        headers = {"User-Agent": params.get("user_agent") or "Mozilla/5.0 ElecBidSpecAI/0.1 public-portal-links"}
+        with httpx.Client(timeout=30, follow_redirects=True, headers=headers, verify=verify_tls) as client:
             response = client.get(url)
             response.raise_for_status()
             parser = _AnchorParser()

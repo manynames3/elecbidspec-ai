@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Bell, DatabaseZap, Filter, RefreshCw, Save, Search } from "lucide-react";
 import { apiFetch, authHeaders, getAuthToken, sourceLabel } from "@/lib/api";
-import type { AlertPreference, AlertRun, IngestionRefreshResult, IngestionSummary, Opportunity, SearchResult } from "@/lib/types";
+import type { AlertPreference, AlertRun, IngestionRefreshResult, IngestionSummary, Opportunity, SavedSearch, SearchResult } from "@/lib/types";
 import { OpportunityCard } from "@/components/OpportunityCard";
 
 const adminTokenStorageKey = "elecbidspec_admin_token";
@@ -101,6 +101,8 @@ export function Dashboard() {
   const [ingestionSummary, setIngestionSummary] = useState<IngestionSummary | null>(null);
   const [alertPreference, setAlertPreference] = useState<AlertPreference | null>(null);
   const [alertRun, setAlertRun] = useState<AlertRun | null>(null);
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
+  const [savedSearchName, setSavedSearchName] = useState("");
   const [alertForm, setAlertForm] = useState({ email_to: "", min_fit_score: "70", due_within_days: "30", enabled: true, include_source_failures: true });
   const [alertLoading, setAlertLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +115,7 @@ export function Dashboard() {
   const sourceHealth = ingestionSummary?.source_health ?? [];
   const publicSourceCount = sourceHealth.length || ingestionSummary?.sources.filter((source) => source.source !== "seed" && source.source !== "manual_upload").length || 0;
   const healthySourceCount = sourceHealth.filter((source) => source.status === "healthy").length;
+  const gatedSourceCount = sourceHealth.filter((source) => source.status === "portal_gated").length;
   const alertCounts = alertRun?.digest.counts;
   const averageFit = useMemo(() => {
     const scores = opportunities.map((item) => item.fit_score).filter((score): score is number => score !== null);
@@ -172,6 +175,7 @@ export function Dashboard() {
       } catch {
         setAlertRun(null);
       }
+      setSavedSearches(await apiFetch<SavedSearch[]>("/saved-searches"));
     } catch {
       setAlertPreference(null);
     }
@@ -297,6 +301,54 @@ export function Dashboard() {
     }
   }
 
+  async function saveCurrentSearch() {
+    setAlertLoading(true);
+    setAlertMessage(null);
+    setError(null);
+    try {
+      const fallbackName = query.trim() || `${filters.state || "Nationwide"} ${filters.project_type || filters.source_type || "opportunities"}`;
+      const saved = await apiFetch<SavedSearch>("/saved-searches", {
+        method: "POST",
+        body: JSON.stringify({
+          name: (savedSearchName || fallbackName).trim(),
+          query: query.trim() || null,
+          filters,
+          enabled: true,
+          email_digest: true
+        })
+      });
+      setSavedSearchName("");
+      setSavedSearches((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
+      setAlertMessage("Saved search added to daily digest.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save search");
+    } finally {
+      setAlertLoading(false);
+    }
+  }
+
+  async function deleteSavedSearch(savedSearchId: number) {
+    setAlertLoading(true);
+    setAlertMessage(null);
+    setError(null);
+    try {
+      await apiFetch<unknown>(`/saved-searches/${savedSearchId}`, { method: "DELETE" });
+      setSavedSearches((current) => current.filter((item) => item.id !== savedSearchId));
+      setAlertMessage("Saved search removed.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete saved search");
+    } finally {
+      setAlertLoading(false);
+    }
+  }
+
+  function applySavedSearch(savedSearch: SavedSearch) {
+    const nextFilters = { ...emptyFilters, ...(savedSearch.filters as Partial<Filters>) };
+    setFilters(nextFilters);
+    setQuery(savedSearch.query ?? "");
+    void loadOpportunities(nextFilters);
+  }
+
   return (
     <div className="page-stack">
       <section className="page-header">
@@ -331,6 +383,10 @@ export function Dashboard() {
             <strong>{sourceHealth.length ? `${healthySourceCount}/${sourceHealth.length}` : "--"}</strong>
           </div>
           <div className="source-card">
+            <span className="field-label">Gated portals</span>
+            <strong>{sourceHealth.length ? gatedSourceCount : "--"}</strong>
+          </div>
+          <div className="source-card">
             <span className="field-label">Real records</span>
             <strong>{ingestionSummary?.real_opportunity_count ?? "--"}</strong>
           </div>
@@ -356,9 +412,9 @@ export function Dashboard() {
           <div className="source-health-list" aria-label="Official source health">
             {sourceHealth.map((source) => (
               <span
-                className={`source-pill ${source.status === "healthy" ? "live" : source.status === "missing_config" ? "sample" : source.status === "needs_adapter" ? "pending" : ""}`}
+                className={`source-pill ${source.status === "healthy" ? "live" : source.status === "missing_config" ? "sample" : source.status === "needs_adapter" ? "pending" : source.status === "portal_gated" ? "gated" : ""}`}
                 key={source.source}
-                title={source.source_url ? `${source.coverage} - ${source.source_url}` : source.coverage}
+                title={`${source.coverage}${source.access_note ? ` - ${source.access_note}` : ""}${source.last_job_error ? ` - ${source.last_job_error}` : ""}`}
               >
                 {sourceLabel(source.source)}: {source.count} · {source.status.replaceAll("_", " ")}
               </span>
@@ -407,6 +463,33 @@ export function Dashboard() {
               <Bell size={17} />
               {alertLoading ? "Working" : "Generate digest"}
             </button>
+          </div>
+          <div className="saved-search-panel">
+            <div className="saved-search-form">
+              <label className="wide-control">
+                <span>Saved search name</span>
+                <input value={savedSearchName} onChange={(event) => setSavedSearchName(event.target.value)} placeholder="Underground cable due soon" />
+              </label>
+              <button className="secondary-button" type="button" onClick={() => void saveCurrentSearch()} disabled={alertLoading}>
+                <Save size={17} />
+                Save current search
+              </button>
+            </div>
+            {savedSearches.length ? (
+              <div className="saved-search-list">
+                {savedSearches.slice(0, 5).map((savedSearch) => (
+                  <div className="saved-search-item" key={savedSearch.id}>
+                    <button type="button" className="text-link" onClick={() => applySavedSearch(savedSearch)}>
+                      {savedSearch.name}
+                    </button>
+                    <span>{savedSearch.query || "filter search"}</span>
+                    <button type="button" className="text-link danger-link" onClick={() => void deleteSavedSearch(savedSearch.id)} disabled={alertLoading}>
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
           {alertRun?.digest.high_fit?.length ? (
             <div className="digest-list">

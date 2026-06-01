@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 from app.db.session import SessionLocal
-from app.models import CompanyProfile, IngestionJob, Opportunity
+from app.models import AlertPreference, AlertRun, CompanyProfile, IngestionJob, Opportunity
+from app.services.alerts import build_alert_digest
+from app.services.email_alerts import send_alert_digest_email
 from app.services.fit_scoring import score_fit
 from app.services.ingestion.defaults import available_default_public_bid_jobs
 from app.services.ingestion.registry import ADAPTERS
@@ -147,6 +149,44 @@ def run_once() -> bool:
         return True
     finally:
         db.close()
+
+
+def run_due_alerts(db: Session) -> int:
+    settings = get_settings()
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=settings.alert_send_cooldown_hours)
+    created = 0
+    preferences = (
+        db.query(AlertPreference)
+        .filter(AlertPreference.enabled == True, AlertPreference.email_to.isnot(None))  # noqa: E712
+        .order_by(AlertPreference.updated_at.asc())
+        .all()
+    )
+    for preference in preferences:
+        latest = (
+            db.query(AlertRun)
+            .filter(AlertRun.tenant_id == preference.tenant_id)
+            .order_by(AlertRun.created_at.desc())
+            .first()
+        )
+        if latest and latest.created_at:
+            latest_at = latest.created_at.replace(tzinfo=timezone.utc) if latest.created_at.tzinfo is None else latest.created_at
+            if latest_at >= cutoff:
+                continue
+        digest = build_alert_digest(db, preference.tenant_id, preference)
+        delivery = send_alert_digest_email(preference.email_to, digest)
+        db.add(
+            AlertRun(
+                tenant_id=preference.tenant_id,
+                status=delivery["status"] or "complete",
+                digest=digest,
+                error=delivery["error"],
+                sent_to=preference.email_to if delivery["status"] == "sent" else None,
+            )
+        )
+        created += 1
+    if created:
+        db.commit()
+    return created
 
 
 def main() -> None:

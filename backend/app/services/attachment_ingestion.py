@@ -66,6 +66,31 @@ class _DocumentLinkParser(HTMLParser):
             self._text_parts.append(data)
 
 
+class _HtmlTextParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self._skip_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() in {"script", "style", "noscript", "svg"}:
+            self._skip_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() in {"script", "style", "noscript", "svg"} and self._skip_depth:
+            self._skip_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if not self._skip_depth and data.strip():
+            self.parts.append(data.strip())
+
+
+def html_to_text(html: str) -> str:
+    parser = _HtmlTextParser()
+    parser.feed(html)
+    return normalize_text(" ".join(parser.parts))
+
+
 def _is_public_http_url(url: str) -> bool:
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
@@ -86,6 +111,8 @@ def _filename_from_url(url: str, content_type: str | None = None) -> str:
         return parsed_name[:240]
     if content_type and "pdf" in content_type.lower():
         return "attachment.pdf"
+    if content_type and "html" in content_type.lower():
+        return "attachment.html"
     return parsed_name[:240] or "attachment.txt"
 
 
@@ -212,7 +239,10 @@ def ingest_opportunity_attachments(db: Session, opportunity: Opportunity, max_li
                 attachment = store_upload(content, filename, content_type)
                 attachment["url"] = candidate.url
                 attachment["label"] = candidate.label
-                text = parse_attachment(content, filename)
+                if content_type and "html" in content_type.lower():
+                    text = html_to_text(content.decode("utf-8", errors="ignore"))
+                else:
+                    text = parse_attachment(content, filename)
                 specs = extract_specs(text)
 
                 extraction.filename = filename

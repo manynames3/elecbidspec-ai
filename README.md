@@ -6,6 +6,8 @@ The app works without live SAM.gov access: Docker startup runs migrations, loads
 
 The default dashboard view is tuned for open public electrical opportunities that are confirmed or likely to meet a $5M+ target. Records carry source type, bid status, value confidence, and a short value explanation so SAM.gov can be one source instead of the whole strategy.
 
+The nationwide source monitor distinguishes healthy feeds, no-record feeds, missing API keys, and browser-gated portals. Browser-gated means the public portal is reachable for humans but blocks server-side monitoring with a browser challenge, captcha, supplier-system front door, or similar session requirement.
+
 ## Stack
 
 - Next.js + TypeScript frontend
@@ -14,6 +16,7 @@ The default dashboard view is tuned for open public electrical opportunities tha
 - SQLAlchemy + Alembic migrations
 - Docker Compose for local development
 - Background worker for queued ingestion jobs
+- Optional saved-search email digests through SMTP
 - Terraform-managed AWS Lambda backend for low-idle pilot deployment
 
 ## Quick Start
@@ -133,6 +136,7 @@ Required production inputs:
 - `AUTH_REQUIRED=true` when profile/proposal endpoints should require login
 - `SAM_GOV_API_KEY` only if live SAM.gov ingestion is enabled
 - `NYPA_API_SUBSCRIPTION_KEY` only if live NYPA utility RFQ ingestion is enabled
+- `SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `ALERT_EMAIL_FROM` only if daily saved-search emails should actually send. Without SMTP, digests are still generated in-app and marked `email_unconfigured` when email delivery is requested.
 - `BEDROCK_PROPOSALS_ENABLED=true` only if AI-written proposal drafts should call Bedrock
 - `BEDROCK_MODEL_ID=us.anthropic.claude-sonnet-4-6` for Claude Sonnet proposal drafting
 - `API_TIMEOUT_SECONDS=120` when deploying Lambda with Sonnet, because proposal generation can take 30-45 seconds
@@ -185,8 +189,9 @@ The dashboard includes an alert digest panel backed by:
 - `GET/PUT /api/alerts/preferences`
 - `POST /api/alerts/run`
 - `GET /api/alerts/latest`
+- `GET/POST/PUT/DELETE /api/saved-searches`
 
-The current alert implementation generates an in-app digest with high-fit opportunities, due-soon opportunities, saved/watched opportunities, and recent source refresh failures. Email delivery is intentionally left as a follow-on integration so the low-idle MVP does not need SMTP or another paid service.
+The alert implementation generates an in-app digest with high-fit opportunities, due-soon opportunities, saved/watched opportunities, saved-search matches, and recent source refresh issues. Scheduled Lambda workers generate at most one alert run per tenant per cooldown window (`ALERT_SEND_COOLDOWN_HOURS`, default 20). Email delivery is optional and uses SMTP environment variables; leaving them blank keeps alerts in-app only.
 
 For attachment intelligence, `POST /api/opportunities/{id}/attachments/ingest` fetches public linked PDFs/text documents from an opportunity source page, stores the files, extracts electrical scope keywords/materials/deadlines/bonding/submission terms, and reclassifies/rescores the opportunity.
 
@@ -202,15 +207,30 @@ SAM.gov is optional. The backend now treats SAM.gov as one source in a nationwid
 - `la_ramp` through the Los Angeles RAMP Open Bid Opportunities Socrata feed
 - `montgomery_md_solicitations` through Montgomery County, MD active solicitations
 - `chicago_solicitations` through the public City of Chicago/CTA solicitation table
+- `jea_procurement` for JEA public formal/informal solicitation packages grouped by solicitation number
+- `bonfire_portal` for Bonfire public portal JSON feeds, including DFW Airport
 
 Keyed sources can also run when the corresponding environment variable is configured:
 
 - `sam_gov` through the SAM.gov Contract Opportunities API using `SAM_GOV_API_KEY`
 - `nypa` through the New York Power Authority public RFQ API using `NYPA_API_SUBSCRIPTION_KEY`
 
-The source catalog also tracks identified official portals for Caltrans, FDOT, NYSDOT, GDOT, IDOT, ODOT, NC eVP, VDOT, ADOT, TVA, BPA, LADWP, Austin Energy, CPS Energy, JEA, SRP, Port Authority NY/NJ, LA Metro, SEPTA, MTA, DFW Airport, University of California, and Houston Public Works. A generic `public_portal_links` monitor attempts conservative public HTML link detection for these targets. Sources with no matching records report `no_records`; sources with matching electrical bid/spec links import candidate opportunity cards.
+The source catalog also tracks identified official portals for Caltrans, FDOT, NYSDOT, GDOT, IDOT, Ohio DOT/OhioBuys, NC eVP, VDOT, ADOT, TVA, BPA, LADWP, Austin Energy, CPS Energy, SRP, Port Authority NY/NJ, LA Metro, SEPTA, MTA, University of California, and Houston Public Works. A generic `public_portal_links` monitor attempts conservative public HTML link detection for these targets. Sources with no matching records report `no_records`; sources with matching electrical bid/spec links import candidate opportunity cards. Sources that require a browser session, captcha, or supplier portal are labeled `portal_gated`.
 
-`GET /api/ingestion/summary` reports source health for every configured source. Statuses include `healthy`, `stale`, `failed`, `no_records`, `missing_config`, and `needs_adapter`, so the dashboard can distinguish live coverage from known coverage targets.
+`GET /api/ingestion/summary` reports source health for every configured source. Statuses include `healthy`, `stale`, `failed`, `portal_gated`, `no_records`, `missing_config`, and `needs_adapter`, so the dashboard can distinguish live coverage from known coverage targets.
+
+Check SAM.gov status:
+
+```bash
+curl http://localhost:8000/api/ingestion/sam-gov/status
+```
+
+Verify live SAM.gov ingestion after setting `SAM_GOV_API_KEY`:
+
+```bash
+curl -X POST http://localhost:8000/api/ingestion/sam-gov/verify \
+  -H "Authorization: Bearer $ADMIN_API_TOKEN"
+```
 
 The app also keeps generic `public_json_feed` and `public_html_scrape` adapters for state, local, utility, school, authority, or other public bid portals. New official feeds can be added by registering another default job in `backend/app/services/ingestion/defaults.py`; most Socrata-style portals only need a URL, field mapping, source label, keyword fields, and status filter.
 
@@ -243,10 +263,12 @@ The MVP value filter uses posted or extracted values when available. If no value
 
 Available adapters:
 
+- `bonfire_portal` for public Bonfire open-opportunity JSON feeds
 - `public_json_feed` for configurable public JSON bid feeds
 - `public_html_scrape` for configurable public HTML bid listings
 - `public_portal_links` for conservative public portal link monitoring
 - `chicago_solicitations` for City of Chicago/CTA public solicitations
+- `jea_procurement` for JEA formal/informal solicitation document packages
 - `la_ramp` for Los Angeles RAMP public bid opportunities
 - `montgomery_md_solicitations` for Montgomery County, MD active solicitations
 - `nypa` for New York Power Authority public RFQs

@@ -5,7 +5,7 @@ from typing import Any
 
 from app.core.config import get_settings
 from app.db.session import SessionLocal
-from app.worker import enqueue_default_jobs_if_due, run_once
+from app.worker import enqueue_default_jobs_if_due, run_due_alerts, run_once
 
 logger = logging.getLogger("elecbidspec.worker_lambda")
 
@@ -14,8 +14,10 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, int | bool]:
     settings = get_settings()
     queued = 0
     db = SessionLocal()
+    alerts = 0
     try:
         queued = enqueue_default_jobs_if_due(db)
+        alerts = run_due_alerts(db)
     finally:
         db.close()
 
@@ -25,4 +27,4 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, int | bool]:
             break
         processed += 1
     logger.info("Processed %s ingestion jobs", processed)
-    return {"queued": queued, "processed": processed, "had_work": processed > 0}
+    return {"queued": queued, "processed": processed, "alerts": alerts, "had_work": processed > 0 or alerts > 0}

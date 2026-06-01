@@ -133,14 +133,39 @@ export type AlertRun = {
       due_soon?: number;
       watched?: number;
       source_failures?: number;
+      saved_searches?: number;
+      saved_search_matches?: number;
     };
     high_fit?: AlertDigestOpportunity[];
     due_soon?: AlertDigestOpportunity[];
     watched?: AlertDigestOpportunity[];
+    saved_searches?: Array<{
+      id: number;
+      name: string;
+      query: string | null;
+      filters: Record<string, unknown>;
+      matches: Array<{
+        opportunity: AlertDigestOpportunity;
+        rank_score: number;
+        search_explanation: string;
+      }>;
+    }>;
     source_failures?: Array<Record<string, unknown>>;
   };
   error: string | null;
   sent_to: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SavedSearch = {
+  id: number;
+  tenant_id: string;
+  name: string;
+  query: string | null;
+  filters: Record<string, string>;
+  enabled: boolean;
+  email_digest: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -175,6 +200,8 @@ export type SourceHealth = {
   source_url?: string;
   directory_only?: boolean;
   requires_setting?: string;
+  portal_gated?: boolean;
+  access_note?: string;
   status: "healthy" | "stale" | "failed" | "no_records" | "missing_config" | "needs_adapter" | string;
   count: number;
   target_matches: number;

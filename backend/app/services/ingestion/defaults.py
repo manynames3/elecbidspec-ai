@@ -29,6 +29,9 @@ DEFAULT_ELECTRICAL_SOURCE_KEYWORDS = [
     "data center",
     "transmission",
     "distribution",
+    "lighting",
+    "lights",
+    "airfield lights",
     "lighting infrastructure",
 ]
 
@@ -42,6 +45,9 @@ def _catalog_entry(
     source_url: str | None = None,
     directory_only: bool = False,
     requires_setting: str | None = None,
+    portal_gated: bool = False,
+    access_note: str | None = None,
+    job_params: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     entry: dict[str, Any] = {
         "source": source,
@@ -56,6 +62,12 @@ def _catalog_entry(
         entry["directory_only"] = True
     if requires_setting:
         entry["requires_setting"] = requires_setting
+    if portal_gated:
+        entry["portal_gated"] = True
+    if access_note:
+        entry["access_note"] = access_note
+    if job_params:
+        entry["job_params"] = job_params
     return entry
 
 
@@ -70,27 +82,113 @@ DEFAULT_SOURCE_CATALOG = [
     _catalog_entry("chicago_solicitations", "Chicago/CTA", "state_local", "City of Chicago and CTA solicitations", "chicago_solicitations"),
     _catalog_entry("sf_open_bids", "San Francisco", "state_local", "San Francisco open bid opportunities", "sf_open_bids"),
     _catalog_entry("montgomery_md_solicitations", "Montgomery County", "state_local", "Montgomery County, MD active solicitations", "public_json_feed"),
-    _catalog_entry("ca_dot", "Caltrans", "state_dot", "California state transportation bid opportunities", "public_portal_links", "https://caleprocure.ca.gov/"),
+    _catalog_entry(
+        "ca_dot",
+        "Caltrans",
+        "state_dot",
+        "California state transportation bid opportunities",
+        "public_portal_links",
+        "https://caleprocure.ca.gov/",
+        portal_gated=True,
+        access_note="Cal eProcure currently returns an automated 403 response to server-side public monitoring.",
+    ),
     _catalog_entry("fl_dot", "FDOT", "state_dot", "Florida transportation lettings and procurement", "public_portal_links", "https://www.fdot.gov/contracts/"),
     _catalog_entry("ny_dot", "NYSDOT", "state_dot", "New York transportation contract opportunities", "public_portal_links", "https://www.dot.ny.gov/doing-business/opportunities/const-notices"),
     _catalog_entry("ga_dot", "GDOT", "state_dot", "Georgia transportation bid opportunities", "public_portal_links", "https://www.dot.ga.gov/GDOT/Pages/Contractors.aspx"),
     _catalog_entry("il_dot", "IDOT", "state_dot", "Illinois transportation lettings and bids", "public_portal_links", "https://idot.illinois.gov/doing-business/procurements.html"),
-    _catalog_entry("oh_dot", "ODOT", "state_dot", "Ohio transportation bid opportunities", "public_portal_links", "https://www.transportation.ohio.gov/working/engineering/estimator/contract-letting"),
+    _catalog_entry(
+        "oh_dot",
+        "Ohio DOT / OhioBuys",
+        "state_dot",
+        "Ohio transportation bid opportunities through OhioBuys public solicitations",
+        "public_portal_links",
+        "https://ohiobuys.ohio.gov/page.aspx/en/rfp/request_browse_public",
+        portal_gated=True,
+        access_note="OhioBuys serves a browser/captcha check before public solicitation details.",
+    ),
     _catalog_entry("nc_evp", "NC eVP", "state_local", "North Carolina statewide public solicitations including schools, utilities, airports, and authorities", "public_portal_links", "https://evp.nc.gov/solicitations/"),
     _catalog_entry("va_dot", "VDOT", "state_dot", "Virginia transportation bids and proposals", "public_portal_links", "https://www.virginiadot.org/business/const/default.asp"),
     _catalog_entry("az_dot", "ADOT", "state_dot", "Arizona transportation procurement and construction opportunities", "public_portal_links", "https://azdot.gov/business/contracts-and-specifications"),
-    _catalog_entry("tva_procurement", "TVA", "utility", "Tennessee Valley Authority supplier and sourcing opportunities", "public_portal_links", "https://www.tva.com/information/suppliers"),
-    _catalog_entry("bpa_procurement", "BPA", "utility", "Bonneville Power Administration acquisition opportunities", "public_portal_links", "https://www.bpa.gov/doing-business"),
+    _catalog_entry(
+        "tva_procurement",
+        "TVA",
+        "utility",
+        "Tennessee Valley Authority supplier and sourcing opportunities",
+        "public_portal_links",
+        "https://www.tva.com/information/suppliers",
+        portal_gated=True,
+        access_note="TVA supplier pages are protected by a browser challenge from server-side monitors.",
+    ),
+    _catalog_entry(
+        "bpa_procurement",
+        "BPA",
+        "utility",
+        "Bonneville Power Administration acquisition opportunities",
+        "public_portal_links",
+        "https://www.bpa.gov/energy-and-services/customers-and-contractors/buying-or-selling-products-and-services",
+        access_note="BPA publishes supplier instructions and procurement category documents; open opportunity detail is often routed through federal channels.",
+    ),
     _catalog_entry("ladwp", "LADWP", "utility", "Los Angeles Department of Water and Power opportunities through regional procurement portals", "public_portal_links", "https://www.ladwp.com/"),
     _catalog_entry("austin_energy", "Austin Energy", "utility", "Austin Energy and City of Austin procurement", "public_portal_links", "https://financeonline.austintexas.gov/afo/account_services/solicitation/solicitation.cfm"),
-    _catalog_entry("cps_energy", "CPS Energy", "utility", "San Antonio CPS Energy procurement opportunities", "public_portal_links", "https://www.cpsenergy.com/en/about-us/procurement-and-suppliers.html"),
-    _catalog_entry("jea", "JEA", "utility", "Jacksonville JEA procurement opportunities", "public_portal_links", "https://www.jea.com/about/procurement/"),
-    _catalog_entry("srp", "SRP", "utility", "Salt River Project procurement and supplier opportunities", "public_portal_links", "https://www.srpnet.com/about/suppliers"),
+    _catalog_entry(
+        "cps_energy",
+        "CPS Energy",
+        "utility",
+        "San Antonio CPS Energy procurement opportunities",
+        "public_portal_links",
+        "https://www.cpsenergy.com/content/corporate/en/work-with-us/procurement-and-suppliers/bid-opportunities.html",
+        portal_gated=True,
+        access_note="CPS Energy directs active opportunities to its supplier management system.",
+    ),
+    _catalog_entry(
+        "jea",
+        "JEA",
+        "utility",
+        "Jacksonville JEA procurement opportunities",
+        "jea_procurement",
+        "https://www.jea.com/about/procurement/formal_procurement_opportunities/?ns=y",
+    ),
+    _catalog_entry(
+        "srp",
+        "SRP",
+        "utility",
+        "Salt River Project procurement and supplier opportunities",
+        "public_portal_links",
+        "https://www.srpnet.com/about/suppliers",
+        portal_gated=True,
+        access_note="SRP supplier pages are protected by a browser challenge from server-side monitors.",
+    ),
     _catalog_entry("port_authority_ny_nj", "Port Authority NY/NJ", "airport_authority", "Airport, port, and transit authority bid opportunities", "public_portal_links", "https://www.panynj.gov/port-authority/en/business-opportunities/solicitations-advertisements.html"),
-    _catalog_entry("la_metro", "LA Metro", "transit", "Los Angeles Metro procurement opportunities", "public_portal_links", "https://business.metro.net/VendorPortal/faces/home/solicitations/openSolicitations"),
+    _catalog_entry(
+        "la_metro",
+        "LA Metro",
+        "transit",
+        "Los Angeles Metro procurement opportunities",
+        "public_portal_links",
+        "https://business.metro.net/webcenter/portal/VendorPortal/pages_home/solicitations/openSolicitations.",
+        portal_gated=True,
+        access_note="LA Metro exposes a JavaScript procurement portal that needs a browser session for opportunity details.",
+        job_params={"verify_tls": False},
+    ),
     _catalog_entry("septa", "SEPTA", "transit", "Southeastern Pennsylvania Transportation Authority procurement", "public_portal_links", "https://www5.septa.org/business/procurement/"),
-    _catalog_entry("ny_mta", "MTA", "transit", "New York MTA procurement opportunities", "public_portal_links", "https://new.mta.info/doing-business-with-us/procurement"),
-    _catalog_entry("dfw_airport", "DFW Airport", "airport_authority", "Dallas Fort Worth Airport procurement opportunities", "public_portal_links", "https://www.dfwairport.com/business/opportunities/solicitations/"),
+    _catalog_entry(
+        "ny_mta",
+        "MTA",
+        "transit",
+        "New York MTA procurement opportunities",
+        "public_portal_links",
+        "https://new.mta.info/doing-business-with-us/procurement",
+        portal_gated=True,
+        access_note="MTA procurement pages return an Akamai denial to server-side monitors.",
+    ),
+    _catalog_entry(
+        "dfw_airport",
+        "DFW Airport",
+        "airport_authority",
+        "Dallas Fort Worth Airport procurement opportunities",
+        "bonfire_portal",
+        "https://dfwairport.bonfirehub.com/portal/?tab=openOpportunities",
+    ),
     _catalog_entry("uc_procurement", "University of California", "university", "University of California construction and procurement opportunities", "public_portal_links", "https://www.ucop.edu/procurement-services/"),
     _catalog_entry("houston_water", "Houston Public Works", "water_authority", "Houston water, wastewater, and public works solicitations", "public_portal_links", "https://www.houstontx.gov/bizwithhou/"),
 ]
@@ -254,6 +352,37 @@ DEFAULT_PUBLIC_BID_JOBS = [
             "update_existing": True,
         },
     },
+    {
+        "adapter": "jea_procurement",
+        "params": {
+            "job_label": "jea",
+            "source": "jea",
+            "source_type": "utility",
+            "agency": "JEA",
+            "state": "FL",
+            "location": "Jacksonville, FL",
+            "limit": 25,
+            "source_limit": 1200,
+            "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
+            "update_existing": True,
+        },
+    },
+    {
+        "adapter": "bonfire_portal",
+        "params": {
+            "job_label": "dfw_airport",
+            "source": "dfw_airport",
+            "source_type": "airport_authority",
+            "agency": "DFW Airport",
+            "state": "TX",
+            "location": "Dallas-Fort Worth, TX",
+            "portal_url": "https://dfwairport.bonfirehub.com/portal/?tab=openOpportunities",
+            "limit": 25,
+            "source_limit": 250,
+            "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
+            "update_existing": True,
+        },
+    },
 ]
 
 PORTAL_SOURCE_STATES = {
@@ -296,6 +425,7 @@ DEFAULT_PUBLIC_BID_JOBS.extend(
                 "source_limit": 600,
                 "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
                 "update_existing": True,
+                **(catalog.get("job_params") or {}),
             },
         }
         for catalog in DEFAULT_SOURCE_CATALOG

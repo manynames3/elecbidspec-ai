@@ -173,6 +173,22 @@ class AlertRun(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+class SavedSearch(Base):
+    __tablename__ = "saved_searches"
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_saved_search_tenant_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(80), default="default", index=True)
+    name: Mapped[str] = mapped_column(String(160), index=True)
+    query: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    filters: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    email_digest: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class OpportunityAttachmentExtraction(Base):
     __tablename__ = "opportunity_attachment_extractions"
     __table_args__ = (UniqueConstraint("opportunity_id", "source_url", name="uq_attachment_extraction_source"),)

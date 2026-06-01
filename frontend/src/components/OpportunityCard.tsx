@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CalendarDays, ExternalLink, MapPin, TrendingUp } from "lucide-react";
-import { formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
+import { formatCurrency, formatDate, labelize, sourceLabel, whyThisBidMatters } from "@/lib/api";
 import type { Opportunity } from "@/lib/types";
 
 type OpportunityCardProps = {
@@ -26,6 +26,7 @@ function fitClass(score: number | null) {
 
 export function OpportunityCard({ opportunity, explanation, rankScore }: OpportunityCardProps) {
   const keywords = opportunity.extracted_specs?.keywords ?? [];
+  const rationale = whyThisBidMatters(opportunity);
   return (
     <article className="opportunity-card">
       <div className="card-topline">
@@ -69,6 +70,10 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
           <strong>{opportunity.value_confidence.replaceAll("_", " ")}</strong>
         </div>
       </div>
+      <p className="bid-rationale">
+        <span>Why it matters</span>
+        {rationale}
+      </p>
       {opportunity.value_explanation ? <p className="compact-copy">{opportunity.value_explanation}</p> : null}
       {keywords.length ? (
         <div className="tag-row">

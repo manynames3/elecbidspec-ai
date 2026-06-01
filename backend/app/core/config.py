@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     )
     nypa_api_subscription_key: str | None = Field(default=None, validation_alias="NYPA_API_SUBSCRIPTION_KEY")
 
+    smtp_host: str | None = Field(default=None, validation_alias="SMTP_HOST")
+    smtp_port: int = Field(default=587, validation_alias="SMTP_PORT")
+    smtp_username: str | None = Field(default=None, validation_alias="SMTP_USERNAME")
+    smtp_password: str | None = Field(default=None, validation_alias="SMTP_PASSWORD")
+    smtp_use_tls: bool = Field(default=True, validation_alias="SMTP_USE_TLS")
+    alert_email_from: str | None = Field(default=None, validation_alias="ALERT_EMAIL_FROM")
+    alert_send_cooldown_hours: int = Field(default=20, validation_alias="ALERT_SEND_COOLDOWN_HOURS")
+
     bedrock_proposals_enabled: bool = Field(default=False, validation_alias="BEDROCK_PROPOSALS_ENABLED")
     bedrock_model_id: str = Field(
         default="anthropic.claude-3-haiku-20240307-v1:0",

@@ -17,6 +17,13 @@ locals {
     BEDROCK_TEMPERATURE       = tostring(var.bedrock_temperature)
     SAM_GOV_API_KEY           = var.sam_gov_api_key
     ADMIN_API_TOKEN           = var.admin_api_token
+    SMTP_HOST                 = var.smtp_host
+    SMTP_PORT                 = tostring(var.smtp_port)
+    SMTP_USERNAME             = var.smtp_username
+    SMTP_PASSWORD             = var.smtp_password
+    SMTP_USE_TLS              = tostring(var.smtp_use_tls)
+    ALERT_EMAIL_FROM          = var.alert_email_from
+    ALERT_SEND_COOLDOWN_HOURS = tostring(var.alert_send_cooldown_hours)
     AUTH_REQUIRED             = tostring(var.auth_required)
     AUTH_SESSION_TTL_HOURS    = tostring(var.auth_session_ttl_hours)
     AUTH_ADMIN_EMAIL          = var.auth_admin_email

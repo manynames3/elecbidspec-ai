@@ -1,3 +1,5 @@
+import type { Opportunity } from "@/lib/types";
+
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 export const AUTH_TOKEN_STORAGE_KEY = "elecbidspec_auth_token";
 
@@ -43,6 +45,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
     const message = await response.text();
     throw new Error(message || `Request failed with ${response.status}`);
+  }
+  if (response.status === 204) {
+    return undefined as T;
   }
   return response.json() as Promise<T>;
 }
@@ -106,7 +111,7 @@ export function sourceLabel(source: string): string {
     return "IDOT";
   }
   if (source === "oh_dot") {
-    return "ODOT";
+    return "Ohio DOT";
   }
   if (source === "nc_evp") {
     return "NC eVP";
@@ -184,4 +189,33 @@ export function sourceLabel(source: string): string {
     return "Sample";
   }
   return labelize(source);
+}
+
+export function whyThisBidMatters(opportunity: Opportunity): string {
+  const reasons: string[] = [];
+  if (opportunity.minimum_value_match) {
+    reasons.push(opportunity.estimated_value ? `${formatCurrency(opportunity.estimated_value)} posted or inferred` : "$5M+ target likely");
+  }
+  if ((opportunity.fit_score ?? 0) >= 75) {
+    reasons.push(`${opportunity.fit_score} fit for Taihan capabilities`);
+  } else if ((opportunity.fit_score ?? 0) >= 55) {
+    reasons.push("worth review against profile gaps");
+  }
+  if (opportunity.project_type && opportunity.project_type !== "general_electrical") {
+    reasons.push(labelize(opportunity.project_type));
+  }
+  const keywords = opportunity.extracted_specs?.keywords ?? [];
+  const strategicKeyword = keywords.find((keyword) =>
+    ["underground cable", "medium voltage", "high voltage", "substation", "data center", "transmission", "distribution", "transformer"].includes(keyword)
+  );
+  if (strategicKeyword) {
+    reasons.push(`${strategicKeyword} scope`);
+  }
+  if (opportunity.source !== "seed") {
+    reasons.push(`official ${labelize(opportunity.source_type)} source`);
+  }
+  if (!reasons.length && opportunity.fit_explanation) {
+    return opportunity.fit_explanation;
+  }
+  return reasons.length ? reasons.slice(0, 4).join(" · ") : "Needs review: value, scope, and fit are not fully established yet.";
 }

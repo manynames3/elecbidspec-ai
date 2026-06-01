@@ -186,6 +186,35 @@ class AlertRunRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SavedSearchBase(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    query: str | None = None
+    filters: dict = Field(default_factory=dict)
+    enabled: bool = True
+    email_digest: bool = True
+
+
+class SavedSearchCreate(SavedSearchBase):
+    pass
+
+
+class SavedSearchUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    query: str | None = None
+    filters: dict | None = None
+    enabled: bool | None = None
+    email_digest: bool | None = None
+
+
+class SavedSearchRead(SavedSearchBase):
+    id: int
+    tenant_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CompanyProfileBase(BaseModel):
     name: str
     tenant_id: str = "default"
