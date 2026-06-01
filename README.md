@@ -70,7 +70,9 @@ The frontend cannot call `http://localhost:8000/api` after deployment. Deploy th
 
 ## Public Bid Sources
 
-SAM.gov is optional. For state, local, utility, school, authority, or other public bid portals, use the generic `public_json_feed` adapter when a portal exposes JSON. It accepts a configurable URL, optional nested record path, optional field mapping, and source metadata.
+SAM.gov is optional. For state, local, utility, school, authority, or other public bid portals, use `public_json_feed` when a portal exposes JSON and `public_html_scrape` when a portal only exposes public HTML listing/detail pages.
+
+The scraper adapter is intentionally conservative: public pages only, HTTP GET requests, configurable selectors, optional detail-page fetches, and no login, captcha bypass, or browser automation.
 
 ```bash
 curl -X POST http://localhost:8000/api/ingestion/jobs \
@@ -97,7 +99,34 @@ The MVP value filter uses posted or extracted values when available. If no value
 Available adapters:
 
 - `public_json_feed` for configurable public JSON bid feeds
+- `public_html_scrape` for configurable public HTML bid listings
 - `sam_gov` for federal Contract Opportunities
+
+Example HTML scrape job:
+
+```bash
+curl -X POST http://localhost:8000/api/ingestion/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "adapter": "public_html_scrape",
+    "params": {
+      "url": "https://example.gov/procurement",
+      "record_selector": "article.bid-card",
+      "source_type": "state_local",
+      "field_selectors": {
+        "title": "a.notice-link",
+        "source_url": "a.notice-link@href",
+        "agency": ".agency",
+        "due_date": ".due"
+      },
+      "detail_field_selectors": {
+        "description": ".scope",
+        "estimated_value": ".value",
+        "state": ".state"
+      }
+    }
+  }'
+```
 
 ## SAM.gov Ingestion
 
