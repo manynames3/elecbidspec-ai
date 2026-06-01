@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Date, DateTime, Integer, Numeric, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, Integer, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict, MutableList
 from sqlalchemy.orm import Mapped, mapped_column
@@ -29,8 +29,13 @@ class Opportunity(Base):
     naics_code: Mapped[Optional[str]] = mapped_column(String(12), nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     source: Mapped[str] = mapped_column(String(80), default="manual", index=True)
+    source_type: Mapped[str] = mapped_column(String(80), default="manual", index=True)
     source_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    bid_status: Mapped[str] = mapped_column(String(40), default="open", index=True)
     estimated_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), nullable=True)
+    value_confidence: Mapped[str] = mapped_column(String(40), default="unknown", index=True)
+    value_explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    minimum_value_match: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     attachments: Mapped[list] = mapped_column(MutableList.as_mutable(json_type()), default=list)
     extracted_specs: Mapped[dict] = mapped_column(MutableDict.as_mutable(json_type()), default=dict)

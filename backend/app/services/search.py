@@ -17,12 +17,16 @@ PROJECT_QUERY_MAP = {
 
 
 def parse_value_threshold(query: str) -> int | None:
-    match = re.search(r"(?:over|above|greater than)\s+\$?(\d+(?:\.\d+)?)\s*(m|million|k|thousand)?", query, re.I)
+    match = re.search(
+        r"(?:over|above|greater than|at least|minimum|min)\s+(?:minimum\s+)?\$?(\d+(?:\.\d+)?)\s*(m|mil|million|k|thousand)?",
+        query,
+        re.I,
+    )
     if not match:
         return None
     amount = float(match.group(1))
     unit = (match.group(2) or "").lower()
-    if unit in {"m", "million"}:
+    if unit in {"m", "mil", "million"}:
         amount *= 1_000_000
     elif unit in {"k", "thousand"}:
         amount *= 1_000
@@ -36,6 +40,8 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
     next_days_match = re.search(r"next\s+(\d+)\s+days", lower_query)
     due_before = date.today() + timedelta(days=int(next_days_match.group(1))) if next_days_match else None
     wants_supply_and_install = "supply and installation" in lower_query or "supply and install" in lower_query or "both cable supply and installation" in lower_query
+    wants_open = any(term in lower_query for term in ["open", "active", "bidding", "solicitation"])
+    wants_public = any(term in lower_query for term in ["public", "publicly notified", "nationwide"])
 
     ranked: list[dict] = []
     query_terms = {term for term in re.findall(r"[a-z0-9]+", lower_query) if len(term) > 2}
@@ -46,6 +52,9 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
             [
                 str(opp.get("title") or ""),
                 str(opp.get("description") or ""),
+                str(opp.get("source_type") or ""),
+                str(opp.get("bid_status") or ""),
+                str(opp.get("value_confidence") or ""),
                 " ".join((opp.get("extracted_specs") or {}).get("keywords", [])),
                 " ".join((opp.get("extracted_specs") or {}).get("required_materials", [])),
                 str(opp.get("project_type") or ""),
@@ -72,8 +81,21 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
         if value_threshold and estimated_value and float(estimated_value) >= value_threshold:
             score += 20
             reasons.append(f"Estimated value is at or above ${value_threshold:,.0f}.")
+        elif value_threshold and value_threshold <= 5_000_000 and opp.get("minimum_value_match"):
+            score += 15
+            reasons.append(f"Value is {opp.get('value_confidence')} for the $5M+ target.")
         elif value_threshold:
             score -= 10
+
+        if wants_open and opp.get("bid_status") == "open":
+            score += 15
+            reasons.append("Bid status is open.")
+        elif wants_open:
+            score -= 10
+
+        if wants_public and opp.get("source_type") != "manual":
+            score += 10
+            reasons.append(f"Source is categorized as {opp.get('source_type')}.")
 
         specs = opp.get("extracted_specs") or {}
         scope_text = " ".join(specs.get("installation_scope", [])).lower()
@@ -92,4 +114,3 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
             ranked.append({"opportunity": opp, "rank_score": score, "search_explanation": " ".join(reasons)})
 
     return sorted(ranked, key=lambda item: item["rank_score"], reverse=True)
-

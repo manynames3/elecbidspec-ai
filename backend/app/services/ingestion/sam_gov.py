@@ -58,7 +58,9 @@ def normalize_sam_notice(notice: dict[str, Any]) -> dict[str, Any]:
         "naics_code": str(notice.get("naicsCode")) if notice.get("naicsCode") else None,
         "description": description,
         "source": "sam_gov",
+        "source_type": "federal",
         "source_url": notice.get("uiLink") or notice.get("link"),
+        "bid_status": "open",
         "estimated_value": None,
         "attachments": attachments,
         "extracted_specs": specs,
@@ -70,6 +72,7 @@ def normalize_sam_notice(notice: dict[str, Any]) -> dict[str, Any]:
 
 class SamGovAdapter(IngestionAdapter):
     name = "sam_gov"
+    description = "SAM.gov federal Contract Opportunities API adapter."
 
     def fetch(self, params: dict[str, Any]) -> list[dict[str, Any]]:
         settings = get_settings()

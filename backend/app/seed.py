@@ -12,6 +12,7 @@ from app.models import CompanyProfile, Opportunity
 from app.services.classification import classify_bid
 from app.services.extraction import extract_specs
 from app.services.fit_scoring import score_fit
+from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
 
 
 SEED_DIR = Path(__file__).parent / "seed_data"
@@ -46,10 +47,13 @@ def ensure_seed_data(db: Session) -> None:
             "estimated_value": Decimal(str(item["estimated_value"])) if item.get("estimated_value") else None,
             "attachments": [],
             "extracted_specs": specs,
+            "source_type": item.get("source_type") or infer_source_type(item.get("source"), item.get("agency")),
+            "bid_status": normalize_bid_status(item.get("bid_status"), _parse_date(item.get("due_date"))),
             "project_type": classification["project_type"],
             "confidence_score": classification["confidence_score"],
             "classification_explanation": classification["explanation"],
         }
+        opportunity_data.update(assess_value(opportunity_data))
         fit = score_fit(opportunity_data, profile_data)
         opportunity_data.update(fit)
         db.add(Opportunity(**opportunity_data))
@@ -66,4 +70,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

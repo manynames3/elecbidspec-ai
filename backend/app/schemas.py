@@ -15,8 +15,13 @@ class OpportunityBase(BaseModel):
     naics_code: str | None = None
     description: str | None = None
     source: str = "manual"
+    source_type: str = "manual"
     source_url: str | None = None
+    bid_status: str = "open"
     estimated_value: Decimal | None = None
+    value_confidence: str = "unknown"
+    value_explanation: str | None = None
+    minimum_value_match: bool = False
     attachments: list[dict] = Field(default_factory=list)
 
 
@@ -32,8 +37,14 @@ class OpportunityUpdate(BaseModel):
     due_date: date | None = None
     naics_code: str | None = None
     description: str | None = None
+    source: str | None = None
+    source_type: str | None = None
     source_url: str | None = None
+    bid_status: str | None = None
     estimated_value: Decimal | None = None
+    value_confidence: str | None = None
+    value_explanation: str | None = None
+    minimum_value_match: bool | None = None
 
 
 class OpportunityRead(OpportunityBase):
@@ -102,4 +113,3 @@ class IngestionJobRead(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

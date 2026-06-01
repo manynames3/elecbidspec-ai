@@ -4,6 +4,8 @@ AI-assisted bid intelligence and proposal-prep MVP for electrical cable supplier
 
 The app works without live SAM.gov access: Docker startup runs migrations, loads 10 seed opportunities, and creates a sample company capability profile. Users can also upload RFP/spec PDFs or text files for extraction, classification, fit scoring, and proposal draft generation.
 
+The default dashboard view is tuned for open public electrical opportunities that are confirmed or likely to meet a $5M+ target. Records carry source type, bid status, value confidence, and a short value explanation so SAM.gov can be one source instead of the whole strategy.
+
 ## Stack
 
 - Next.js + TypeScript frontend
@@ -66,6 +68,37 @@ Recommended Pages settings:
 
 The frontend cannot call `http://localhost:8000/api` after deployment. Deploy the FastAPI backend to a public host first, then set `NEXT_PUBLIC_API_URL` in Cloudflare Pages production and preview environments.
 
+## Public Bid Sources
+
+SAM.gov is optional. For state, local, utility, school, authority, or other public bid portals, use the generic `public_json_feed` adapter when a portal exposes JSON. It accepts a configurable URL, optional nested record path, optional field mapping, and source metadata.
+
+```bash
+curl -X POST http://localhost:8000/api/ingestion/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "adapter": "public_json_feed",
+    "params": {
+      "url": "https://example.gov/bids.json",
+      "records_path": "items",
+      "source_type": "state_local",
+      "mapping": {
+        "title": "title",
+        "agency": "agency.name",
+        "due_date": "closeDate",
+        "estimated_value": "budget",
+        "source_url": "links.detail"
+      }
+    }
+  }'
+```
+
+The MVP value filter uses posted or extracted values when available. If no value is posted, it marks high-scope projects as `likely` when indicators such as data center, substation, transmission, high voltage, transformers, switchgear, duct bank, and bonding language suggest the bid may meet the $5M+ threshold.
+
+Available adapters:
+
+- `public_json_feed` for configurable public JSON bid feeds
+- `sam_gov` for federal Contract Opportunities
+
 ## SAM.gov Ingestion
 
 Add a SAM.gov API key to `.env`:
@@ -86,12 +119,13 @@ The worker service polls queued jobs and imports normalized opportunities. Addit
 
 ## Key API Surfaces
 
-- `GET /api/opportunities` with filters for due date, state, project type, fit score, value, and source
+- `GET /api/opportunities` with filters for due date, state, project type, fit score, estimated value, $5M target match, bid status, source type, and source
 - `POST /api/uploads` for manual PDF/text intake
 - `POST /api/search` for natural-language opportunity search
 - `GET /api/opportunities/{id}/proposal` for proposal-prep output
 - `GET/PUT /api/company-profile` for fit-scoring capabilities
 - `POST /api/ingestion/jobs` for background ingestion
+- `GET /api/ingestion/adapters` for available ingestion adapters
 
 ## Notes
 

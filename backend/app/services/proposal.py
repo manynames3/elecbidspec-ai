@@ -19,6 +19,10 @@ def generate_proposal_package(opportunity: Mapping) -> dict:
         risk_flags.append("Estimated value is missing; validate bonding and pricing exposure before pursuing.")
     if fit_score is not None and fit_score < 60:
         risk_flags.append("Fit score is below target; consider teaming or no-bid review.")
+    if opportunity.get("value_confidence") in {"unknown", "likely"}:
+        risk_flags.append("Estimated value needs validation before committing bid resources.")
+    if opportunity.get("bid_status") != "open":
+        risk_flags.append("Opportunity is not marked open; confirm bidding status before outreach.")
     if not specs.get("deadlines"):
         risk_flags.append("Intermediate deadlines were not extracted; review the full solicitation manually.")
     if not bonding:
@@ -64,4 +68,3 @@ def generate_proposal_package(opportunity: Mapping) -> dict:
             "Thanks,"
         ),
     }
-

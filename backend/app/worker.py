@@ -8,13 +8,11 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.models import CompanyProfile, IngestionJob, Opportunity
 from app.services.fit_scoring import score_fit
-from app.services.ingestion.sam_gov import SamGovAdapter
+from app.services.ingestion.registry import ADAPTERS
+from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elecbidspec.worker")
-
-ADAPTERS = {"sam_gov": SamGovAdapter()}
-
 
 def _profile_data(db: Session) -> dict | None:
     profile = db.query(CompanyProfile).first()
@@ -47,6 +45,11 @@ def process_job(db: Session, job: IngestionJob) -> None:
         if existing:
             skipped += 1
             continue
+        inferred_source_type = infer_source_type(data.get("source"), data.get("agency"))
+        if not data.get("source_type") or (data.get("source_type") == "manual" and inferred_source_type != "manual"):
+            data["source_type"] = inferred_source_type
+        data["bid_status"] = normalize_bid_status(data.get("bid_status"), data.get("due_date"))
+        data.update(assess_value(data))
         if profile:
             data.update(score_fit(data, profile))
         db.add(Opportunity(**data))
@@ -83,4 +86,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

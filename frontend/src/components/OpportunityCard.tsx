@@ -33,7 +33,8 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
           <TrendingUp size={14} />
           {opportunity.fit_score ?? "--"} fit
         </span>
-        <span className="source-pill">{opportunity.source.replaceAll("_", " ")}</span>
+        <span className="source-pill">{opportunity.bid_status}</span>
+        <span className="source-pill">{opportunity.source_type.replaceAll("_", " ")}</span>
         {rankScore ? <span className="source-pill">rank {rankScore}</span> : null}
       </div>
       <Link href={`/opportunities?id=${opportunity.id}`} className="card-title">
@@ -62,7 +63,12 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
           <span className="field-label">Estimated value</span>
           <strong>{formatCurrency(opportunity.estimated_value)}</strong>
         </div>
+        <div>
+          <span className="field-label">Value read</span>
+          <strong>{opportunity.value_confidence.replaceAll("_", " ")}</strong>
+        </div>
       </div>
+      {opportunity.value_explanation ? <p className="compact-copy">{opportunity.value_explanation}</p> : null}
       {keywords.length ? (
         <div className="tag-row">
           {keywords.slice(0, 6).map((keyword) => (

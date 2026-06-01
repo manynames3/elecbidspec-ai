@@ -95,12 +95,14 @@ export function OpportunityDetail() {
             </span>
             <span>{opportunity.location ?? opportunity.state ?? "Location TBD"}</span>
             <span>{labelize(opportunity.project_type)}</span>
+            <span>{opportunity.bid_status}</span>
           </div>
         </div>
         <div className="score-panel">
           <span className="field-label">Fit score</span>
           <strong>{opportunity.fit_score ?? "--"}</strong>
           <span>{formatCurrency(opportunity.estimated_value)}</span>
+          <span>{opportunity.value_confidence.replaceAll("_", " ")} value</span>
         </div>
       </section>
 
@@ -127,8 +129,17 @@ export function OpportunityDetail() {
               <span className="field-label">Confidence</span>
               <strong>{Math.round(opportunity.confidence_score * 100)}%</strong>
             </div>
+            <div>
+              <span className="field-label">Source type</span>
+              <strong>{opportunity.source_type.replaceAll("_", " ")}</strong>
+            </div>
+            <div>
+              <span className="field-label">Value match</span>
+              <strong>{opportunity.minimum_value_match ? "Target" : "Review"}</strong>
+            </div>
           </div>
           <p>{opportunity.classification_explanation}</p>
+          <p>{opportunity.value_explanation}</p>
           <p className="compact-copy">{opportunity.fit_explanation}</p>
         </section>
       </section>

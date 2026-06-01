@@ -22,7 +22,11 @@ type Filters = {
   project_type: string;
   min_fit_score: string;
   min_value: string;
+  minimum_value_match: string;
+  source_type: string;
+  bid_status: string;
   source: string;
+  open_only: string;
 };
 
 const emptyFilters: Filters = {
@@ -31,7 +35,11 @@ const emptyFilters: Filters = {
   project_type: "",
   min_fit_score: "",
   min_value: "",
-  source: ""
+  minimum_value_match: "true",
+  source_type: "",
+  bid_status: "open",
+  source: "",
+  open_only: "true"
 };
 
 export function Dashboard() {
@@ -107,7 +115,7 @@ export function Dashboard() {
       <section className="page-header">
         <div>
           <p className="eyebrow">Bid intelligence workspace</p>
-          <h1>Opportunity dashboard</h1>
+          <h1>Open public bids over $5M</h1>
         </div>
         <div className="summary-strip">
           <div>
@@ -132,7 +140,7 @@ export function Dashboard() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Which bids require underground cable installation in the next 30 days?"
+              placeholder="Show open public electrical bids nationwide above $5M"
             />
           </label>
           <button className="primary-button" type="submit">
@@ -173,12 +181,40 @@ export function Dashboard() {
             <input type="number" min="0" value={filters.min_value} onChange={(event) => setFilters({ ...filters, min_value: event.target.value })} placeholder="10000000" />
           </label>
           <label>
+            <span>Value match</span>
+            <select value={filters.minimum_value_match} onChange={(event) => setFilters({ ...filters, minimum_value_match: event.target.value })}>
+              <option value="true">Confirmed or likely</option>
+              <option value="">Any</option>
+              <option value="false">Below or unknown</option>
+            </select>
+          </label>
+          <label>
+            <span>Source type</span>
+            <select value={filters.source_type} onChange={(event) => setFilters({ ...filters, source_type: event.target.value })}>
+              <option value="">Nationwide</option>
+              <option value="federal">Federal</option>
+              <option value="state_local">State/local</option>
+              <option value="utility">Utility</option>
+              <option value="education">Education</option>
+              <option value="manual">Manual</option>
+            </select>
+          </label>
+          <label>
+            <span>Status</span>
+            <select value={filters.bid_status} onChange={(event) => setFilters({ ...filters, bid_status: event.target.value, open_only: event.target.value === "open" ? "true" : "" })}>
+              <option value="open">Open</option>
+              <option value="">Any</option>
+              <option value="closed">Closed</option>
+            </select>
+          </label>
+          <label>
             <span>Source</span>
             <select value={filters.source} onChange={(event) => setFilters({ ...filters, source: event.target.value })}>
               <option value="">Any</option>
               <option value="seed">Seed</option>
               <option value="manual_upload">Manual upload</option>
               <option value="sam_gov">SAM.gov</option>
+              <option value="public_json_feed">Public JSON feed</option>
             </select>
           </label>
           <button className="secondary-button" type="submit">
@@ -216,4 +252,3 @@ export function Dashboard() {
     </div>
   );
 }
-

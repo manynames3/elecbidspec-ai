@@ -10,8 +10,13 @@ export type Opportunity = {
   naics_code: string | null;
   description: string | null;
   source: string;
+  source_type: string;
   source_url: string | null;
+  bid_status: string;
   estimated_value: MoneyValue;
+  value_confidence: string;
+  value_explanation: string | null;
+  minimum_value_match: boolean;
   attachments: Array<Record<string, unknown>>;
   extracted_specs: {
     keywords?: string[];
@@ -57,4 +62,3 @@ export type CompanyProfile = {
   labor_type: string | null;
   experience: Record<string, boolean>;
 };
-

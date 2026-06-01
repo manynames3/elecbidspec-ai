@@ -1,0 +1,33 @@
+from app.services.value_assessment import assess_value, infer_estimated_value, infer_source_type, normalize_bid_status
+
+
+def test_assess_value_confirms_posted_value_over_minimum():
+    result = assess_value({"estimated_value": 7_500_000, "description": "Medium voltage cable install."})
+
+    assert result["minimum_value_match"] is True
+    assert result["value_confidence"] == "confirmed"
+
+
+def test_assess_value_marks_scope_likely_when_value_missing():
+    result = assess_value(
+        {
+            "title": "Data center substation and high voltage distribution campus",
+            "description": "Furnish switchgear, transformers, medium voltage feeders, performance bond required.",
+            "extracted_specs": {"keywords": ["data center", "substation", "high voltage"]},
+        }
+    )
+
+    assert result["minimum_value_match"] is True
+    assert result["value_confidence"] == "likely"
+
+
+def test_infer_estimated_value_from_notice_text():
+    value = infer_estimated_value("Estimated value exceeds $12.5M for the project.")
+
+    assert value == 12_500_000
+    assert infer_estimated_value("Budget is above $5mil for the project.") == 5_000_000
+
+
+def test_normalizes_portal_status_and_manual_public_agency_type():
+    assert normalize_bid_status("Sources Sought", None) == "open"
+    assert infer_source_type("manual_upload", "City of Austin Public Works") == "state_local"

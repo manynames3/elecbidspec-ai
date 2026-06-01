@@ -26,6 +26,7 @@ from app.services.extraction import extract_specs, parse_attachment
 from app.services.fit_scoring import score_fit
 from app.services.proposal import generate_proposal_package
 from app.services.search import search_opportunities
+from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
 
 router = APIRouter()
 
@@ -41,8 +42,13 @@ def opportunity_to_dict(opportunity: Opportunity) -> dict:
         "naics_code": opportunity.naics_code,
         "description": opportunity.description,
         "source": opportunity.source,
+        "source_type": opportunity.source_type,
         "source_url": opportunity.source_url,
+        "bid_status": opportunity.bid_status,
         "estimated_value": float(opportunity.estimated_value) if opportunity.estimated_value is not None else None,
+        "value_confidence": opportunity.value_confidence,
+        "value_explanation": opportunity.value_explanation,
+        "minimum_value_match": opportunity.minimum_value_match,
         "attachments": opportunity.attachments or [],
         "extracted_specs": opportunity.extracted_specs or {},
         "project_type": opportunity.project_type,
@@ -80,6 +86,11 @@ def enrich_opportunity_data(data: dict, db: Session) -> dict:
         "confidence_score": classification["confidence_score"],
         "classification_explanation": classification["explanation"],
     }
+    inferred_source_type = infer_source_type(enriched.get("source"), enriched.get("agency"))
+    if not enriched.get("source_type") or (enriched.get("source_type") == "manual" and inferred_source_type != "manual"):
+        enriched["source_type"] = inferred_source_type
+    enriched["bid_status"] = normalize_bid_status(enriched.get("bid_status"), enriched.get("due_date"))
+    enriched.update(assess_value(enriched))
     profile = get_profile_data(db)
     if profile:
         enriched.update(score_fit(enriched, profile))
@@ -100,7 +111,12 @@ def list_opportunities(
     project_type: str | None = Query(default=None),
     min_fit_score: int | None = Query(default=None, ge=0, le=100),
     min_value: Decimal | None = Query(default=None),
+    minimum_value_match: bool | None = Query(default=None),
+    value_confidence: str | None = Query(default=None),
     source: str | None = Query(default=None),
+    source_type: str | None = Query(default=None),
+    bid_status: str | None = Query(default=None),
+    open_only: bool = Query(default=False),
 ) -> list[Opportunity]:
     query = db.query(Opportunity)
     if due_before:
@@ -115,8 +131,18 @@ def list_opportunities(
         query = query.filter(Opportunity.fit_score >= min_fit_score)
     if min_value is not None:
         query = query.filter(Opportunity.estimated_value >= min_value)
+    if minimum_value_match is not None:
+        query = query.filter(Opportunity.minimum_value_match == minimum_value_match)
+    if value_confidence:
+        query = query.filter(Opportunity.value_confidence == value_confidence)
     if source:
         query = query.filter(Opportunity.source == source)
+    if source_type:
+        query = query.filter(Opportunity.source_type == source_type)
+    if bid_status:
+        query = query.filter(Opportunity.bid_status == bid_status)
+    if open_only:
+        query = query.filter(Opportunity.bid_status == "open")
     return query.order_by(Opportunity.due_date.asc().nullslast(), Opportunity.fit_score.desc().nullslast()).all()
 
 
@@ -197,7 +223,9 @@ async def upload_opportunity_document(
         "naics_code": naics_code,
         "description": text[:6000],
         "source": "manual_upload",
+        "source_type": "manual",
         "source_url": source_url,
+        "bid_status": "open",
         "estimated_value": estimated_value,
         "attachments": [{"name": file.filename, "stored_path": str(storage_path)}],
         "extracted_specs": specs,
@@ -239,8 +267,10 @@ def upsert_company_profile(payload: CompanyProfileCreate, db: Session = Depends(
 
 @router.post("/ingestion/jobs", response_model=IngestionJobRead, status_code=202)
 def create_ingestion_job(payload: IngestionJobCreate, db: Session = Depends(get_db)) -> IngestionJob:
-    if payload.adapter != "sam_gov":
-        raise HTTPException(status_code=400, detail="Only the sam_gov adapter is implemented in this MVP.")
+    from app.services.ingestion.registry import ADAPTERS
+
+    if payload.adapter not in ADAPTERS:
+        raise HTTPException(status_code=400, detail=f"Unknown adapter. Available adapters: {', '.join(sorted(ADAPTERS))}.")
     job = IngestionJob(adapter=payload.adapter, params=payload.params, status="queued")
     db.add(job)
     db.commit()
@@ -252,3 +282,9 @@ def create_ingestion_job(payload: IngestionJobCreate, db: Session = Depends(get_
 def list_ingestion_jobs(db: Session = Depends(get_db)) -> list[IngestionJob]:
     return db.query(IngestionJob).order_by(IngestionJob.created_at.desc()).limit(50).all()
 
+
+@router.get("/ingestion/adapters")
+def list_ingestion_adapters() -> list[dict]:
+    from app.services.ingestion.registry import ADAPTERS
+
+    return [{"name": name, "description": adapter.description} for name, adapter in sorted(ADAPTERS.items())]
