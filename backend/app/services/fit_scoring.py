@@ -26,7 +26,8 @@ def score_fit(opportunity: Mapping, profile: Mapping) -> dict:
 
     state = (opportunity.get("state") or "").upper()
     states_served = {str(item).upper() for item in profile.get("states_served", [])}
-    if state and state in states_served:
+    nationwide = bool(states_served & {"ALL", "US", "USA", "NATIONWIDE"})
+    if state and (state in states_served or nationwide):
         score += 20
         positives.append(f"Serves project state {state}.")
     elif state:
@@ -96,4 +97,3 @@ def score_fit(opportunity: Mapping, profile: Mapping) -> dict:
     bounded_score = max(0, min(100, score))
     explanation = " ".join(positives + negatives)
     return {"fit_score": bounded_score, "fit_explanation": explanation}
-

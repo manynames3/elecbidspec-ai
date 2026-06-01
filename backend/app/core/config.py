@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +24,15 @@ class Settings(BaseSettings):
         validation_alias="SAM_GOV_API_BASE_URL",
     )
 
+    bedrock_proposals_enabled: bool = Field(default=False, validation_alias="BEDROCK_PROPOSALS_ENABLED")
+    bedrock_model_id: str = Field(
+        default="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        validation_alias="BEDROCK_MODEL_ID",
+    )
+    bedrock_region: str = Field(default="us-east-1", validation_alias=AliasChoices("BEDROCK_REGION", "AWS_REGION", "AWS_DEFAULT_REGION"))
+    bedrock_max_tokens: int = Field(default=2500, validation_alias="BEDROCK_MAX_TOKENS")
+    bedrock_temperature: float = Field(default=0.2, validation_alias="BEDROCK_TEMPERATURE")
+
     upload_dir: Path = Field(default=Path("/tmp/elecbidspec_uploads"), validation_alias="UPLOAD_DIR")
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
@@ -34,4 +43,3 @@ def get_settings() -> Settings:
     settings = Settings()
     settings.upload_dir.mkdir(parents=True, exist_ok=True)
     return settings
-

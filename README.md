@@ -82,6 +82,7 @@ Required production environment variables:
 - `FRONTEND_ORIGIN=https://elecbidspec-ai.pages.dev`
 - `UPLOAD_DIR=/tmp/elecbidspec_uploads`
 - `SAM_GOV_API_KEY` only if live SAM.gov ingestion is enabled
+- `BEDROCK_PROPOSALS_ENABLED=true` plus AWS Bedrock credentials/role if AI-written proposal drafts are enabled
 
 ## Public Bid Sources
 
@@ -160,6 +161,20 @@ curl -X POST http://localhost:8000/api/ingestion/jobs \
 ```
 
 The worker service polls queued jobs and imports normalized opportunities. Additional state or local bid portals can be added as new classes implementing `IngestionAdapter` under `backend/app/services/ingestion`.
+
+## Bedrock Proposal Generation
+
+The proposal assistant can use Amazon Bedrock to write company-specific proposal content. When enabled, the backend sends Bedrock the opportunity, extracted specs, fit score, and the current company capability profile, then validates the returned JSON against the existing proposal response shape.
+
+```bash
+BEDROCK_PROPOSALS_ENABLED=true
+BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
+BEDROCK_REGION=us-east-1
+```
+
+AWS credentials are not stored in the app. `boto3` uses the normal AWS credential chain, such as environment variables, workload identity, or an instance/container role. If Bedrock is disabled or unavailable, the endpoint falls back to deterministic proposal generation.
+
+The seed profile is configured for Taihan Cable & Solution so proposal drafts are grounded in its cable and power infrastructure capability profile instead of a generic contractor profile.
 
 ## Key API Surfaces
 

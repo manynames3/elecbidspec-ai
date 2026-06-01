@@ -1,32 +1,45 @@
 {
-  "name": "Tri-State Cable & Power Services",
-  "states_served": ["CA", "NV", "AZ", "OR", "WA", "TX", "VA"],
-  "bonding_capacity": 25000000,
+  "name": "Taihan Cable & Solution",
+  "states_served": ["NATIONWIDE"],
+  "bonding_capacity": 50000000,
   "cable_types_supplied": [
-    "medium_voltage",
+    "extra_high_voltage",
     "high_voltage",
-    "fiber",
-    "conduit",
-    "switchgear",
-    "transformer"
+    "medium_voltage",
+    "low_voltage",
+    "hvdc",
+    "submarine_cable",
+    "solar_power_cable",
+    "overhead_line",
+    "distribution_cable",
+    "optical_cable",
+    "communication_cable",
+    "cable_accessories",
+    "busduct"
   ],
   "installation_capabilities": [
+    "power_transmission_distribution",
     "underground",
-    "trenching",
-    "distribution",
     "overhead",
-    "pole_line",
     "substation",
+    "submarine_installation",
+    "cable_laying",
+    "connection",
+    "construction",
+    "maintenance",
+    "renewable_energy",
+    "offshore_wind",
     "data_center",
-    "emergency_repair"
+    "utility_replacement",
+    "turnkey_project_support"
   ],
-  "labor_type": "union",
+  "labor_type": "partner-led",
   "experience": {
     "data_center_power": true,
     "utility_replacement": true,
     "underground_installation": true,
     "pole_overhead_installation": true,
-    "substation_related": true
+    "substation_related": true,
+    "general_electrical": true
   }
 }
-

@@ -111,6 +111,7 @@ export function ProfileForm() {
               <option value="union">Union</option>
               <option value="non-union">Non-union</option>
               <option value="mixed">Mixed</option>
+              <option value="partner-led">Partner-led</option>
             </select>
           </label>
           <label className="wide-control">
@@ -154,4 +155,3 @@ export function ProfileForm() {
     </div>
   );
 }
-

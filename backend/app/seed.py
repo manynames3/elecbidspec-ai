@@ -16,6 +16,7 @@ from app.services.value_assessment import assess_value, infer_source_type, norma
 
 
 SEED_DIR = Path(__file__).parent / "seed_data"
+LEGACY_SAMPLE_PROFILE_NAMES = {"Sample Electrical Contractor", "Tri-State Cable & Power Services"}
 
 
 def _parse_date(value: str | None):
@@ -32,6 +33,10 @@ def ensure_seed_data(db: Session) -> None:
     if not profile:
         profile = CompanyProfile(**profile_data)
         db.add(profile)
+        db.flush()
+    elif profile.name in LEGACY_SAMPLE_PROFILE_NAMES:
+        for key, value in profile_data.items():
+            setattr(profile, key, value)
         db.flush()
 
     if db.query(Opportunity).count() > 0:

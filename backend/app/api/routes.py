@@ -183,7 +183,7 @@ def get_proposal(opportunity_id: int, db: Session = Depends(get_db)) -> dict:
     opportunity = db.get(Opportunity, opportunity_id)
     if not opportunity:
         raise HTTPException(status_code=404, detail="Opportunity not found")
-    return generate_proposal_package(opportunity_to_dict(opportunity))
+    return generate_proposal_package(opportunity_to_dict(opportunity), get_profile_data(db))
 
 
 @router.post("/search")
