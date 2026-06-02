@@ -206,7 +206,22 @@ export function whyThisBidMatters(opportunity: Opportunity): string {
   }
   const keywords = opportunity.extracted_specs?.keywords ?? [];
   const strategicKeyword = keywords.find((keyword) =>
-    ["underground cable", "medium voltage", "high voltage", "substation", "data center", "transmission", "distribution", "transformer"].includes(keyword)
+    [
+      "underground cable",
+      "medium voltage",
+      "high voltage",
+      "substation",
+      "data center",
+      "hyperscale",
+      "ai infrastructure",
+      "critical power",
+      "gpu",
+      "ups",
+      "switchgear",
+      "transmission",
+      "distribution",
+      "transformer"
+    ].includes(keyword)
   );
   if (strategicKeyword) {
     reasons.push(`${strategicKeyword} scope`);

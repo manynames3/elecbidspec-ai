@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from app.core.config import get_settings
 from app.services.proposal import generate_bedrock_proposal, generate_deterministic_proposal
 from app.services.proposal_docx import generate_proposal_docx
+from app.services.proposal_pdf import generate_proposal_pdf
 
 
 def _opportunity():
@@ -29,7 +30,7 @@ def _taihan_profile():
     return {
         "name": "Taihan Cable & Solution",
         "states_served": ["NATIONWIDE"],
-        "bonding_capacity": 50_000_000,
+        "bonding_capacity": 600_000_000,
         "cable_types_supplied": ["high_voltage", "medium_voltage", "hvdc", "submarine_cable"],
         "installation_capabilities": ["substation", "connection", "construction", "turnkey_project_support"],
         "labor_type": "partner-led",
@@ -153,3 +154,12 @@ def test_proposal_docx_contains_word_package_parts():
     with zipfile.ZipFile(BytesIO(content)) as docx:
         assert "word/document.xml" in docx.namelist()
         assert "Taihan Cable &amp; Solution" in docx.read("word/document.xml").decode("utf-8")
+
+
+def test_proposal_pdf_contains_pdf_document():
+    proposal = generate_deterministic_proposal(_opportunity(), _taihan_profile())
+    content = generate_proposal_pdf(_opportunity(), proposal, _taihan_profile())
+
+    assert content.startswith(b"%PDF-1.4")
+    assert b"Taihan Cable & Solution Proposal Prep Package" in content
+    assert b"%%EOF" in content

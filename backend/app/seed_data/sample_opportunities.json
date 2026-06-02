@@ -14,13 +14,13 @@
     "estimated_value": 4200000
   },
   {
-    "title": "Data Center Campus Critical Power Distribution Phase 2",
+    "title": "Hyperscale AI Data Center Critical Power Distribution Phase 2",
     "agency": "Virginia Economic Development Partnership",
     "location": "Loudoun County, VA",
     "state": "VA",
     "due_date": "2026-07-02",
     "naics_code": "238210",
-    "description": "Furnish and install medium voltage cable, switchgear, transformers, fiber controls, duct bank, and UPS distribution for a data center campus. Requires supply and installation coordination, insurance certificates, and manufacturer cut sheets. Estimated value exceeds $18,000,000.",
+    "description": "Furnish and install medium voltage cable, switchgear, transformers, fiber controls, duct bank, UPS distribution, busduct, and utility interconnection equipment for a hyperscale AI infrastructure data center campus supporting GPU compute halls. Requires supply and installation coordination, insurance certificates, and manufacturer cut sheets. Estimated value exceeds $18,000,000.",
     "source": "seed",
     "source_type": "state_local",
     "bid_status": "open",

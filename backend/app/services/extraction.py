@@ -19,6 +19,16 @@ ELECTRICAL_SCOPE_KEYWORDS = [
     "substation",
     "fiber",
     "data center",
+    "hyperscale",
+    "colocation",
+    "critical power",
+    "ai infrastructure",
+    "artificial intelligence",
+    "hpc",
+    "high performance computing",
+    "gpu",
+    "compute campus",
+    "server farm",
     "fire damage",
     "replacement",
     "emergency repair",
@@ -32,6 +42,13 @@ MATERIAL_TERMS = [
     "transformer",
     "switchgear",
     "switchboard",
+    "ups",
+    "uninterruptible power supply",
+    "generator",
+    "busduct",
+    "busway",
+    "power distribution unit",
+    "pdu",
     "fiber",
     "pull box",
     "manhole",
@@ -111,6 +128,21 @@ def find_sentences(text: str, terms: list[str], limit: int = 8) -> list[str]:
     return matches
 
 
+def contains_term(text: str, term: str) -> bool:
+    if term == "ups":
+        return (
+            re.search(
+                r"\bups\b(?=.{0,64}\b(power|battery|distribution|system|room|electrical|critical|backup|busduct|switchgear|feeder|feeders|data center|infrastructure)\b)|"
+                r"\b(power|battery|distribution|system|room|electrical|critical|backup|busduct|switchgear|feeder|feeders|data center|infrastructure)\b.{0,64}\bups\b",
+                text,
+            )
+            is not None
+        )
+    if re.fullmatch(r"[a-z0-9]+", term):
+        return re.search(rf"\b{re.escape(term)}\b", text) is not None
+    return term in text
+
+
 def extract_money(text: str) -> list[str]:
     values = re.findall(r"\$\s?\d[\d,]*(?:\.\d{2})?", text)
     return values[:5]
@@ -132,8 +164,8 @@ def extract_specs(text: str) -> dict:
     clean_text = normalize_text(text)
     lower = clean_text.lower()
 
-    keywords = [keyword for keyword in ELECTRICAL_SCOPE_KEYWORDS if keyword in lower]
-    materials = [term for term in MATERIAL_TERMS if term in lower]
+    keywords = [keyword for keyword in ELECTRICAL_SCOPE_KEYWORDS if contains_term(lower, keyword)]
+    materials = [term for term in MATERIAL_TERMS if contains_term(lower, term)]
 
     return {
         "keywords": keywords,
@@ -145,4 +177,3 @@ def extract_specs(text: str) -> dict:
         "submission_instructions": find_sentences(clean_text, SUBMISSION_TERMS, limit=5),
         "source_text_preview": clean_text[:1200],
     }
-

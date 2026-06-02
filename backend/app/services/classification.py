@@ -1,18 +1,34 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import re
 
 
 CLASSIFICATION_KEYWORDS = {
     "data_center_power": [
         "data center",
         "hyperscale",
-        "server",
         "colocation",
+        "server",
+        "server farm",
+        "compute campus",
+        "ai infrastructure",
+        "artificial intelligence",
+        "hpc",
+        "high performance computing",
+        "gpu",
+        "gpu cluster",
         "ups",
+        "uninterruptible power supply",
         "generator",
         "switchgear",
         "critical power",
+        "pdu",
+        "power distribution unit",
+        "busduct",
+        "busway",
+        "utility interconnection",
+        "campus power",
     ],
     "utility_replacement": [
         "utility",
@@ -29,6 +45,38 @@ CLASSIFICATION_KEYWORDS = {
     "substation_related": ["substation", "transformer", "switchyard", "breaker", "relay", "bus work"],
 }
 
+DATA_CENTER_STRONG_TERMS = {
+    "data center",
+    "hyperscale",
+    "colocation",
+    "server farm",
+    "compute campus",
+    "ai infrastructure",
+    "artificial intelligence",
+    "hpc",
+    "high performance computing",
+    "gpu",
+    "gpu cluster",
+    "critical power",
+    "utility interconnection",
+    "campus power",
+}
+
+
+def _contains_term(text: str, term: str) -> bool:
+    if term == "ups":
+        return (
+            re.search(
+                r"\bups\b(?=.{0,64}\b(power|battery|distribution|system|room|electrical|critical|backup|busduct|switchgear|feeder|feeders|data center|infrastructure)\b)|"
+                r"\b(power|battery|distribution|system|room|electrical|critical|backup|busduct|switchgear|feeder|feeders|data center|infrastructure)\b.{0,64}\bups\b",
+                text,
+            )
+            is not None
+        )
+    if re.fullmatch(r"[a-z0-9]+", term):
+        return re.search(rf"\b{re.escape(term)}\b", text) is not None
+    return term in text
+
 
 def classify_bid(title: str, description: str = "", extracted_specs: Mapping | None = None) -> dict:
     extracted_specs = extracted_specs or {}
@@ -40,7 +88,9 @@ def classify_bid(title: str, description: str = "", extracted_specs: Mapping | N
     scores: dict[str, int] = {}
     hits_by_type: dict[str, list[str]] = {}
     for project_type, terms in CLASSIFICATION_KEYWORDS.items():
-        hits = [term for term in terms if term in text]
+        hits = [term for term in terms if _contains_term(text, term)]
+        if project_type == "data_center_power" and hits and not any(hit in DATA_CENTER_STRONG_TERMS for hit in hits):
+            hits = []
         hits_by_type[project_type] = hits
         scores[project_type] = len(hits)
 
@@ -61,4 +111,3 @@ def classify_bid(title: str, description: str = "", extracted_specs: Mapping | N
         "confidence_score": round(confidence, 2),
         "explanation": f"Matched {best_type.replace('_', ' ')} indicators: {hits_text}.",
     }
-

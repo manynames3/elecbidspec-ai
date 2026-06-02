@@ -40,7 +40,7 @@ def test_fit_scoring_accepts_nationwide_state_profile():
         },
         {
             "states_served": ["NATIONWIDE"],
-            "bonding_capacity": 50_000_000,
+            "bonding_capacity": 600_000_000,
             "cable_types_supplied": ["high_voltage"],
             "installation_capabilities": ["substation", "transformer"],
             "labor_type": "partner-led",

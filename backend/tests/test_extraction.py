@@ -16,3 +16,20 @@ def test_extract_specs_finds_electrical_scope_and_requirements():
     assert specs["bonding_insurance_requirements"]
     assert specs["submission_instructions"]
 
+
+def test_extract_specs_finds_ai_data_center_power_terms():
+    specs = extract_specs(
+        "AI infrastructure data center requires UPS, busduct, switchgear, GPU compute campus feeders, "
+        "and utility interconnection work."
+    )
+
+    assert "ai infrastructure" in specs["keywords"]
+    assert "data center" in specs["keywords"]
+    assert "ups" in specs["required_materials"]
+    assert "busduct" in specs["required_materials"]
+
+
+def test_extract_specs_does_not_treat_delivery_ups_as_power_equipment():
+    specs = extract_specs("Bid packages may be sent by FedEx, UPS, USPS, or hand delivery.")
+
+    assert "ups" not in specs["required_materials"]

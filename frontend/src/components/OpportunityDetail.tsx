@@ -162,11 +162,11 @@ export function OpportunityDetail() {
     }
   }
 
-  async function downloadProposal() {
+  async function downloadProposal(format: "docx" | "pdf") {
     if (!opportunity) {
       return;
     }
-    const response = await fetch(apiUrl(`/opportunities/${opportunity.id}/proposal.docx`), {
+    const response = await fetch(apiUrl(`/opportunities/${opportunity.id}/proposal.${format}`), {
       headers: authHeaders()
     });
     if (!response.ok) {
@@ -176,7 +176,7 @@ export function OpportunityDetail() {
     const objectUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = objectUrl;
-    link.download = `${opportunity.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.docx`;
+    link.download = `${opportunity.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-proposal.${format}`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -207,9 +207,13 @@ export function OpportunityDetail() {
           <RefreshCw size={16} />
           Rescore
         </button>
-        <button className="secondary-button" onClick={() => void downloadProposal().catch((err) => setError(err instanceof Error ? err.message : "Download failed"))} type="button">
+        <button className="secondary-button" onClick={() => void downloadProposal("docx").catch((err) => setError(err instanceof Error ? err.message : "DOCX download failed"))} type="button">
           <Download size={16} />
           DOCX
+        </button>
+        <button className="secondary-button" onClick={() => void downloadProposal("pdf").catch((err) => setError(err instanceof Error ? err.message : "PDF download failed"))} type="button">
+          <Download size={16} />
+          PDF
         </button>
         <button className="secondary-button" onClick={() => void enhanceProposal()} type="button" disabled={enhancing}>
           <Sparkles size={16} />

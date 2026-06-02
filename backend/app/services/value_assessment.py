@@ -10,6 +10,23 @@ DEFAULT_MINIMUM_VALUE = Decimal("5000000")
 
 HIGH_VALUE_SCOPE_TERMS = {
     "data center": 4,
+    "datacenter": 4,
+    "hyperscale": 5,
+    "colocation": 4,
+    "ai infrastructure": 5,
+    "artificial intelligence": 4,
+    "hpc": 4,
+    "high performance computing": 4,
+    "gpu": 4,
+    "compute campus": 5,
+    "critical power": 4,
+    "ups": 3,
+    "uninterruptible power supply": 3,
+    "power distribution unit": 3,
+    "pdu": 2,
+    "busduct": 2,
+    "busway": 2,
+    "utility interconnection": 3,
     "substation": 4,
     "transmission": 4,
     "high voltage": 3,
@@ -60,6 +77,21 @@ def decimal_or_none(value: Any) -> Decimal | None:
         return Decimal(str(value))
     except (InvalidOperation, ValueError):
         return None
+
+
+def contains_scope_term(text: str, term: str) -> bool:
+    if term == "ups":
+        return (
+            re.search(
+                r"\bups\b(?=.{0,64}\b(power|battery|distribution|system|room|electrical|critical|backup|busduct|switchgear|feeder|feeders|data center|infrastructure)\b)|"
+                r"\b(power|battery|distribution|system|room|electrical|critical|backup|busduct|switchgear|feeder|feeders|data center|infrastructure)\b.{0,64}\bups\b",
+                text,
+            )
+            is not None
+        )
+    if re.fullmatch(r"[a-z0-9]+", term):
+        return re.search(rf"\b{re.escape(term)}\b", text) is not None
+    return term in text
 
 
 def parse_money_value(raw_amount: str, raw_unit: str | None = None) -> Decimal | None:
@@ -132,7 +164,7 @@ def high_value_scope_score(data: dict) -> int:
             " ".join(specs.get("bonding_insurance_requirements", [])),
         ]
     ).lower()
-    score = sum(weight for term, weight in HIGH_VALUE_SCOPE_TERMS.items() if term in text)
+    score = sum(weight for term, weight in HIGH_VALUE_SCOPE_TERMS.items() if contains_scope_term(text, term))
     if re.search(r"\b\d{2,4}\s?kv\b", text, flags=re.IGNORECASE):
         score += 3
     return score

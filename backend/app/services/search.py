@@ -7,6 +7,15 @@ import re
 
 PROJECT_QUERY_MAP = {
     "data center": "data_center_power",
+    "datacenter": "data_center_power",
+    "ai infrastructure": "data_center_power",
+    "artificial intelligence": "data_center_power",
+    "hyperscale": "data_center_power",
+    "colocation": "data_center_power",
+    "hpc": "data_center_power",
+    "gpu": "data_center_power",
+    "critical power": "data_center_power",
+    "compute campus": "data_center_power",
     "utility": "utility_replacement",
     "fire": "fire_damage_rebuild",
     "underground": "underground_installation",
@@ -14,6 +23,21 @@ PROJECT_QUERY_MAP = {
     "overhead": "pole_overhead_installation",
     "substation": "substation_related",
 }
+
+
+def contains_term(text: str, term: str) -> bool:
+    if term == "ups":
+        return (
+            re.search(
+                r"\bups\b(?=.{0,64}\b(power|battery|distribution|system|room|electrical|critical|backup|busduct|switchgear|feeder|feeders|data center|infrastructure)\b)|"
+                r"\b(power|battery|distribution|system|room|electrical|critical|backup|busduct|switchgear|feeder|feeders|data center|infrastructure)\b.{0,64}\bups\b",
+                text,
+            )
+            is not None
+        )
+    if re.fullmatch(r"[a-z0-9]+", term):
+        return re.search(rf"\b{re.escape(term)}\b", text) is not None
+    return term in text
 
 
 def parse_value_threshold(query: str) -> int | None:
@@ -42,6 +66,21 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
     wants_supply_and_install = "supply and installation" in lower_query or "supply and install" in lower_query or "both cable supply and installation" in lower_query
     wants_open = any(term in lower_query for term in ["open", "active", "bidding", "solicitation"])
     wants_public = any(term in lower_query for term in ["public", "publicly notified", "nationwide"])
+    wants_ai_infra = any(
+        term in lower_query
+        for term in [
+            "ai infrastructure",
+            "artificial intelligence",
+            "hyperscale",
+            "colocation",
+            "data center",
+            "datacenter",
+            "hpc",
+            "gpu",
+            "critical power",
+            "compute campus",
+        ]
+    )
 
     ranked: list[dict] = []
     query_terms = {term for term in re.findall(r"[a-z0-9]+", lower_query) if len(term) > 2}
@@ -96,6 +135,39 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
         if wants_public and opp.get("source_type") != "manual":
             score += 10
             reasons.append(f"Source is categorized as {opp.get('source_type')}.")
+
+        if wants_ai_infra:
+            strong_ai_terms = {
+                "ai infrastructure",
+                "artificial intelligence",
+                "hyperscale",
+                "colocation",
+                "data center",
+                "datacenter",
+                "hpc",
+                "gpu",
+                "critical power",
+                "compute campus",
+            }
+            supporting_power_terms = {
+                "ups",
+                "switchgear",
+                "generator",
+                "substation",
+                "high voltage",
+                "medium voltage",
+                "utility interconnection",
+            }
+            strong_matches = sorted(term for term in strong_ai_terms if contains_term(haystack, term))
+            support_matches = sorted(term for term in supporting_power_terms if contains_term(haystack, term))
+            ai_matches = strong_matches + support_matches
+            if ai_matches:
+                if strong_matches:
+                    score += min(30, 10 + len(ai_matches) * 4)
+                    reasons.append(f"AI/data center infrastructure indicators: {', '.join(ai_matches[:5])}.")
+                elif len(support_matches) >= 2:
+                    score += min(14, len(support_matches) * 4)
+                    reasons.append(f"Power-infrastructure support terms: {', '.join(support_matches[:5])}.")
 
         specs = opp.get("extracted_specs") or {}
         scope_text = " ".join(specs.get("installation_scope", [])).lower()

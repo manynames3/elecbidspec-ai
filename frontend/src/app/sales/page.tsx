@@ -17,7 +17,7 @@ const sourceStats = [
   { value: "33", label: "미국 공공 발주 소스 추적" },
   { value: "$5M+", label: "우선 검토 인프라 프로젝트" },
   { value: "EHV", label: "HVDC, XLPE, 가공선, MV/LV 매칭" },
-  { value: "DOCX", label: "수주 검토 산출물 생성" },
+  { value: "DOCX/PDF", label: "수주 검토 산출물 생성" },
 ];
 
 const taihanFacts = [
@@ -302,7 +302,7 @@ export default function SalesPage() {
               <p>영업, 사업개발, 파트너팀이 제안 준비 가치를 검증하는 단계입니다.</p>
               <ul>
                 <li>대한전선 맞춤 회사 맥락</li>
-                <li>DOCX 제안 초안</li>
+                <li>DOCX/PDF 제안 초안</li>
                 <li>일일 저장 검색 알림</li>
               </ul>
             </article>

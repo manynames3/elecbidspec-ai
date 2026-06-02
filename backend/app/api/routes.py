@@ -62,6 +62,7 @@ from app.services.ingestion.defaults import (
 from app.services.ingestion.sam_gov import resolve_sam_api_key
 from app.services.proposal_cache import enhance_proposal, get_or_create_fast_proposal
 from app.services.proposal_docx import generate_proposal_docx
+from app.services.proposal_pdf import generate_proposal_pdf
 from app.services.search import search_opportunities
 from app.services.storage import store_upload
 from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
@@ -582,6 +583,27 @@ def download_proposal_docx(
         content,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{filename}-proposal.docx"'},
+    )
+
+
+@router.get("/opportunities/{opportunity_id}/proposal.pdf")
+def download_proposal_pdf(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> Response:
+    opportunity = db.get(Opportunity, opportunity_id)
+    if not opportunity:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    opportunity_data = opportunity_to_dict(opportunity)
+    profile = get_profile_data_for_user(db, current_user)
+    proposal = get_or_create_fast_proposal(db, opportunity, profile, request_tenant_id(current_user), opportunity_to_dict)
+    content = generate_proposal_pdf(opportunity_data, proposal, profile)
+    filename = "".join(char if char.isalnum() else "-" for char in opportunity.title.lower()).strip("-")[:80] or "proposal"
+    return Response(
+        content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}-proposal.pdf"'},
     )
 
 

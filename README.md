@@ -183,7 +183,7 @@ Proposal generation is split into two paths:
 - `GET /api/opportunities/{id}/proposal` returns a fast deterministic draft and caches it per tenant.
 - `POST /api/opportunities/{id}/proposal/enhance` requires login and calls Bedrock only on demand, then caches the enhanced proposal.
 
-DOCX downloads use the cached proposal package when available, so downloads do not trigger slow AI calls.
+DOCX and PDF downloads use the cached proposal package when available, so downloads do not trigger slow AI calls.
 
 The dashboard includes an alert digest panel backed by:
 
@@ -260,7 +260,7 @@ curl -X POST http://localhost:8000/api/ingestion/jobs \
   }'
 ```
 
-The MVP value filter uses posted or extracted values when available. If no value is posted, it marks high-scope projects as `likely` when indicators such as data center, substation, transmission, high voltage, transformers, switchgear, duct bank, and bonding language suggest the bid may meet the $5M+ threshold.
+The MVP value filter uses posted or extracted values when available. If no value is posted, it marks high-scope projects as `likely` when indicators such as data center, hyperscale, AI infrastructure, GPU/HPC compute, critical power, UPS, substation, transmission, high voltage, transformers, switchgear, duct bank, and bonding language suggest the bid may meet the $5M+ threshold.
 
 Available adapters:
 
@@ -340,7 +340,7 @@ BEDROCK_TEMPERATURE=0.2
 
 Claude Sonnet 4.6 uses a Bedrock inference profile ID here because direct on-demand invocation is not supported for this model in the current AWS account. AWS credentials are not stored in the app. `boto3` uses the normal AWS credential chain, such as environment variables, workload identity, or an instance/container role. If Bedrock is disabled or unavailable, the endpoint falls back to deterministic proposal generation.
 
-The seed profile is configured for Taihan Cable & Solution so proposal drafts are grounded in its cable and power infrastructure capability profile instead of a generic contractor profile.
+The seed profile is configured for Taihan Cable & Solution so proposal drafts are grounded in its cable and power infrastructure capability profile instead of a generic contractor profile. The seeded bonding capacity is user-configured profile context, not a public-source claim, and is currently set to `$600,000,000`.
 
 Proposal output includes:
 
@@ -354,6 +354,7 @@ Proposal output includes:
 - Bid/no-bid memo
 - Partner outreach email
 - Downloadable DOCX package from `GET /api/opportunities/{id}/proposal.docx`
+- Downloadable PDF package from `GET /api/opportunities/{id}/proposal.pdf`
 
 ## Key API Surfaces
 
@@ -361,7 +362,8 @@ Proposal output includes:
 - `POST /api/uploads` for manual PDF/text intake
 - `POST /api/search` for natural-language opportunity search
 - `GET /api/opportunities/{id}/proposal` for proposal-prep output
-- `GET /api/opportunities/{id}/proposal.docx` for downloadable proposal package
+- `GET /api/opportunities/{id}/proposal.docx` for downloadable DOCX proposal package
+- `GET /api/opportunities/{id}/proposal.pdf` for downloadable PDF proposal package
 - `GET/PUT /api/company-profile` for fit-scoring capabilities
 - `POST /api/auth/login`, `GET /api/auth/me`, and `POST /api/auth/logout` for pilot authentication
 - `POST /api/ingestion/jobs` for background ingestion, protected by `ADMIN_API_TOKEN`
