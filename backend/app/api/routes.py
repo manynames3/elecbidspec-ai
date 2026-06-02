@@ -282,12 +282,19 @@ def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[d
             return bool(settings.sam_gov_api_key or settings.sam_gov_api_key_secret_arn)
         return bool(getattr(settings, name, None))
 
+    def aware_datetime(value):
+        if value and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
+
     health = []
     for catalog in DEFAULT_SOURCE_CATALOG:
         source = catalog["source"]
         latest_job = jobs_by_label.get(source)
         count_row = counts_by_source.get(source)
         missing_setting = catalog.get("requires_setting")
+        latest_job_at = aware_datetime(latest_job.updated_at) if latest_job else None
+        recently_refreshed = bool(latest_job and latest_job.status == "complete" and latest_job_at and latest_job_at >= stale_cutoff)
         if missing_setting and not has_required_setting(str(missing_setting)):
             status = "missing_config"
         elif latest_job and latest_job.status == "failed" and (_is_portal_gated_error(latest_job.error) or catalog.get("portal_gated")):
@@ -304,10 +311,10 @@ def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[d
             status = "no_current_matches"
         elif not count_row or not count_row["count"]:
             status = "no_records"
+        elif recently_refreshed:
+            status = "healthy"
         else:
-            last_seen = count_row.get("last_seen_at")
-            if last_seen and last_seen.tzinfo is None:
-                last_seen = last_seen.replace(tzinfo=timezone.utc)
+            last_seen = aware_datetime(count_row.get("last_seen_at"))
             status = "stale" if last_seen and last_seen < stale_cutoff else "healthy"
 
         health.append(
