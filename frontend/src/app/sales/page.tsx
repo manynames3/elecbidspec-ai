@@ -100,7 +100,6 @@ export default function SalesPage() {
       <section className="sales-hero">
         <div className="sales-nav">
           <Link href="/sales" className="sales-brand" aria-label="ElecBidSpec AI 대한전선 소개 페이지">
-            <span className="sales-brand-mark" aria-hidden="true">EB</span>
             <span>ElecBidSpec AI | 대한전선</span>
           </Link>
           <nav aria-label="소개 페이지 내비게이션">

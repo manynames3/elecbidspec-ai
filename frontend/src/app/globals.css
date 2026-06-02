@@ -915,21 +915,6 @@ textarea {
   white-space: nowrap;
 }
 
-.sales-brand-mark {
-  display: inline-grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  flex: 0 0 auto;
-  border-radius: 8px;
-  color: #ffffff;
-  background: var(--sales-blue);
-  box-shadow: 8px 8px 0 rgba(9, 51, 137, 0.08);
-  font-family: "Geist Mono", Consolas, monospace;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .sales-nav nav {
   display: flex;
   align-items: center;
