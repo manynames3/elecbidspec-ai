@@ -62,3 +62,23 @@ def test_switchgear_alone_is_not_data_center_power():
     )
 
     assert result["project_type"] != "data_center_power"
+
+
+def test_hpc_concrete_is_not_high_performance_computing():
+    result = classify_bid(
+        "Bridge widening",
+        "Relevant bid items include CL C CONC (CAP)(HPC), conduit, and illumination fixtures.",
+        {"keywords": ["conduit", "hpc"], "required_materials": ["conduit"]},
+    )
+
+    assert result["project_type"] != "data_center_power"
+
+
+def test_hpc_compute_context_is_data_center_power():
+    result = classify_bid(
+        "HPC compute campus power upgrades",
+        "AI compute rooms require GPU racks, medium voltage feeders, and critical power systems.",
+        {"keywords": ["hpc", "gpu", "critical power"], "required_materials": []},
+    )
+
+    assert result["project_type"] == "data_center_power"

@@ -33,3 +33,9 @@ def test_extract_specs_does_not_treat_delivery_ups_as_power_equipment():
     specs = extract_specs("Bid packages may be sent by FedEx, UPS, USPS, or hand delivery.")
 
     assert "ups" not in specs["required_materials"]
+
+
+def test_extract_specs_does_not_treat_hpc_concrete_as_compute():
+    specs = extract_specs("Relevant bid items: CL C CONC (CAP)(HPC), CONDT PVC conduit, and illumination fixtures.")
+
+    assert "hpc" not in specs["keywords"]

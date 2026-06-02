@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import re
+import time
 from datetime import date, datetime, timedelta
 from functools import lru_cache
 from typing import Any
@@ -81,6 +83,12 @@ def resolve_sam_api_key(params: dict[str, Any] | None = None) -> str | None:
     return None
 
 
+def sanitize_sam_error(message: str) -> str:
+    message = re.sub(r"([?&]api_key=)[^&\s'\"]+", r"\1[REDACTED]", message)
+    message = re.sub(r"(SAM-[A-Za-z0-9-]+)", "[REDACTED]", message)
+    return message
+
+
 def normalize_sam_notice(notice: dict[str, Any]) -> dict[str, Any]:
     place = notice.get("placeOfPerformance") or {}
     state = _get_nested(place, ["state", "code"]) or _get_nested(place, ["state", "name"])
@@ -146,6 +154,7 @@ class SamGovAdapter(IngestionAdapter):
         source_limit = int(params.get("source_limit") or limit)
         keywords = [str(keyword).strip() for keyword in (params.get("keywords") or []) if str(keyword).strip()]
         require_keywords = bool(params.get("require_keywords", bool(keywords)))
+        query_pause_seconds = float(params.get("query_pause_seconds") or 0)
         records: list[dict[str, Any]] = []
         seen: set[str] = set()
         keyword_queries = [str(keyword).strip() for keyword in (params.get("keyword_queries") or []) if str(keyword).strip()]
@@ -162,10 +171,19 @@ class SamGovAdapter(IngestionAdapter):
         }
         base_request_params = {key: value for key, value in base_request_params.items() if value}
         with httpx.Client(timeout=30) as client:
-            for keyword_query in keyword_queries:
+            for index, keyword_query in enumerate(keyword_queries):
+                if query_pause_seconds and index > 0:
+                    time.sleep(query_pause_seconds)
                 request_params = {**base_request_params, "keyword": keyword_query}
                 response = client.get(settings.sam_gov_api_base_url, params=request_params)
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    if exc.response.status_code == 429:
+                        if records:
+                            return records
+                        raise RuntimeError("SAM.gov rate limit reached; retry this source later.") from exc
+                    raise RuntimeError(sanitize_sam_error(str(exc))) from exc
                 payload = response.json()
                 notices = payload.get("opportunitiesData") or payload.get("data") or []
                 for notice in notices:

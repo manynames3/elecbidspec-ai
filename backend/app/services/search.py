@@ -26,6 +26,16 @@ PROJECT_QUERY_MAP = {
 
 
 def contains_term(text: str, term: str) -> bool:
+    if term == "hpc":
+        return (
+            "high performance computing" in text
+            or re.search(
+                r"\bhpc\b(?=.{0,80}\b(ai|compute|computing|gpu|server|data center|datacenter|hyperscale)\b)|"
+                r"\b(ai|compute|computing|gpu|server|data center|datacenter|hyperscale)\b.{0,80}\bhpc\b",
+                text,
+            )
+            is not None
+        )
     if term == "ups":
         return (
             re.search(
@@ -136,6 +146,7 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
             score += 10
             reasons.append(f"Source is categorized as {opp.get('source_type')}.")
 
+        ai_relevance_confirmed = False
         if wants_ai_infra:
             strong_ai_terms = {
                 "ai infrastructure",
@@ -163,11 +174,15 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
             ai_matches = strong_matches + support_matches
             if ai_matches:
                 if strong_matches:
+                    ai_relevance_confirmed = True
                     score += min(30, 10 + len(ai_matches) * 4)
                     reasons.append(f"AI/data center infrastructure indicators: {', '.join(ai_matches[:5])}.")
                 elif len(support_matches) >= 2:
+                    ai_relevance_confirmed = True
                     score += min(14, len(support_matches) * 4)
                     reasons.append(f"Power-infrastructure support terms: {', '.join(support_matches[:5])}.")
+        if wants_ai_infra and opp.get("project_type") != "data_center_power" and not ai_relevance_confirmed:
+            continue
 
         specs = opp.get("extracted_specs") or {}
         scope_text = " ".join(specs.get("installation_scope", [])).lower()

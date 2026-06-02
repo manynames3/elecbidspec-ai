@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 
 from datetime import datetime, timedelta, timezone
@@ -18,6 +19,13 @@ from app.services.value_assessment import assess_value, infer_source_type, norma
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elecbidspec.worker")
+
+
+def sanitize_job_error(message: str) -> str:
+    redacted = re.sub(r"([?&](?:api_key|token|key|secret)=)[^&\s'\"]+", r"\1[REDACTED]", message, flags=re.IGNORECASE)
+    redacted = re.sub(r"(Bearer\s+)[A-Za-z0-9._~+/=-]+", r"\1[REDACTED]", redacted, flags=re.IGNORECASE)
+    redacted = re.sub(r"(SAM-[A-Za-z0-9-]+)", "[REDACTED]", redacted)
+    return redacted
 
 
 def _default_job_label(adapter: str, params: dict | None) -> str:
@@ -151,7 +159,7 @@ def run_once() -> bool:
         except Exception as exc:  # noqa: BLE001 - worker should persist job errors
             logger.exception("Ingestion job failed")
             job.status = "failed"
-            job.error = str(exc)
+            job.error = sanitize_job_error(str(exc))
             db.commit()
         return True
     finally:

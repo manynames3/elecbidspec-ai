@@ -80,6 +80,16 @@ def decimal_or_none(value: Any) -> Decimal | None:
 
 
 def contains_scope_term(text: str, term: str) -> bool:
+    if term == "hpc":
+        return (
+            "high performance computing" in text
+            or re.search(
+                r"\bhpc\b(?=.{0,80}\b(ai|compute|computing|gpu|server|data center|datacenter|hyperscale)\b)|"
+                r"\b(ai|compute|computing|gpu|server|data center|datacenter|hyperscale)\b.{0,80}\bhpc\b",
+                text,
+            )
+            is not None
+        )
     if term == "ups":
         return (
             re.search(

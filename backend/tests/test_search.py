@@ -10,12 +10,13 @@ def test_search_prioritizes_ai_data_center_infrastructure():
     opportunities = [
         {
             "id": 1,
-            "title": "Office lighting replacement",
+            "title": "Office lighting replacement over $20M",
             "description": "Replace fixtures.",
             "source_type": "state_local",
             "bid_status": "open",
             "project_type": "general_electrical",
             "fit_score": 70,
+            "estimated_value": 20_000_000,
             "extracted_specs": {"keywords": ["lighting"], "required_materials": []},
         },
         {
@@ -37,4 +38,5 @@ def test_search_prioritizes_ai_data_center_infrastructure():
     results = search_opportunities("show AI infrastructure data center opportunities over $10M", opportunities)
 
     assert results[0]["opportunity"]["id"] == 2
+    assert all(result["opportunity"]["id"] != 1 for result in results)
     assert "AI/data center infrastructure indicators" in results[0]["search_explanation"]
