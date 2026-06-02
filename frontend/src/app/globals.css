@@ -850,29 +850,28 @@ textarea {
 }
 
 .sales-page {
-  --sales-ink: #f0ede8;
-  --sales-muted: #a6a09a;
-  --sales-paper: #0a0a0f;
-  --sales-surface: rgba(19, 19, 26, 0.94);
-  --sales-surface-2: rgba(28, 28, 38, 0.92);
-  --sales-line: rgba(255, 255, 255, 0.1);
-  --sales-line-strong: rgba(212, 168, 67, 0.34);
-  --sales-gold: #d4a843;
-  --sales-green: #3ecf8e;
-  --sales-violet: #9a8bff;
-  --sales-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+  --sales-ink: #000000;
+  --sales-muted: #666666;
+  --sales-paper: #ffffff;
+  --sales-surface: #ffffff;
+  --sales-surface-2: #f4f5f7;
+  --sales-line: #d7d7d7;
+  --sales-line-strong: #093389;
+  --sales-blue: #093389;
+  --sales-red: #e30011;
+  --sales-charcoal: #303030;
+  --sales-shadow: 0 18px 45px rgba(0, 0, 0, 0.12);
   position: relative;
   min-width: 320px;
   min-height: 100vh;
   overflow: hidden;
   color: var(--sales-ink);
-  background:
-    radial-gradient(circle at 50% -12%, rgba(212, 168, 67, 0.14), transparent 34%),
-    radial-gradient(circle at 100% 100%, rgba(154, 139, 255, 0.08), transparent 28%),
-    linear-gradient(180deg, #0a0a0f 0%, #15110d 58%, #0a0a0f 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f4f5f7 46%, #ffffff 100%);
   font-family:
     "Noto Sans KR", Geist, "Apple SD Gothic Neo", "Malgun Gothic", ui-sans-serif, system-ui,
     -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  word-break: keep-all;
+  overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -881,7 +880,7 @@ textarea {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.44;
+  opacity: 0.08;
   content: "";
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.045'/%3E%3C/svg%3E");
 }
@@ -902,7 +901,7 @@ textarea {
   gap: 24px;
   padding: 12px max(24px, calc((100vw - 1180px) / 2));
   border-bottom: 1px solid var(--sales-line);
-  background: rgba(10, 10, 15, 0.76);
+  background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(22px);
 }
 
@@ -923,9 +922,9 @@ textarea {
   place-items: center;
   flex: 0 0 auto;
   border-radius: 8px;
-  color: #0a0a0f;
-  background: linear-gradient(135deg, #f0c95c, #c08b2e);
-  box-shadow: 0 0 24px rgba(212, 168, 67, 0.24);
+  color: #ffffff;
+  background: var(--sales-blue);
+  box-shadow: 8px 8px 0 rgba(9, 51, 137, 0.08);
   font-family: "Geist Mono", Consolas, monospace;
   font-size: 12px;
   font-weight: 700;
@@ -936,7 +935,7 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 30px;
-  color: rgba(240, 237, 232, 0.72);
+  color: var(--sales-charcoal);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -944,7 +943,7 @@ textarea {
 
 .sales-nav nav a:hover,
 .sales-nav nav a:focus-visible {
-  color: var(--sales-ink);
+  color: var(--sales-blue);
 }
 
 .sales-primary,
@@ -968,15 +967,15 @@ textarea {
 }
 
 .sales-primary {
-  color: #0a0a0f;
-  background: linear-gradient(135deg, #efc755, #d4a843);
-  box-shadow: 0 0 30px rgba(212, 168, 67, 0.2);
+  color: #ffffff;
+  background: var(--sales-blue);
+  box-shadow: 0 16px 30px rgba(9, 51, 137, 0.18);
 }
 
 .sales-secondary {
-  color: var(--sales-ink);
-  border-color: rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--sales-blue);
+  border-color: var(--sales-line);
+  background: #ffffff;
 }
 
 .sales-primary:hover,
@@ -992,6 +991,9 @@ textarea {
   min-height: 615px;
   overflow: hidden;
   border-bottom: 1px solid var(--sales-line);
+  background:
+    linear-gradient(90deg, rgba(9, 51, 137, 0.08) 0, rgba(9, 51, 137, 0) 34%),
+    #ffffff;
 }
 
 .sales-hero::before {
@@ -1001,8 +1003,8 @@ textarea {
   pointer-events: none;
   content: "";
   background:
-    radial-gradient(circle at 10% 12%, rgba(212, 168, 67, 0.12), transparent 34%),
-    linear-gradient(90deg, rgba(10, 10, 15, 0.98) 0%, rgba(19, 15, 11, 0.9) 44%, rgba(10, 10, 15, 0.35) 100%);
+    linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.94) 45%, rgba(255, 255, 255, 0.42) 100%),
+    linear-gradient(180deg, rgba(244, 245, 247, 0.72), rgba(255, 255, 255, 0));
 }
 
 .sales-hero-visual {
@@ -1011,15 +1013,15 @@ textarea {
   right: max(20px, calc((100vw - 1180px) / 2));
   width: min(56vw, 650px);
   max-width: 650px;
-  opacity: 0.96;
-  filter: drop-shadow(0 30px 45px rgba(0, 0, 0, 0.38));
+  opacity: 1;
+  filter: drop-shadow(0 28px 38px rgba(9, 51, 137, 0.16));
 }
 
 .sales-hero-overlay {
   position: absolute;
   inset: auto 0 0;
   height: 150px;
-  background: linear-gradient(0deg, rgba(10, 10, 15, 0.92), transparent);
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0.94), transparent);
 }
 
 .sales-hero-content {
@@ -1040,22 +1042,22 @@ textarea {
   align-items: center;
   gap: 8px;
   margin: 0 0 18px;
-  border: 1px solid rgba(212, 168, 67, 0.26);
+  border: 1px solid rgba(9, 51, 137, 0.18);
   border-radius: 999px;
   padding: 7px 14px;
-  color: var(--sales-gold);
-  background: rgba(212, 168, 67, 0.1);
+  color: var(--sales-blue);
+  background: #f4f5f7;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
+  line-height: 1.35;
 }
 
 .sales-kicker::before {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--sales-gold);
-  box-shadow: 0 0 14px rgba(212, 168, 67, 0.55);
+  background: var(--sales-red);
+  box-shadow: 0 0 0 4px rgba(227, 0, 17, 0.1);
   content: "";
 }
 
@@ -1065,21 +1067,23 @@ textarea {
   max-width: 760px;
   margin: 0;
   color: var(--sales-ink);
-  font-family: "Noto Serif KR", "Instrument Serif", Georgia, serif;
-  font-weight: 600;
+  font-family:
+    "Noto Sans KR", Geist, "Apple SD Gothic Neo", "Malgun Gothic", ui-sans-serif, system-ui,
+    sans-serif;
+  font-weight: 800;
   letter-spacing: 0;
-  line-height: 0.98;
+  line-height: 1.08;
 }
 
 .sales-hero h1 {
   max-width: 620px;
-  font-size: 66px;
+  font-size: 58px;
 }
 
 .sales-hero h1 em,
 .sales-lineage h2 em,
 .sales-cta-content h2 em {
-  color: var(--sales-gold);
+  color: var(--sales-red);
   font-style: italic;
 }
 
@@ -1096,7 +1100,7 @@ textarea {
 .sales-hero-copy {
   max-width: 620px;
   margin: 28px 0 0;
-  color: var(--sales-muted);
+  color: var(--sales-charcoal);
   font-size: 19px;
   font-weight: 300;
   line-height: 1.55;
@@ -1115,7 +1119,7 @@ textarea {
   flex-wrap: wrap;
   gap: 0;
   margin: 28px 0 0;
-  color: rgba(240, 237, 232, 0.68);
+  color: var(--sales-muted);
 }
 
 .sales-hero-stats div {
@@ -1123,7 +1127,7 @@ textarea {
   align-items: baseline;
   gap: 8px;
   padding: 0 18px;
-  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  border-right: 1px solid var(--sales-line);
 }
 
 .sales-hero-stats div:first-child {
@@ -1136,14 +1140,14 @@ textarea {
 
 .sales-hero-stats dt {
   margin: 0;
-  color: var(--sales-gold);
+  color: var(--sales-blue);
   font-size: 15px;
   font-weight: 700;
 }
 
 .sales-hero-stats dd {
   margin: 0;
-  color: rgba(240, 237, 232, 0.62);
+  color: var(--sales-muted);
   font-size: 14px;
 }
 
@@ -1186,9 +1190,7 @@ textarea {
 
 .sales-muted-band {
   border-block: 1px solid var(--sales-line);
-  background:
-    radial-gradient(circle at top left, rgba(212, 168, 67, 0.08), transparent 42%),
-    rgba(19, 19, 26, 0.44);
+  background: #f4f5f7;
 }
 
 .sales-section-heading {
@@ -1226,14 +1228,11 @@ textarea {
   border: 1px solid var(--sales-line);
   border-radius: 8px;
   background: var(--sales-surface);
-  background-image: radial-gradient(circle at top left, rgba(212, 168, 67, 0.08), transparent 55%);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.06);
 }
 
 .sales-source-band {
-  background:
-    linear-gradient(180deg, rgba(10, 10, 15, 0), rgba(212, 168, 67, 0.03)),
-    rgba(10, 10, 15, 0.36);
+  background: #ffffff;
 }
 
 .sales-fact-grid {
@@ -1255,14 +1254,16 @@ textarea {
 .sales-fact-card:focus-visible {
   transform: translateY(-2px);
   border-color: var(--sales-line-strong);
-  background-color: rgba(28, 28, 38, 0.98);
+  background-color: #f4f5f7;
 }
 
 .sales-fact-card strong {
-  color: var(--sales-gold);
-  font-family: "Noto Serif KR", "Instrument Serif", Georgia, serif;
+  color: var(--sales-blue);
+  font-family:
+    "Noto Sans KR", Geist, "Apple SD Gothic Neo", "Malgun Gothic", ui-sans-serif, system-ui,
+    sans-serif;
   font-size: 46px;
-  font-weight: 400;
+  font-weight: 800;
   line-height: 0.98;
 }
 
@@ -1280,10 +1281,12 @@ textarea {
 
 .sales-stat strong {
   display: block;
-  color: var(--sales-ink);
-  font-family: "Noto Serif KR", "Instrument Serif", Georgia, serif;
+  color: var(--sales-blue);
+  font-family:
+    "Noto Sans KR", Geist, "Apple SD Gothic Neo", "Malgun Gothic", ui-sans-serif, system-ui,
+    sans-serif;
   font-size: 52px;
-  font-weight: 400;
+  font-weight: 800;
   line-height: 0.95;
 }
 
@@ -1306,7 +1309,7 @@ textarea {
 }
 
 .sales-workflow-card svg {
-  color: var(--sales-gold);
+  color: var(--sales-blue);
 }
 
 .sales-workflow-card h3,
@@ -1369,8 +1372,8 @@ textarea {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--sales-gold);
-  box-shadow: 0 0 18px rgba(212, 168, 67, 0.22);
+  background: var(--sales-red);
+  box-shadow: 0 0 0 4px rgba(227, 0, 17, 0.08);
   content: "";
 }
 
@@ -1379,7 +1382,7 @@ textarea {
   overflow: hidden;
   border: 1px solid var(--sales-line);
   border-radius: 8px;
-  background: rgba(10, 10, 15, 0.9);
+  background: #ffffff;
   box-shadow: var(--sales-shadow);
 }
 
@@ -1388,7 +1391,7 @@ textarea {
   gap: 8px;
   padding: 10px;
   border-bottom: 1px solid var(--sales-line);
-  background: rgba(28, 28, 38, 0.78);
+  background: #f4f5f7;
 }
 
 .sales-tabs span {
@@ -1398,15 +1401,15 @@ textarea {
   border: 1px solid transparent;
   border-radius: 8px;
   padding: 0 14px;
-  color: rgba(240, 237, 232, 0.68);
+  color: var(--sales-charcoal);
   font-size: 13px;
   font-weight: 700;
 }
 
 .sales-tabs span:first-child {
-  color: #0a0a0f;
-  border-color: rgba(212, 168, 67, 0.35);
-  background: var(--sales-gold);
+  color: #ffffff;
+  border-color: var(--sales-blue);
+  background: var(--sales-blue);
 }
 
 .sales-code-block {
@@ -1414,7 +1417,7 @@ textarea {
   margin: 0;
   overflow-x: auto;
   padding: 26px;
-  color: var(--sales-ink);
+  color: #303030;
   font-family: "Geist Mono", Consolas, monospace;
   font-size: 14px;
   line-height: 1.7;
@@ -1428,7 +1431,7 @@ textarea {
 
 .sales-plan.featured {
   border-color: var(--sales-line-strong);
-  box-shadow: 0 0 36px rgba(212, 168, 67, 0.16);
+  box-shadow: 0 24px 46px rgba(9, 51, 137, 0.12);
 }
 
 .sales-plan h3 {
@@ -1443,16 +1446,24 @@ textarea {
 .sales-cta-band {
   padding: 70px 0;
   border-block: 1px solid var(--sales-line);
-  color: var(--sales-ink);
-  background:
-    radial-gradient(circle at top left, rgba(212, 168, 67, 0.12), transparent 38%),
-    rgba(10, 10, 15, 0.72);
+  color: #ffffff;
+  background: #093389;
 }
 
 .sales-cta-content {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 34px;
   align-items: center;
+}
+
+.sales-cta-band .sales-kicker {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.sales-cta-band .sales-cta-content h2 {
+  color: #ffffff;
 }
 
 .sales-cta-actions {
@@ -1462,14 +1473,24 @@ textarea {
   justify-content: flex-end;
 }
 
+.sales-cta-band .sales-primary {
+  background: var(--sales-red);
+  box-shadow: none;
+}
+
+.sales-cta-band .sales-secondary {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: #ffffff;
+}
+
 .sales-footer {
   display: flex;
   justify-content: space-between;
   gap: 24px;
   padding: 28px max(20px, calc((100vw - 1180px) / 2));
   border-top: 1px solid var(--sales-line);
-  color: rgba(240, 237, 232, 0.56);
-  background: rgba(10, 10, 15, 0.66);
+  color: rgba(255, 255, 255, 0.72);
+  background: #000000;
   font-size: 14px;
   font-weight: 500;
 }
@@ -1526,12 +1547,14 @@ textarea {
   }
 
   .sales-hero h1 {
-    font-size: 38px;
+    font-size: 32px;
+    line-height: 1.14;
   }
 
   .sales-lineage h2,
   .sales-cta-content h2 {
-    font-size: 42px;
+    font-size: 34px;
+    line-height: 1.18;
   }
 
   .sales-section-heading h2,

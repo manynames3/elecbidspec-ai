@@ -8,16 +8,16 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "대한전선 미국 공공입찰 인텔리전스 | ElecBidSpec AI",
+  title: "대한전선 미국 공공 인프라 입찰 인텔리전스 | ElecBidSpec AI",
   description:
     "대한전선의 전력 케이블, EHV, HVDC, 가공선, 배전, 해저케이블 역량에 맞춰 미국 공공입찰을 찾고 제안 준비까지 연결하는 AI 워크스페이스.",
 };
 
 const sourceStats = [
   { value: "33", label: "미국 공공 발주 소스 추적" },
-  { value: "$5M+", label: "우선 검토 인프라 입찰 기준" },
-  { value: "EHV", label: "HVDC, XLPE, 가공선, MV/LV 적합도" },
-  { value: "DOCX", label: "제안서 산출물 생성" },
+  { value: "$5M+", label: "우선 검토 인프라 프로젝트" },
+  { value: "EHV", label: "HVDC, XLPE, 가공선, MV/LV 매칭" },
+  { value: "DOCX", label: "수주 검토 산출물 생성" },
 ];
 
 const taihanFacts = [
@@ -44,7 +44,7 @@ const taihanFacts = [
 ];
 
 const outcomes = [
-  "연방·주정부·전력회사·교통국·공항·데이터센터·재생에너지·공공기관 공고를 한 화면에서 추적합니다.",
+  "연방·주정부·전력회사·교통국·공항·데이터센터·재생에너지·공공기관 공고를 하나의 기준으로 연결합니다.",
   "EHV, HVDC, 가공선, MV/LV 배전, 해저·해상풍력, 접속재, 변전소, 시공 파트너 필요 여부를 구매 잡음에서 분리합니다.",
   "유망 공고를 대한전선 관점의 입찰/비입찰 판단 메모, 컴플라이언스 매트릭스, 누락정보 체크리스트, 파트너 이메일, 경영진 요약으로 전환합니다.",
 ];
@@ -53,17 +53,17 @@ const workflow = [
   {
     icon: Radar,
     title: "미국 공공 수요 상시 감시",
-    copy: "SAM.gov 연동을 준비하고, 주정부·전력회사·교통국·공항·교통기관·도시·공공기관·Bonfire형 포털을 소스별 어댑터로 추적합니다.",
+    copy: "SAM.gov 연동을 준비하고, 주정부·전력회사·교통국·공항·교통기관·도시·공공기관·Bonfire형 포털을 소스별로 연결합니다.",
   },
   {
     icon: Search,
     title: "대한전선 역량 기준 우선순위화",
-    copy: "지역, 예상 규모, 케이블 유형, 지중·가공·변전소 범위, 설치 파트너 필요 여부를 기준으로 적합도를 산정합니다.",
+    copy: "지역, 예상 규모, 케이블 유형, 지중·가공·변전소 범위, 설치 파트너 필요 여부를 대한전선 역량 기준으로 정렬합니다.",
   },
   {
     icon: FileText,
     title: "제안 준비 패키지 생성",
-    copy: "각 공고를 범위 체크리스트, 리스크 요약, 컴플라이언스 매트릭스, 경영진 요약, 파트너 접촉 이메일로 정리합니다.",
+    copy: "각 공고를 범위 체크리스트, 리스크 요약, 컴플라이언스 매트릭스, 경영진 요약, 파트너 접촉 이메일로 전환합니다.",
   },
 ];
 
@@ -119,10 +119,10 @@ export default function SalesPage() {
         <div className="sales-hero-overlay" aria-hidden="true"></div>
 
         <div className="sales-hero-content">
-          <p className="sales-kicker">대한전선의 미국 공공 인프라 수주를 위한 AI 워크스페이스</p>
-          <h1>대한전선 미국 공공입찰 인텔리전스</h1>
+          <p className="sales-kicker">미래를 연결하는 기술, 미국 공공입찰까지</p>
+          <h1>대한전선의 미국 공공 인프라 수주를 더 빠르고 정확하게.</h1>
           <p className="sales-hero-copy">
-            연방·주정부·전력회사·교통·공항·데이터센터 발주 공고를 수집하고, EHV/HVDC·가공선·배전·해저케이블 역량에 맞춰 선별해 제안 준비까지 이어주는 파일럿 워크스페이스입니다.
+            전력과 정보를 잇는 대한전선의 글로벌 역량을 미국 공공 발주 데이터에 연결합니다. EHV/HVDC·가공선·배전·해저케이블 기회를 선별하고, 수주 검토와 제안 준비까지 한 흐름으로 정리합니다.
           </p>
           <div className="sales-actions">
             <Link href="/" className="sales-primary">
@@ -153,9 +153,9 @@ export default function SalesPage() {
       <section className="sales-lineage sales-section-pad">
         <div className="sales-section-inner sales-two-column">
           <p className="sales-kicker">대한전선 맞춤 포지셔닝</p>
-          <h2>제품 나열이 아니라, 수주 가능성을 읽는 화면.</h2>
+          <h2>기술과 품질의 언어로, 미국 입찰을 선별합니다.</h2>
           <p>
-            대한전선의 경쟁력은 단순 케이블 공급에 머물지 않습니다. 전력 인프라, 토털 케이블 솔루션, EHV/HVDC 시스템, 가공선·배전 제품, 해저케이블 실행 역량까지 이어집니다. 이 파일럿은 그 역량을 미국 공공입찰 선별 기준으로 바꿉니다.
+            대한전선의 경쟁력은 단순 케이블 공급에 머물지 않습니다. 전력 인프라, 토털 케이블 솔루션, EHV/HVDC 시스템, 가공선·배전 제품, 해저케이블 실행 역량까지 이어집니다. 이 파일럿은 그 역량을 미국 공공입찰을 읽는 기준으로 바꿉니다.
           </p>
         </div>
       </section>
@@ -164,7 +164,7 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading">
             <p className="sales-kicker">역량 기준</p>
-            <h2>대한전선이 이미 증명한 영역을 기준으로 기회를 선별합니다.</h2>
+            <h2>대한전선이 이미 증명한 기술 영역을 기준으로 기회를 선별합니다.</h2>
             <p>
               제안 보조 기능은 대한전선의 공개 역량 프로필을 바탕으로 전력 송배전, EHV/HVDC, 가공선, MV/LV 배전, 케이블 접속재, 해상풍력, 해저케이블, 글로벌 납품 경험을 문맥으로 사용합니다.
             </p>
@@ -184,9 +184,9 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading">
             <p className="sales-kicker">미국 시장 실시간 리드</p>
-            <h2>전국 공공입찰을 대한전선 관점의 케이블·전력망 범위로 필터링합니다.</h2>
+            <h2>전국 공공입찰을 대한전선 관점의 전력망 기회로 정렬합니다.</h2>
             <p>
-              이 제품은 커버리지의 빈틈을 숨기지 않습니다. 어떤 소스가 정상 동작하는지, 어떤 포털은 접근 개선이 필요한지, 어디에는 매칭 공고가 없는지, 다음 어댑터를 어디에 투자해야 하는지까지 보여줍니다.
+              커버리지의 빈틈도 투명하게 보여줍니다. 정상 소스, 포털 제한, 매칭 없음, 설정 필요 상태를 분리해 어느 시장을 더 깊게 연결해야 하는지 판단할 수 있습니다.
             </p>
           </div>
           <div className="sales-stat-grid">
@@ -228,9 +228,9 @@ export default function SalesPage() {
         <div className="sales-section-inner sales-code-layout">
           <div className="sales-code-copy">
             <p className="sales-kicker">대한전선이 바로 체감할 가치</p>
-            <h2>포털을 뒤지는 시간을 줄이고, 검토할 만한 미국 파이프라인만 남깁니다.</h2>
+            <h2>포털 검색 시간을 줄이고, 검토할 만한 미국 파이프라인만 남깁니다.</h2>
             <p>
-              대한전선의 영업·사업개발팀은 첫 사용부터 우선순위가 매겨진 미국 공공입찰, 각 공고가 중요한 이유, 소스 헬스, 저장 검색, 파트너·EPC·유통사·내부 검토자에게 넘길 수 있는 제안 자료를 확인할 수 있습니다.
+              대한전선의 영업·사업개발팀은 첫 사용부터 우선순위가 매겨진 미국 공공입찰, 각 공고가 중요한 이유, 소스 상태, 저장 검색, 파트너·EPC·유통사·내부 검토자에게 넘길 수 있는 제안 자료를 확인할 수 있습니다.
             </p>
             <ul className="sales-feature-list">
               {outcomes.map((item) => (
@@ -265,7 +265,7 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading compact">
             <p className="sales-kicker">파일럿 플랫폼</p>
-            <h2>대한전선 미국 시장 파일럿에 필요한 것부터 단단하게.</h2>
+            <h2>대한전선 미국 시장 파일럿에 필요한 것부터 검증 가능하게.</h2>
           </div>
           <div className="sales-platform-grid">
             {proof.map((item) => (
@@ -282,7 +282,7 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading">
             <p className="sales-kicker">파일럿 구성</p>
-            <h2>미국 입찰 레이더에서 실제 수주 운영으로 가는 현실적인 경로.</h2>
+            <h2>미국 입찰 레이더에서 실제 수주 운영으로 이어지는 현실적인 경로.</h2>
             <p>
               낮은 운영비의 미국 공공입찰 파일럿으로 시작하고, 사용 가치가 확인되는 순서대로 심화 소스 어댑터, 전용 사용자 계정, 관리형 제안 워크플로를 확장합니다.
             </p>
@@ -323,7 +323,7 @@ export default function SalesPage() {
         <div className="sales-section-inner sales-cta-content">
           <div>
             <p className="sales-kicker">대한전선 검토용</p>
-            <h2>일반 SaaS 데모가 아니라, 바로 눌러볼 수 있는 미국 수주 워크스페이스.</h2>
+            <h2>일반 SaaS 데모가 아니라, 대한전선 기준으로 검증 가능한 미국 수주 워크스페이스.</h2>
           </div>
           <div className="sales-cta-actions">
             <Link href="/" className="sales-primary">
