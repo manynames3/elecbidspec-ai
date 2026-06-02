@@ -36,7 +36,7 @@ const workflow = [
   {
     icon: Radar,
     title: "Monitor the right public sources",
-    copy: "Track official federal, state, utility, education, transit, airport, and municipal bid sources from one workspace instead of checking portals by hand.",
+    copy: "Track fragmented federal, state, utility, education, transit, airport, and municipal bid sources from one workspace instead of checking portals by hand.",
   },
   {
     icon: Search,
@@ -137,7 +137,7 @@ export default function SalesPage() {
           <p className="sales-kicker">Public bid intelligence for electrical work</p>
           <h1>Your next big electrical contract is already posted. Find it first.</h1>
           <p className="sales-hero-copy">
-            ElecBidSpec AI monitors official public bid sources nationwide, filters for high-value electrical infrastructure work, scores each bid against your capabilities, and prepares the proposal package before your team starts reading.
+            ElecBidSpec AI monitors fragmented public bid sources nationwide, filters for high-value electrical infrastructure work, scores each bid against your capabilities, and prepares the proposal package before your team starts reading.
           </p>
           <div className="sales-actions">
             <Link href="/" className="sales-primary">
@@ -175,7 +175,7 @@ export default function SalesPage() {
             <p className="sales-kicker">Nationwide opportunity radar</p>
             <h2>One workspace for high-value public electrical opportunities.</h2>
             <p>
-              ElecBidSpec AI tracks the sources that matter for public infrastructure: federal opportunities, state DOTs, utilities, public power, transit, airport authorities, universities, schools, cities, and county procurement sites.
+              ElecBidSpec AI tracks the fragmented sources that matter for public infrastructure: federal opportunities, state DOTs, utilities, public power, transit, airport authorities, universities, schools, cities, and county procurement sites.
             </p>
           </div>
           <div className="sales-stat-grid">

@@ -6,6 +6,8 @@ The app works without live SAM.gov access: Docker startup runs migrations, loads
 
 The default dashboard view is tuned for open public electrical opportunities that are confirmed or likely to meet a $5M+ target. Records carry source type, bid status, value confidence, and a short value explanation so SAM.gov can be one source instead of the whole strategy.
 
+The core product problem is fragmented public bid data. Electrical, data-center power, utility replacement, DOT, school, airport, transit, and municipal infrastructure opportunities are spread across dozens of official portals, many with inconsistent titles, tables, PDFs, source links, and value signals. ElecBidSpec AI turns that scattered public layer into a source-aware pursuit workspace.
+
 The nationwide source monitor distinguishes healthy feeds, no-record feeds, missing API keys, and browser-gated portals. Browser-gated means the public portal is reachable for humans but blocks server-side monitoring with a browser challenge, captcha, supplier-system front door, or similar session requirement.
 
 ## Stack
@@ -199,6 +201,8 @@ For attachment intelligence, `POST /api/opportunities/{id}/attachments/ingest` f
 ## Public Bid Sources
 
 SAM.gov is optional. The backend now treats SAM.gov as one source in a nationwide source registry, not as the whole product. Default no-key sources include:
+
+This registry is designed around fragmented public data sources rather than a single bid board. Each adapter normalizes a different official source shape, such as open-data APIs, public JSON feeds, bid-item tables, agency procurement pages, Bonfire portals, and source-specific public bid pages. That lets the product surface electrical opportunities that employees could technically find by hand, but are unlikely to monitor consistently across many agencies and formats.
 
 - `txdot_bid_items` for Texas DOT official bid item projects with electrical, lighting, conduit, cable, fiber, signal, and related scope
 - `pa_emarketplace` for Pennsylvania eMarketplace open solicitations
