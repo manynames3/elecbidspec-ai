@@ -2,190 +2,180 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
+  Bell,
+  Building2,
+  Cable,
+  ClipboardCheck,
   FileText,
+  Mail,
   Radar,
   Search,
+  ShieldCheck,
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "대한전선 미국 공공 인프라 입찰 인텔리전스 | ElecBidSpec AI",
+  title: "ElecBidSpec AI | Public bid intelligence for electrical contractors",
   description:
-    "대한전선의 전력 케이블, EHV, HVDC, 가공선, 배전, 해저케이블 역량에 맞춰 미국 공공입찰을 찾고 제안 준비까지 연결하는 AI 워크스페이스.",
+    "A sales-ready bid intelligence and proposal-prep workspace for electrical contractors, GCs, and cable suppliers chasing $5M+ public infrastructure work.",
 };
 
+const heroStats = [
+  { value: "33", label: "official sources tracked" },
+  { value: "$5M+", label: "priority opportunity threshold" },
+  { value: "85+", label: "strong-fit bid signal" },
+];
+
 const sourceStats = [
-  { value: "33", label: "미국 공공 발주 소스 추적" },
-  { value: "$5M+", label: "우선 검토 인프라 프로젝트" },
-  { value: "EHV", label: "HVDC, XLPE, 가공선, MV/LV 매칭" },
-  { value: "DOCX/PDF", label: "수주 검토 산출물 생성" },
-];
-
-const taihanFacts = [
-  {
-    value: "1941",
-    label: "대한민국 최초 전선기업",
-    href: "https://www.taihan.com/en/company/overview",
-  },
-  {
-    value: "100+",
-    label: "100개국 이상 진출한 글로벌 네트워크",
-    href: "https://www.taihan.com/en/company/overview",
-  },
-  {
-    value: "EHV/HVDC",
-    label: "송전 케이블 및 접속재 포트폴리오",
-    href: "https://www.taihan.com/en/business/product/electricity",
-  },
-  {
-    value: "CLV",
-    label: "해저케이블 및 해상풍력 밸류체인",
-    href: "https://www.taihan.com/en/business/solutionDetail?idx=10",
-  },
-];
-
-const outcomes = [
-  "연방·주정부·전력회사·교통국·공항·데이터센터·재생에너지·공공기관 공고를 하나의 기준으로 연결합니다.",
-  "EHV, HVDC, 가공선, MV/LV 배전, 해저·해상풍력, 접속재, 변전소, 시공 파트너 필요 여부를 구매 잡음에서 분리합니다.",
-  "유망 공고를 대한전선 관점의 입찰/비입찰 판단 메모, 컴플라이언스 매트릭스, 누락정보 체크리스트, 파트너 이메일, 경영진 요약으로 전환합니다.",
+  { value: "Federal", label: "SAM.gov and public federal opportunities" },
+  { value: "State DOT", label: "transportation infrastructure and bid-item feeds" },
+  { value: "Utilities", label: "public power, energy, water, and authority sources" },
+  { value: "Local", label: "cities, schools, airports, transit, and universities" },
 ];
 
 const workflow = [
   {
     icon: Radar,
-    title: "미국 공공 수요 상시 감시",
-    copy: "SAM.gov 연동을 준비하고, 주정부·전력회사·교통국·공항·교통기관·도시·공공기관·Bonfire형 포털을 소스별로 연결합니다.",
+    title: "Monitor the right public sources",
+    copy: "Track official federal, state, utility, education, transit, airport, and municipal bid sources from one workspace instead of checking portals by hand.",
   },
   {
     icon: Search,
-    title: "대한전선 역량 기준 우선순위화",
-    copy: "지역, 예상 규모, 케이블 유형, 지중·가공·변전소 범위, 설치 파트너 필요 여부를 대한전선 역량 기준으로 정렬합니다.",
+    title: "Find the jobs that match your edge",
+    copy: "Search in plain English for conduit, underground, pole line, substation, data center, emergency repair, and cable-supply opportunities.",
   },
   {
-    icon: FileText,
-    title: "제안 준비 패키지 생성",
-    copy: "각 공고를 범위 체크리스트, 리스크 요약, 컴플라이언스 매트릭스, 경영진 요약, 파트너 접촉 이메일로 전환합니다.",
+    icon: ClipboardCheck,
+    title: "Move straight into bid prep",
+    copy: "Turn each posting into a bid summary, scope checklist, missing-info list, required-document checklist, risk flags, and partner email.",
   },
 ];
 
-const proof = [
+const outcomes = [
+  "Stop losing hours to portal hopping, PDF skimming, and low-value public notices.",
+  "Prioritize bids by fit score, geography, project type, deadline, source, and likely value.",
+  "Spot cable supply plus installation opportunities before competitors build the same shortlist.",
+  "Create DOCX and PDF proposal prep outputs your estimating, BD, and partner teams can act on.",
+];
+
+const platform = [
   {
-    title: "EHV/HVDC 케이블 범위 감지",
-    copy: "초고압 송전 계통 공고를 일반 전기공사와 분리해 우선 검토 대상으로 올립니다.",
+    icon: Building2,
+    title: "Contractor and GC fit scoring",
+    copy: "Score opportunities against states served, bonding capacity, cable types, installation capabilities, labor model, and project history.",
   },
   {
-    title: "가공선·배전·변전소 키워드 추출",
-    copy: "발주서 문장 안의 자재, 접속재, 관로, 변압기, 변전소 범위를 빠르게 구조화합니다.",
+    icon: Cable,
+    title: "Electrical scope extraction",
+    copy: "Extract underground cable, overhead line, distribution, transmission, conduit, trenching, transformer, substation, fiber, and repair terms.",
   },
   {
-    title: "해저케이블·해상풍력 신호 식별",
-    copy: "항만, 해상풍력, 해저 전력망 발주 언어를 별도 기회 신호로 표시합니다.",
+    icon: ShieldCheck,
+    title: "Bid-readiness guardrails",
+    copy: "Surface due dates, bonding and insurance language, submission instructions, missing attachments, and risk flags.",
   },
   {
-    title: "시공 파트너·EPC 접촉 초안",
-    copy: "공급 단독인지, 설치·EPC 협력이 필요한지 판단하고 바로 보낼 이메일을 준비합니다.",
+    icon: Bell,
+    title: "Saved searches and alerts",
+    copy: "Save high-fit searches and generate daily digests for open opportunities, due-soon work, and source updates.",
   },
   {
-    title: "소스 헬스와 포털 접근 상태",
-    copy: "정상 소스, 포털 제한, 매칭 없음, 설정 필요 상태를 나눠 커버리지 신뢰도를 보입니다.",
+    icon: FileText,
+    title: "Proposal artifacts",
+    copy: "Generate executive summaries, compliance matrices, bid/no-bid memos, checklist packages, DOCX drafts, and PDF exports.",
   },
   {
-    title: "대한전선 맞춤 제안 문구",
-    copy: "회사 프로필의 강점을 경영진 요약과 제안 체크리스트에 자연스럽게 반영합니다.",
+    icon: Mail,
+    title: "Partner outreach",
+    copy: "Draft emails to installer, supplier, EPC, and joint-venture partners with the bid context already included.",
+  },
+];
+
+const pilotPlans = [
+  {
+    title: "Free beta access",
+    copy: "Use the live workspace to test real public-bid discovery and proposal prep without a credit card.",
+    items: ["Nationwide source dashboard", "Manual RFP upload", "Fit scoring and filters"],
+  },
+  {
+    title: "Paid pilot",
+    copy: "A focused pilot for a BD or estimating team that needs higher-confidence coverage and repeatable proposal prep.",
+    items: ["Saved searches and daily digests", "DOCX/PDF proposal outputs", "Company-specific capability profile"],
+    featured: true,
+  },
+  {
+    title: "Coverage expansion",
+    copy: "Add priority portals and agency-specific adapters around your region, trade focus, and customer list.",
+    items: ["State and local source adapters", "Attachment ingestion improvements", "Role-based access controls"],
   },
 ];
 
 export default function SalesPage() {
   return (
-    <main className="sales-page" lang="ko">
+    <main className="sales-page product-sales-page" lang="en">
       <section className="sales-hero">
         <div className="sales-nav">
-          <Link href="/sales" className="sales-brand" aria-label="ElecBidSpec AI 대한전선 소개 페이지">
-            <span>ElecBidSpec AI | 대한전선</span>
+          <Link href="/sales" className="sales-brand" aria-label="ElecBidSpec AI sales page">
+            <span>ElecBidSpec AI</span>
           </Link>
-          <nav aria-label="소개 페이지 내비게이션">
-            <a href="#coverage">커버리지</a>
-            <a href="#workflow">워크플로</a>
-            <a href="#pilot">파일럿</a>
-            <Link href="/">앱 열기</Link>
+          <nav aria-label="Sales page navigation">
+            <a href="#coverage">Coverage</a>
+            <a href="#workflow">Workflow</a>
+            <a href="#outputs">Outputs</a>
+            <a href="#pilot">Pilot</a>
+            <Link href="/">Open app</Link>
           </nav>
         </div>
 
         <img
           className="sales-hero-visual"
           src="/assets/elecbidspec-console-preview-dark.svg"
-          alt="소스 상태, 우선 검토 공고, 적합도 점수, 제안 산출물을 보여주는 ElecBidSpec AI 플랫폼 미리보기"
+          alt="ElecBidSpec AI dashboard preview showing source status, fit score, bid cards, and proposal outputs"
         />
         <div className="sales-hero-overlay" aria-hidden="true"></div>
 
         <div className="sales-hero-content">
-          <p className="sales-kicker">미래를 연결하는 기술, 미국 공공입찰까지</p>
-          <h1>대한전선의 미국 공공 인프라 수주를 더 빠르고 정확하게.</h1>
+          <p className="sales-kicker">Public bid intelligence for electrical work</p>
+          <h1>Your next big electrical contract is already posted. Find it first.</h1>
           <p className="sales-hero-copy">
-            전력과 정보를 잇는 대한전선의 글로벌 역량을 미국 공공 발주 데이터에 연결합니다. EHV/HVDC·가공선·배전·해저케이블 기회를 선별하고, 수주 검토와 제안 준비까지 한 흐름으로 정리합니다.
+            ElecBidSpec AI monitors official public bid sources nationwide, filters for high-value electrical infrastructure work, scores each bid against your capabilities, and prepares the proposal package before your team starts reading.
           </p>
           <div className="sales-actions">
             <Link href="/" className="sales-primary">
-              라이브 도구 열기
+              Start free access
               <ArrowRight size={18} />
             </Link>
-            <a href="#pilot" className="sales-secondary">
-              파일럿 구성 보기
+            <a href="#workflow" className="sales-secondary">
+              See workflow
             </a>
           </div>
-          <dl className="sales-hero-stats" aria-label="플랫폼 핵심 지표">
-            <div>
-              <dt>미국</dt>
-              <dd>공공입찰 레이더</dd>
-            </div>
-            <div>
-              <dt>$5M+</dt>
-              <dd>우선 검토 대상</dd>
-            </div>
-            <div>
-              <dt>대한전선</dt>
-              <dd>역량 맥락 내장</dd>
-            </div>
+          <dl className="sales-hero-stats" aria-label="ElecBidSpec AI proof points">
+            {heroStats.map((item) => (
+              <div key={item.label}>
+                <dt>{item.value}</dt>
+                <dd>{item.label}</dd>
+              </div>
+            ))}
           </dl>
         </div>
       </section>
 
       <section className="sales-lineage sales-section-pad">
         <div className="sales-section-inner sales-two-column">
-          <p className="sales-kicker">대한전선 맞춤 포지셔닝</p>
-          <h2>기술과 품질의 언어로, 미국 입찰을 선별합니다.</h2>
+          <p className="sales-kicker">Built for bid teams under pressure</p>
+          <h2>Public work is visible. The hard part is knowing what is worth chasing.</h2>
           <p>
-            대한전선의 경쟁력은 단순 케이블 공급에 머물지 않습니다. 전력 인프라, 토털 케이블 솔루션, EHV/HVDC 시스템, 가공선·배전 제품, 해저케이블 실행 역량까지 이어집니다. 이 파일럿은 그 역량을 미국 공공입찰을 읽는 기준으로 바꿉니다.
+            Electrical contractors, GCs, and cable suppliers do not need another spreadsheet of public notices. They need a bid radar that understands scope, value, deadline, source credibility, partner needs, and company fit before the opportunity reaches the estimating desk.
           </p>
-        </div>
-      </section>
-
-      <section className="sales-section-pad sales-source-band">
-        <div className="sales-section-inner">
-          <div className="sales-section-heading">
-            <p className="sales-kicker">역량 기준</p>
-            <h2>대한전선이 이미 증명한 기술 영역을 기준으로 기회를 선별합니다.</h2>
-            <p>
-              제안 보조 기능은 대한전선의 공개 역량 프로필을 바탕으로 전력 송배전, EHV/HVDC, 가공선, MV/LV 배전, 케이블 접속재, 해상풍력, 해저케이블, 글로벌 납품 경험을 문맥으로 사용합니다.
-            </p>
-          </div>
-          <div className="sales-fact-grid">
-            {taihanFacts.map((fact) => (
-              <a className="sales-fact-card" href={fact.href} key={fact.label} target="_blank" rel="noreferrer">
-                <strong>{fact.value}</strong>
-                <span>{fact.label}</span>
-              </a>
-            ))}
-          </div>
         </div>
       </section>
 
       <section className="sales-section-pad sales-muted-band" id="coverage">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">미국 시장 실시간 리드</p>
-            <h2>전국 공공입찰을 대한전선 관점의 전력망 기회로 정렬합니다.</h2>
+            <p className="sales-kicker">Nationwide opportunity radar</p>
+            <h2>One workspace for high-value public electrical opportunities.</h2>
             <p>
-              커버리지의 빈틈도 투명하게 보여줍니다. 정상 소스, 포털 제한, 매칭 없음, 설정 필요 상태를 분리해 어느 시장을 더 깊게 연결해야 하는지 판단할 수 있습니다.
+              ElecBidSpec AI tracks the sources that matter for public infrastructure: federal opportunities, state DOTs, utilities, public power, transit, airport authorities, universities, schools, cities, and county procurement sites.
             </p>
           </div>
           <div className="sales-stat-grid">
@@ -202,10 +192,10 @@ export default function SalesPage() {
       <section className="sales-section-pad" id="workflow">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">공고 발견에서 수주 검토까지</p>
-            <h2>케이블 공급, 파트너 시공, 제안 준비를 한 흐름으로 묶습니다.</h2>
+            <p className="sales-kicker">From posted bid to bid/no-bid decision</p>
+            <h2>Find, qualify, and prepare public electrical bids in one flow.</h2>
             <p>
-              공고 탐색, 기술 범위 추출, 적합도 점수, 저장 검색, 파트너 접촉, 제안 산출물을 하나의 워크스페이스에서 처리합니다.
+              The platform compresses the first pass of business development, estimating, and proposal prep into a repeatable review workflow your team can trust.
             </p>
           </div>
           <div className="sales-workflow-grid">
@@ -223,13 +213,13 @@ export default function SalesPage() {
         </div>
       </section>
 
-      <section className="sales-section-pad sales-muted-band">
+      <section className="sales-section-pad sales-muted-band" id="outputs">
         <div className="sales-section-inner sales-code-layout">
           <div className="sales-code-copy">
-            <p className="sales-kicker">대한전선이 바로 체감할 가치</p>
-            <h2>포털 검색 시간을 줄이고, 검토할 만한 미국 파이프라인만 남깁니다.</h2>
+            <p className="sales-kicker">What changes for your team</p>
+            <h2>Less searching. Better shortlists. Faster proposal starts.</h2>
             <p>
-              대한전선의 영업·사업개발팀은 첫 사용부터 우선순위가 매겨진 미국 공공입찰, 각 공고가 중요한 이유, 소스 상태, 저장 검색, 파트너·EPC·유통사·내부 검토자에게 넘길 수 있는 제안 자료를 확인할 수 있습니다.
+              Every opportunity is translated from posting language into practical pursuit context: why it matters, what the scope requires, what is missing, and what your team should do next.
             </p>
             <ul className="sales-feature-list">
               {outcomes.map((item) => (
@@ -237,24 +227,23 @@ export default function SalesPage() {
               ))}
             </ul>
           </div>
-          <div className="sales-code-panel" aria-label="입찰 인텔리전스 예시 기록">
+          <div className="sales-code-panel" aria-label="Example bid intelligence record">
             <div className="sales-tabs">
-              <span>공고</span>
-              <span>적합도</span>
-              <span>제안</span>
+              <span>Bid</span>
+              <span>Fit</span>
+              <span>Proposal</span>
             </div>
             <pre className="sales-code-block"><code>{`{
-  "소스": "JEA",
-  "프로젝트": "변압기·배전 패키지",
-  "회사맥락": "대한전선",
-  "적합도점수": 71,
-  "역량신호": ["EHV", "MV/LV", "변전소"],
-  "주목이유": [
-    "공식 전력회사 발주",
-    "$5M+ 검토 대상 가능성",
-    "변압기·배전 범위 포함",
-    "시공 파트너 접촉 초안 생성"
-  ]
+  "query": "Show conduit bids over $5M in Texas",
+  "opportunity": "Substation duct bank and MV feeder upgrade",
+  "fit_score": 87,
+  "why_it_matters": [
+    "Open public source",
+    "$5M+ likely value",
+    "Underground conduit and medium-voltage cable scope",
+    "Partner installer outreach draft ready"
+  ],
+  "outputs": ["checklist", "risk flags", "DOCX", "PDF"]
 }`}</code></pre>
           </div>
         </div>
@@ -263,16 +252,20 @@ export default function SalesPage() {
       <section className="sales-section-pad" id="platform">
         <div className="sales-section-inner">
           <div className="sales-section-heading compact">
-            <p className="sales-kicker">파일럿 플랫폼</p>
-            <h2>대한전선 미국 시장 파일럿에 필요한 것부터 검증 가능하게.</h2>
+            <p className="sales-kicker">Platform capabilities</p>
+            <h2>The bid intelligence layer your CRM and estimators do not have.</h2>
           </div>
           <div className="sales-platform-grid">
-            {proof.map((item) => (
-              <article className="sales-platform-item" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.copy}</p>
-              </article>
-            ))}
+            {platform.map((item) => {
+              const Icon = item.icon;
+              return (
+                <article className="sales-platform-item" key={item.title}>
+                  <Icon size={22} />
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -280,40 +273,24 @@ export default function SalesPage() {
       <section className="sales-section-pad sales-muted-band" id="pilot">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">파일럿 구성</p>
-            <h2>미국 입찰 레이더에서 실제 수주 운영으로 이어지는 현실적인 경로.</h2>
+            <p className="sales-kicker">Pilot path</p>
+            <h2>Start with live bid discovery. Expand when coverage proves value.</h2>
             <p>
-              낮은 운영비의 미국 공공입찰 파일럿으로 시작하고, 사용 가치가 확인되는 순서대로 심화 소스 어댑터, 전용 사용자 계정, 관리형 제안 워크플로를 확장합니다.
+              The MVP is designed for low-volume pilots: real public data, manual uploads, company capability scoring, and proposal artifacts without heavyweight infrastructure or long onboarding.
             </p>
           </div>
           <div className="sales-plan-grid">
-            <article className="sales-plan">
-              <h3>시장 탐색 파일럿</h3>
-              <p>한 팀이 미국 공공 기회 커버리지와 입찰/비입찰 판단 흐름을 검증하는 단계입니다.</p>
-              <ul>
-                <li>라이브 대시보드와 소스 헬스</li>
-                <li>수동 업로드와 사양 추출</li>
-                <li>저장 검색과 다이제스트 실행</li>
-              </ul>
-            </article>
-            <article className="sales-plan featured">
-              <h3>수주 추진 파일럿</h3>
-              <p>영업, 사업개발, 파트너팀이 제안 준비 가치를 검증하는 단계입니다.</p>
-              <ul>
-                <li>대한전선 맞춤 회사 맥락</li>
-                <li>DOCX/PDF 제안 초안</li>
-                <li>일일 저장 검색 알림</li>
-              </ul>
-            </article>
-            <article className="sales-plan">
-              <h3>커버리지 확장</h3>
-              <p>대한전선에 중요한 미국 포털, 전력회사, 교통국, 지방 공공기관을 추가하는 단계입니다.</p>
-              <ul>
-                <li>주요 DOT와 전력회사 확대</li>
-                <li>소스별 첨부파일 수집 개선</li>
-                <li>관리자 권한과 테넌트 분리</li>
-              </ul>
-            </article>
+            {pilotPlans.map((plan) => (
+              <article className={`sales-plan ${plan.featured ? "featured" : ""}`} key={plan.title}>
+                <h3>{plan.title}</h3>
+                <p>{plan.copy}</p>
+                <ul>
+                  {plan.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
           </div>
         </div>
       </section>
@@ -321,16 +298,16 @@ export default function SalesPage() {
       <section className="sales-cta-band">
         <div className="sales-section-inner sales-cta-content">
           <div>
-            <p className="sales-kicker">대한전선 검토용</p>
-            <h2>일반 SaaS 데모가 아니라, 대한전선 기준으로 검증 가능한 미국 수주 워크스페이스.</h2>
+            <p className="sales-kicker">Free during beta</p>
+            <h2>Give your bid team a smarter first look at public electrical work.</h2>
           </div>
           <div className="sales-cta-actions">
             <Link href="/" className="sales-primary">
-              앱 실행
+              Open live workspace
               <ArrowRight size={18} />
             </Link>
             <a href="#coverage" className="sales-secondary on-dark">
-              커버리지 보기
+              Review coverage
             </a>
           </div>
         </div>
@@ -338,7 +315,7 @@ export default function SalesPage() {
 
       <footer className="sales-footer">
         <span>©2026 ElecBidSpec AI</span>
-        <span>대한전선의 미국 공공입찰 인텔리전스와 제안 준비를 위한 파일럿.</span>
+        <span>Public bid intelligence and proposal prep for electrical contractors, GCs, and cable suppliers.</span>
       </footer>
     </main>
   );
