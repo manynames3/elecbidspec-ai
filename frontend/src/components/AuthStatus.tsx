@@ -64,14 +64,15 @@ export function AuthStatus() {
 
   return (
     <form className="auth-card" onSubmit={login}>
-      <span className="field-label">Pilot login</span>
+      <span className="field-label">Start your free trial</span>
       <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="email" type="email" />
       <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="password" type="password" />
       {error ? <span className="form-error">{error}</span> : null}
       <button className="secondary-button compact-button" type="submit">
         <LogIn size={15} />
-        Sign in
+        Get free access
       </button>
+      <span className="auth-microcopy">No credit card required. Bids refresh daily.</span>
     </form>
   );
 }

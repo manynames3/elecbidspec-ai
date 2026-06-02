@@ -72,6 +72,18 @@ select {
   flex: 0 0 auto;
 }
 
+.brand-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.brand-descriptor {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
 .nav-links {
   display: grid;
   gap: 4px;
@@ -125,6 +137,12 @@ select {
   font-size: 12px;
 }
 
+.auth-microcopy {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .main-content {
   padding: 28px;
   min-width: 0;
@@ -150,6 +168,13 @@ select {
   margin: 4px 0 0;
   font-size: 30px;
   line-height: 1.16;
+}
+
+.page-subheading {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .eyebrow {
@@ -350,6 +375,53 @@ label span,
   font-size: 12px;
   font-weight: 750;
   text-transform: uppercase;
+}
+
+.tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  overflow: visible;
+}
+
+.tooltip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+}
+
+.tooltip-text {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(280px, 70vw);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  text-transform: none;
+  transform: translateY(-2px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  visibility: hidden;
+  white-space: normal;
+}
+
+.tooltip-wrap:hover .tooltip-text,
+.tooltip-wrap:focus-within .tooltip-text {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
 }
 
 input,

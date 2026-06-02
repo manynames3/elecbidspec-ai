@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Bell, DatabaseZap, Filter, RefreshCw, Save, Search } from "lucide-react";
 import { apiFetch, authHeaders, getAuthToken, sourceLabel } from "@/lib/api";
 import type { AlertPreference, AlertRun, IngestionRefreshResult, IngestionSummary, Opportunity, SavedSearch, SearchResult } from "@/lib/types";
+import { COVERED_BY_SOURCE_TOOLTIP, FIT_TOOLTIP, InfoTooltip, PORTAL_GATED_TOOLTIP, VALUE_MATCH_TOOLTIP } from "@/components/InfoTooltip";
 import { OpportunityCard } from "@/components/OpportunityCard";
 
 const adminTokenStorageKey = "elecbidspec_admin_token";
@@ -90,6 +91,16 @@ const emptyFilters: Filters = {
   watched_only: "",
   include_hidden: ""
 };
+
+function SourceStatusText({ status }: { status: string }) {
+  if (status === "portal_gated") {
+    return <InfoTooltip tooltip={PORTAL_GATED_TOOLTIP}>Portal Gated</InfoTooltip>;
+  }
+  if (status === "covered_by_source") {
+    return <InfoTooltip tooltip={COVERED_BY_SOURCE_TOOLTIP}>Covered By Source</InfoTooltip>;
+  }
+  return status.replaceAll("_", " ");
+}
 
 export function Dashboard() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -354,7 +365,10 @@ export function Dashboard() {
       <section className="page-header">
         <div>
           <p className="eyebrow">Bid intelligence workspace</p>
-          <h1>Open public bids over $5M</h1>
+          <h1>Your next big electrical contract is already posted. Find it first.</h1>
+          <p className="page-subheading">
+            ElecBidSpec AI monitors 33 official sources nationwide and scores each bid against your capabilities — so you only see the ones worth chasing.
+          </p>
         </div>
         <div className="summary-strip">
           <div>
@@ -366,11 +380,31 @@ export function Dashboard() {
             <strong>{visibleCount}</strong>
           </div>
           <div>
-            <span className="field-label">Avg fit</span>
+            <span className="field-label">
+              <InfoTooltip tooltip={FIT_TOOLTIP}>Avg fit</InfoTooltip>
+            </span>
             <strong>{averageFit}</strong>
           </div>
         </div>
       </section>
+
+      <form className="search-row" onSubmit={handleSearch}>
+        <label className="wide-control">
+          <span>Natural-language search</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={"Try it: \"Show conduit bids over $5M in Texas due in the next 30 days\""}
+          />
+        </label>
+        <button className="primary-button" type="submit">
+          <Search size={17} />
+          Search
+        </button>
+        <button className="secondary-button" type="button" onClick={() => void loadOpportunities(filters)} aria-label="Refresh opportunities">
+          <RefreshCw size={17} />
+        </button>
+      </form>
 
       <section className="toolbar-band">
         <div className="source-health">
@@ -416,7 +450,7 @@ export function Dashboard() {
                 key={source.source}
                 title={`${source.coverage}${source.access_note ? ` - ${source.access_note}` : ""}${source.last_job_error ? ` - ${source.last_job_error}` : ""}`}
               >
-                {sourceLabel(source.source)}: {source.count} · {source.status.replaceAll("_", " ")}
+                {sourceLabel(source.source)}: {source.count} · <SourceStatusText status={source.status} />
               </span>
             ))}
           </div>
@@ -427,7 +461,15 @@ export function Dashboard() {
           <div className="alert-digest-header">
             <div>
               <span className="field-label">Opportunity alerts</span>
-              <strong>{alertRun ? `${alertCounts?.high_fit ?? 0} high fit · ${alertCounts?.due_soon ?? 0} due soon` : "No digest yet"}</strong>
+              <strong>
+                {alertRun ? (
+                  <>
+                    {alertCounts?.high_fit ?? 0} <InfoTooltip tooltip={FIT_TOOLTIP}>high fit</InfoTooltip> · {alertCounts?.due_soon ?? 0} due soon
+                  </>
+                ) : (
+                  "No digest yet"
+                )}
+              </strong>
             </div>
             <div className="card-meta">
               <span>{alertPreference ? `tenant ${alertPreference.tenant_id}` : "default settings"}</span>
@@ -436,7 +478,9 @@ export function Dashboard() {
           </div>
           <div className="alert-controls">
             <label>
-              <span>Min fit</span>
+              <span>
+                <InfoTooltip tooltip={FIT_TOOLTIP}>Min fit</InfoTooltip>
+              </span>
               <input type="number" min="0" max="100" value={alertForm.min_fit_score} onChange={(event) => setAlertForm({ ...alertForm, min_fit_score: event.target.value })} />
             </label>
             <label>
@@ -495,7 +539,9 @@ export function Dashboard() {
             <div className="digest-list">
               {alertRun.digest.high_fit.slice(0, 3).map((item) => (
                 <Link href={`/opportunities?id=${item.id}`} key={item.id} className="digest-link">
-                  <strong>{item.fit_score ?? "--"} fit</strong>
+                  <strong>
+                    {item.fit_score ?? "--"} <InfoTooltip tooltip={FIT_TOOLTIP}>fit</InfoTooltip>
+                  </strong>
                   <span>{item.title}</span>
                 </Link>
               ))}
@@ -503,24 +549,6 @@ export function Dashboard() {
           ) : null}
           {alertMessage ? <div className="success">{alertMessage}</div> : null}
         </section>
-
-        <form className="search-row" onSubmit={handleSearch}>
-          <label className="wide-control">
-            <span>Natural-language search</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Show open public electrical bids nationwide above $5M"
-            />
-          </label>
-          <button className="primary-button" type="submit">
-            <Search size={17} />
-            Search
-          </button>
-          <button className="secondary-button" type="button" onClick={() => void loadOpportunities(filters)} aria-label="Refresh opportunities">
-            <RefreshCw size={17} />
-          </button>
-        </form>
 
         <form className="filter-grid" onSubmit={handleFilter}>
           <label>
@@ -581,7 +609,9 @@ export function Dashboard() {
             </select>
           </label>
           <label>
-            <span>Min fit</span>
+            <span>
+              <InfoTooltip tooltip={FIT_TOOLTIP}>Min fit</InfoTooltip>
+            </span>
             <input type="number" min="0" max="100" value={filters.min_fit_score} onChange={(event) => setFilters({ ...filters, min_fit_score: event.target.value })} placeholder="70" />
           </label>
           <label>
@@ -589,7 +619,9 @@ export function Dashboard() {
             <input type="number" min="0" value={filters.min_value} onChange={(event) => setFilters({ ...filters, min_value: event.target.value })} placeholder="10000000" />
           </label>
           <label>
-            <span>Value match</span>
+            <span>
+              <InfoTooltip tooltip={VALUE_MATCH_TOOLTIP}>Value match</InfoTooltip>
+            </span>
             <select value={filters.minimum_value_match} onChange={(event) => setFilters({ ...filters, minimum_value_match: event.target.value })}>
               <option value="true">Confirmed or likely</option>
               <option value="">Any</option>

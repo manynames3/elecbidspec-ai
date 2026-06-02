@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CalendarDays, ExternalLink, MapPin, TrendingUp } from "lucide-react";
 import { formatCurrency, formatDate, labelize, sourceLabel, whyThisBidMatters } from "@/lib/api";
+import { FIT_TOOLTIP, InfoTooltip } from "@/components/InfoTooltip";
 import type { Opportunity } from "@/lib/types";
 
 type OpportunityCardProps = {
@@ -32,7 +33,7 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
       <div className="card-topline">
         <span className={`score-pill ${fitClass(opportunity.fit_score)}`}>
           <TrendingUp size={14} />
-          {opportunity.fit_score ?? "--"} fit
+          {opportunity.fit_score ?? "--"} <InfoTooltip tooltip={FIT_TOOLTIP}>fit</InfoTooltip>
         </span>
         <span className="source-pill">{opportunity.bid_status}</span>
         <span className={`source-pill ${opportunity.source === "seed" ? "sample" : "live"}`}>{sourceLabel(opportunity.source)}</span>

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Download, ExternalLink, FileSearch, FileText, RefreshCw, Save, Sparkles } from "lucide-react";
 import { apiFetch, apiUrl, authHeaders, formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
+import { FIT_TOOLTIP, InfoTooltip, VALUE_MATCH_TOOLTIP } from "@/components/InfoTooltip";
 import type { AttachmentExtraction, AttachmentIngestionResult, Opportunity, OpportunityWorkflow, Proposal } from "@/lib/types";
 
 function ListBlock({ title, items }: { title: string; items: string[] }) {
@@ -241,7 +242,9 @@ export function OpportunityDetail() {
           </div>
         </div>
         <div className="score-panel">
-          <span className="field-label">Fit score</span>
+          <span className="field-label">
+            <InfoTooltip tooltip={FIT_TOOLTIP}>Fit score</InfoTooltip>
+          </span>
           <strong>{opportunity.fit_score ?? "--"}</strong>
           <span>{formatCurrency(opportunity.estimated_value)}</span>
           <span>{opportunity.value_confidence.replaceAll("_", " ")} value</span>
@@ -335,7 +338,9 @@ export function OpportunityDetail() {
               <strong>{opportunity.source_type.replaceAll("_", " ")}</strong>
             </div>
             <div>
-              <span className="field-label">Value match</span>
+              <span className="field-label">
+                <InfoTooltip tooltip={VALUE_MATCH_TOOLTIP}>Value match</InfoTooltip>
+              </span>
               <strong>{opportunity.minimum_value_match ? "Target" : "Review"}</strong>
             </div>
           </div>

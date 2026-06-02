@@ -8,7 +8,10 @@ export default function AppLayout({ children }: Readonly<{ children: React.React
       <aside className="sidebar">
         <Link href="/" className="brand" aria-label="ElecBidSpec AI dashboard">
           <DatabaseZap size={24} />
-          <span>ElecBidSpec AI</span>
+          <span className="brand-copy">
+            <span>ElecBidSpec AI</span>
+            <span className="brand-descriptor">For electrical contractors &amp; GCs</span>
+          </span>
         </Link>
         <nav className="nav-links" aria-label="Primary">
           <Link href="/">
