@@ -18,54 +18,54 @@
   <circle cx="112" cy="82" r="8" fill="#d4a843"/>
   <circle cx="138" cy="82" r="8" fill="#3ecf8e"/>
   <rect x="178" y="70" width="190" height="24" rx="8" fill="#20202c"/>
-  <text x="196" y="87" fill="#f0ede8" font-family="Geist Mono, Consolas, monospace" font-size="13" font-weight="600">ElecBidSpec AI</text>
+  <text x="196" y="87" fill="#f0ede8" font-family="Noto Sans KR, Geist Mono, Consolas, monospace" font-size="13" font-weight="600">ElecBidSpec AI</text>
   <rect x="744" y="69" width="154" height="26" rx="8" fill="url(#gold)"/>
-  <text x="779" y="87" fill="#0a0a0f" font-family="Geist, Arial, sans-serif" font-size="13" font-weight="700">Live refresh</text>
+  <text x="784" y="87" fill="#0a0a0f" font-family="Noto Sans KR, Geist, Arial, sans-serif" font-size="13" font-weight="700">실시간 갱신</text>
 
   <rect x="54" y="134" width="250" height="448" rx="18" fill="#13131d" stroke="rgba(255,255,255,.1)"/>
-  <text x="78" y="169" fill="#d4a843" font-family="Geist Mono, Consolas, monospace" font-size="12" font-weight="700">SOURCE HEALTH</text>
-  <g font-family="Geist, Arial, sans-serif" font-size="14" font-weight="600">
+  <text x="78" y="169" fill="#d4a843" font-family="Noto Sans KR, Geist Mono, Consolas, monospace" font-size="12" font-weight="700">소스 상태</text>
+  <g font-family="Noto Sans KR, Geist, Arial, sans-serif" font-size="14" font-weight="600">
     <rect x="78" y="192" width="202" height="44" rx="12" fill="#1b2a22" stroke="rgba(62,207,142,.28)"/>
-    <text x="98" y="219" fill="#f0ede8">12 healthy feeds</text>
+    <text x="98" y="219" fill="#f0ede8">정상 소스 12개</text>
     <rect x="78" y="250" width="202" height="44" rx="12" fill="#2a2417" stroke="rgba(212,168,67,.32)"/>
-    <text x="98" y="277" fill="#f0ede8">7 portal-gated</text>
+    <text x="98" y="277" fill="#f0ede8">포털 제한 7개</text>
     <rect x="78" y="308" width="202" height="44" rx="12" fill="#1a1a25" stroke="rgba(255,255,255,.12)"/>
-    <text x="98" y="335" fill="#f0ede8">13 no-records</text>
+    <text x="98" y="335" fill="#f0ede8">매칭 없음 13개</text>
     <rect x="78" y="366" width="202" height="44" rx="12" fill="#1a1a25" stroke="rgba(154,139,255,.24)"/>
-    <text x="98" y="393" fill="#f0ede8">SAM.gov ready</text>
+    <text x="98" y="393" fill="#f0ede8">SAM.gov 준비</text>
   </g>
   <path d="M78 456H280" stroke="rgba(255,255,255,.12)"/>
-  <text x="78" y="490" fill="#a6a09a" font-family="Geist, Arial, sans-serif" font-size="13">Tracked public market</text>
-  <text x="78" y="530" fill="#f0ede8" font-family="Instrument Serif, Georgia, serif" font-size="52">33</text>
-  <text x="150" y="528" fill="#d4a843" font-family="Geist Mono, Consolas, monospace" font-size="13" font-weight="700">sources</text>
+  <text x="78" y="490" fill="#a6a09a" font-family="Noto Sans KR, Geist, Arial, sans-serif" font-size="13">추적 중인 공공시장</text>
+  <text x="78" y="530" fill="#f0ede8" font-family="Noto Serif KR, Instrument Serif, Georgia, serif" font-size="52">33</text>
+  <text x="150" y="528" fill="#d4a843" font-family="Noto Sans KR, Geist Mono, Consolas, monospace" font-size="13" font-weight="700">소스</text>
 
   <rect x="330" y="134" width="596" height="206" rx="18" fill="#13131d" stroke="rgba(255,255,255,.1)"/>
-  <text x="356" y="169" fill="#d4a843" font-family="Geist Mono, Consolas, monospace" font-size="12" font-weight="700">RANKED OPPORTUNITIES</text>
-  <g font-family="Geist, Arial, sans-serif">
+  <text x="356" y="169" fill="#d4a843" font-family="Noto Sans KR, Geist Mono, Consolas, monospace" font-size="12" font-weight="700">우선 검토 공고</text>
+  <g font-family="Noto Sans KR, Geist, Arial, sans-serif">
     <rect x="356" y="192" width="544" height="44" rx="12" fill="#1a1a25"/>
-    <text x="376" y="219" fill="#f0ede8" font-size="15" font-weight="700">JEA transformer package</text>
-    <text x="726" y="219" fill="#3ecf8e" font-size="13" font-weight="700">71 fit</text>
+    <text x="376" y="219" fill="#f0ede8" font-size="15" font-weight="700">JEA 변압기·배전 패키지</text>
+    <text x="726" y="219" fill="#3ecf8e" font-size="13" font-weight="700">적합도 71</text>
     <rect x="356" y="248" width="544" height="44" rx="12" fill="#1a1a25"/>
-    <text x="376" y="275" fill="#f0ede8" font-size="15" font-weight="700">DFW airfield lights canisters</text>
-    <text x="726" y="275" fill="#d4a843" font-size="13" font-weight="700">open</text>
+    <text x="376" y="275" fill="#f0ede8" font-size="15" font-weight="700">DFW 공항 조명 전력 공사</text>
+    <text x="726" y="275" fill="#d4a843" font-size="13" font-weight="700">공개</text>
     <rect x="356" y="304" width="544" height="2" fill="rgba(255,255,255,.08)"/>
   </g>
 
   <rect x="330" y="366" width="286" height="216" rx="18" fill="#13131d" stroke="rgba(255,255,255,.1)"/>
-  <text x="356" y="401" fill="#d4a843" font-family="Geist Mono, Consolas, monospace" font-size="12" font-weight="700">FIT SCORE</text>
+  <text x="356" y="401" fill="#d4a843" font-family="Noto Sans KR, Geist Mono, Consolas, monospace" font-size="12" font-weight="700">적합도 점수</text>
   <circle cx="474" cy="484" r="62" stroke="rgba(255,255,255,.1)" stroke-width="14"/>
   <path d="M474 422a62 62 0 1 1-58 84" stroke="#d4a843" stroke-width="14" stroke-linecap="round"/>
-  <text x="441" y="499" fill="#f0ede8" font-family="Instrument Serif, Georgia, serif" font-size="56">86</text>
-  <text x="420" y="542" fill="#a6a09a" font-family="Geist, Arial, sans-serif" font-size="14">bid readiness</text>
+  <text x="441" y="499" fill="#f0ede8" font-family="Noto Serif KR, Instrument Serif, Georgia, serif" font-size="56">86</text>
+  <text x="420" y="542" fill="#a6a09a" font-family="Noto Sans KR, Geist, Arial, sans-serif" font-size="14">입찰 준비도</text>
 
   <rect x="640" y="366" width="286" height="216" rx="18" fill="#13131d" stroke="rgba(255,255,255,.1)"/>
-  <text x="666" y="401" fill="#d4a843" font-family="Geist Mono, Consolas, monospace" font-size="12" font-weight="700">PROPOSAL OUTPUT</text>
-  <g font-family="Geist, Arial, sans-serif" font-size="14" font-weight="600">
+  <text x="666" y="401" fill="#d4a843" font-family="Noto Sans KR, Geist Mono, Consolas, monospace" font-size="12" font-weight="700">제안 산출물</text>
+  <g font-family="Noto Sans KR, Geist, Arial, sans-serif" font-size="14" font-weight="600">
     <rect x="666" y="424" width="234" height="30" rx="8" fill="#1a1a25"/>
-    <text x="682" y="444" fill="#f0ede8">Executive summary</text>
+    <text x="682" y="444" fill="#f0ede8">경영진 요약</text>
     <rect x="666" y="466" width="234" height="30" rx="8" fill="#1a1a25"/>
-    <text x="682" y="486" fill="#f0ede8">Compliance matrix</text>
+    <text x="682" y="486" fill="#f0ede8">컴플라이언스 매트릭스</text>
     <rect x="666" y="508" width="234" height="30" rx="8" fill="#1a1a25"/>
-    <text x="682" y="528" fill="#f0ede8">Partner outreach email</text>
+    <text x="682" y="528" fill="#f0ede8">파트너 접촉 이메일</text>
   </g>
 </svg>
