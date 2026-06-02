@@ -128,6 +128,12 @@ variable "sam_gov_api_key" {
   sensitive   = true
 }
 
+variable "sam_gov_api_key_secret_arn" {
+  description = "Optional AWS Secrets Manager ARN containing SAM_GOV_API_KEY or SAM_API_KEY. Preferred for deployed Lambda."
+  type        = string
+  default     = ""
+}
+
 variable "admin_api_token" {
   description = "Bearer token required for admin ingestion refresh and job endpoints."
   type        = string

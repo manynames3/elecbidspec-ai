@@ -59,6 +59,7 @@ from app.services.ingestion.defaults import (
     missing_required_setting,
     skipped_default_public_bid_jobs,
 )
+from app.services.ingestion.sam_gov import resolve_sam_api_key
 from app.services.proposal_cache import enhance_proposal, get_or_create_fast_proposal
 from app.services.proposal_docx import generate_proposal_docx
 from app.services.search import search_opportunities
@@ -273,13 +274,20 @@ def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[d
         if label not in jobs_by_label:
             jobs_by_label[label] = job
 
+    def has_required_setting(name: str | None) -> bool:
+        if not name:
+            return True
+        if name == "sam_gov_api_key":
+            return bool(settings.sam_gov_api_key or settings.sam_gov_api_key_secret_arn)
+        return bool(getattr(settings, name, None))
+
     health = []
     for catalog in DEFAULT_SOURCE_CATALOG:
         source = catalog["source"]
         latest_job = jobs_by_label.get(source)
         count_row = counts_by_source.get(source)
         missing_setting = catalog.get("requires_setting")
-        if missing_setting and not getattr(settings, str(missing_setting), None):
+        if missing_setting and not has_required_setting(str(missing_setting)):
             status = "missing_config"
         elif latest_job and latest_job.status == "failed" and (_is_portal_gated_error(latest_job.error) or catalog.get("portal_gated")):
             status = "portal_gated"
@@ -287,8 +295,12 @@ def _source_health(source_rows: list, latest_jobs: list[IngestionJob]) -> list[d
             status = "failed"
         elif catalog.get("portal_gated") and (not count_row or not count_row["count"]):
             status = "portal_gated"
-        elif catalog.get("directory_only") and not latest_job and (not count_row or not count_row["count"]):
-            status = "needs_adapter"
+        elif catalog.get("covered_by_source") and (not count_row or not count_row["count"]):
+            status = "covered_by_source"
+        elif catalog.get("directory_only") and (not count_row or not count_row["count"]):
+            status = "directory_only"
+        elif latest_job and latest_job.status == "complete" and (not count_row or not count_row["count"]):
+            status = "no_current_matches"
         elif not count_row or not count_row["count"]:
             status = "no_records"
         else:
@@ -869,9 +881,11 @@ def list_ingestion_adapters() -> list[dict]:
 @router.get("/ingestion/sam-gov/status")
 def sam_gov_status() -> dict:
     settings = get_settings()
+    api_key = resolve_sam_api_key()
     return {
-        "configured": bool(settings.sam_gov_api_key),
-        "key_length": len(settings.sam_gov_api_key or ""),
+        "configured": bool(api_key),
+        "key_length": len(api_key or ""),
+        "source": "env" if settings.sam_gov_api_key else "secrets_manager" if settings.sam_gov_api_key_secret_arn else None,
         "base_url": settings.sam_gov_api_base_url,
     }
 
@@ -881,9 +895,8 @@ def verify_sam_gov(
     db: Session = Depends(get_db),
     _: None = Depends(require_admin),
 ) -> IngestionJob:
-    settings = get_settings()
-    if not settings.sam_gov_api_key:
-        raise HTTPException(status_code=503, detail="SAM_GOV_API_KEY is not configured.")
+    if not resolve_sam_api_key():
+        raise HTTPException(status_code=503, detail="SAM_GOV_API_KEY or SAM_GOV_API_KEY_SECRET_ARN is not configured.")
     job = IngestionJob(
         adapter="sam_gov",
         params={

@@ -12,6 +12,7 @@ bedrock_model_id              = "us.anthropic.claude-sonnet-4-6"
 bedrock_max_tokens            = 1800
 bedrock_temperature           = 0.2
 sam_gov_api_key               = ""
+sam_gov_api_key_secret_arn    = ""
 admin_api_token               = ""
 auth_required                 = false
 auth_admin_email              = ""

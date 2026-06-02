@@ -54,8 +54,15 @@ def process_job(db: Session, job: IngestionJob) -> None:
     skipped = 0
     updated = 0
     profile = _profile_data(db)
-    update_existing = bool((job.params or {}).get("update_existing"))
-    for data in adapter.fetch(job.params or {}):
+    params = job.params or {}
+    update_existing = bool(params.get("update_existing"))
+    records = list(adapter.fetch(params))
+    deleted_existing = 0
+    replace_source = params.get("source") or params.get("job_label")
+    if params.get("replace_source_records") and replace_source:
+        deleted_existing = db.query(Opportunity).filter(Opportunity.source == str(replace_source)).delete(synchronize_session=False)
+        db.commit()
+    for data in records:
         existing = None
         if data.get("source_url"):
             existing = db.query(Opportunity).filter(Opportunity.source_url == data["source_url"]).first()
@@ -78,7 +85,7 @@ def process_job(db: Session, job: IngestionJob) -> None:
         db.add(Opportunity(**data))
         imported += 1
     job.status = "complete"
-    job.result = {"imported": imported, "updated": updated, "skipped": skipped}
+    job.result = {"imported": imported, "updated": updated, "skipped": skipped, "deleted_existing": deleted_existing}
     db.commit()
 
 

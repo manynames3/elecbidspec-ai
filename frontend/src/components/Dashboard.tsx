@@ -114,7 +114,7 @@ export function Dashboard() {
   const latestPublicRefresh = ingestionSummary?.latest_jobs.find((job) => job.adapter !== "sam_gov");
   const sourceHealth = ingestionSummary?.source_health ?? [];
   const publicSourceCount = sourceHealth.length || ingestionSummary?.sources.filter((source) => source.source !== "seed" && source.source !== "manual_upload").length || 0;
-  const healthySourceCount = sourceHealth.filter((source) => source.status === "healthy").length;
+  const liveImportingSourceCount = sourceHealth.filter((source) => source.status === "healthy").length;
   const gatedSourceCount = sourceHealth.filter((source) => source.status === "portal_gated").length;
   const alertCounts = alertRun?.digest.counts;
   const averageFit = useMemo(() => {
@@ -379,8 +379,8 @@ export function Dashboard() {
             <strong>{publicSourceCount || "--"}</strong>
           </div>
           <div className="source-card">
-            <span className="field-label">Healthy sources</span>
-            <strong>{sourceHealth.length ? `${healthySourceCount}/${sourceHealth.length}` : "--"}</strong>
+            <span className="field-label">Live importing sources</span>
+            <strong>{sourceHealth.length ? `${liveImportingSourceCount}/${sourceHealth.length}` : "--"}</strong>
           </div>
           <div className="source-card">
             <span className="field-label">Gated portals</span>
@@ -412,7 +412,7 @@ export function Dashboard() {
           <div className="source-health-list" aria-label="Official source health">
             {sourceHealth.map((source) => (
               <span
-                className={`source-pill ${source.status === "healthy" ? "live" : source.status === "missing_config" ? "sample" : source.status === "needs_adapter" ? "pending" : source.status === "portal_gated" ? "gated" : ""}`}
+                className={`source-pill ${source.status === "healthy" ? "live" : source.status === "missing_config" ? "sample" : source.status === "needs_adapter" || source.status === "directory_only" || source.status === "covered_by_source" || source.status === "no_current_matches" ? "pending" : source.status === "portal_gated" ? "gated" : ""}`}
                 key={source.source}
                 title={`${source.coverage}${source.access_note ? ` - ${source.access_note}` : ""}${source.last_job_error ? ` - ${source.last_job_error}` : ""}`}
               >

@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     auth_user_password: str | None = Field(default=None, validation_alias="AUTH_USER_PASSWORD")
 
     sam_gov_api_key: str | None = Field(default=None, validation_alias="SAM_GOV_API_KEY")
+    sam_gov_api_key_secret_arn: str | None = Field(default=None, validation_alias="SAM_GOV_API_KEY_SECRET_ARN")
     sam_gov_api_base_url: str = Field(
         default="https://api.sam.gov/opportunities/v2/search",
         validation_alias="SAM_GOV_API_BASE_URL",

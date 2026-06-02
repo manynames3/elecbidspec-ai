@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 from datetime import date, datetime, timedelta
+from functools import lru_cache
 from typing import Any
 
+import boto3
 import httpx
 
 from app.core.config import get_settings
@@ -46,6 +49,38 @@ def _get_nested(data: dict, path: list[str]) -> Any:
     return current
 
 
+@lru_cache(maxsize=4)
+def _api_key_from_secret(secret_arn: str) -> str | None:
+    if not secret_arn:
+        return None
+    response = boto3.client("secretsmanager").get_secret_value(SecretId=secret_arn)
+    secret_string = response.get("SecretString")
+    if not secret_string:
+        return None
+    try:
+        payload = json.loads(secret_string)
+    except json.JSONDecodeError:
+        return secret_string
+    if isinstance(payload, dict):
+        for key in ("SAM_GOV_API_KEY", "SAM_API_KEY", "api_key", "key"):
+            value = payload.get(key)
+            if value:
+                return str(value)
+    return None
+
+
+def resolve_sam_api_key(params: dict[str, Any] | None = None) -> str | None:
+    params = params or {}
+    settings = get_settings()
+    direct_key = params.get("api_key") or settings.sam_gov_api_key
+    if direct_key:
+        return str(direct_key)
+    secret_arn = params.get("api_key_secret_arn") or settings.sam_gov_api_key_secret_arn
+    if secret_arn:
+        return _api_key_from_secret(str(secret_arn))
+    return None
+
+
 def normalize_sam_notice(notice: dict[str, Any]) -> dict[str, Any]:
     place = notice.get("placeOfPerformance") or {}
     state = _get_nested(place, ["state", "code"]) or _get_nested(place, ["state", "name"])
@@ -81,31 +116,67 @@ def normalize_sam_notice(notice: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _matches_keywords(record: dict[str, Any], keywords: list[str]) -> bool:
+    if not keywords:
+        return True
+    search_text = " ".join(
+        str(value or "")
+        for value in [
+            record.get("title"),
+            record.get("agency"),
+            record.get("description"),
+            record.get("naics_code"),
+            record.get("project_type"),
+        ]
+    ).lower()
+    return any(keyword.lower() in search_text for keyword in keywords)
+
+
 class SamGovAdapter(IngestionAdapter):
     name = "sam_gov"
     description = "SAM.gov federal Contract Opportunities API adapter."
 
     def fetch(self, params: dict[str, Any]) -> list[dict[str, Any]]:
         settings = get_settings()
-        api_key = params.get("api_key") or settings.sam_gov_api_key
+        api_key = resolve_sam_api_key(params)
         if not api_key:
-            raise ValueError("SAM_GOV_API_KEY is required for live SAM.gov ingestion.")
+            raise ValueError("SAM_GOV_API_KEY or SAM_GOV_API_KEY_SECRET_ARN is required for live SAM.gov ingestion.")
 
-        request_params = {
+        limit = int(params.get("limit") or 25)
+        source_limit = int(params.get("source_limit") or limit)
+        keywords = [str(keyword).strip() for keyword in (params.get("keywords") or []) if str(keyword).strip()]
+        require_keywords = bool(params.get("require_keywords", bool(keywords)))
+        records: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        keyword_queries = [str(keyword).strip() for keyword in (params.get("keyword_queries") or []) if str(keyword).strip()]
+        if not keyword_queries:
+            keyword_queries = [str(params.get("keyword") or "electrical cable OR substation OR conduit")]
+        base_request_params = {
             "api_key": api_key,
-            "limit": params.get("limit", 25),
+            "limit": source_limit,
             "postedFrom": _sam_date(params.get("posted_from"), date.today() - timedelta(days=int(params.get("posted_window_days") or 60))),
             "postedTo": _sam_date(params.get("posted_to"), date.today()),
             "ptype": params.get("ptype", "o"),
             "ncode": params.get("naics_code"),
             "status": params.get("status", "active"),
-            "keyword": params.get("keyword", "electrical cable OR substation OR conduit"),
         }
-        request_params = {key: value for key, value in request_params.items() if value}
+        base_request_params = {key: value for key, value in base_request_params.items() if value}
         with httpx.Client(timeout=30) as client:
-            response = client.get(settings.sam_gov_api_base_url, params=request_params)
-            response.raise_for_status()
-            payload = response.json()
-
-        notices = payload.get("opportunitiesData") or payload.get("data") or []
-        return [normalize_sam_notice(notice) for notice in notices]
+            for keyword_query in keyword_queries:
+                request_params = {**base_request_params, "keyword": keyword_query}
+                response = client.get(settings.sam_gov_api_base_url, params=request_params)
+                response.raise_for_status()
+                payload = response.json()
+                notices = payload.get("opportunitiesData") or payload.get("data") or []
+                for notice in notices:
+                    record = normalize_sam_notice(notice)
+                    key = record.get("source_url") or record.get("title")
+                    if not key or key in seen:
+                        continue
+                    if require_keywords and not _matches_keywords(record, keywords):
+                        continue
+                    seen.add(str(key))
+                    records.append(record)
+                    if len(records) >= limit:
+                        return records
+        return records

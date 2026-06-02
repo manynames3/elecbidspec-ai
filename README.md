@@ -134,7 +134,8 @@ Required production inputs:
 - `AUTH_ADMIN_EMAIL` and `AUTH_ADMIN_PASSWORD` if you want a seeded admin login
 - `AUTH_USER_EMAIL` and `AUTH_USER_PASSWORD` if you want a seeded standard user login
 - `AUTH_REQUIRED=true` when profile/proposal endpoints should require login
-- `SAM_GOV_API_KEY` only if live SAM.gov ingestion is enabled
+- `SAM_GOV_API_KEY` only if live SAM.gov ingestion is enabled locally
+- `SAM_GOV_API_KEY_SECRET_ARN` for deployed Lambda when reusing a SAM.gov key stored in AWS Secrets Manager
 - `NYPA_API_SUBSCRIPTION_KEY` only if live NYPA utility RFQ ingestion is enabled
 - `SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `ALERT_EMAIL_FROM` only if daily saved-search emails should actually send. Without SMTP, digests are still generated in-app and marked `email_unconfigured` when email delivery is requested.
 - `BEDROCK_PROPOSALS_ENABLED=true` only if AI-written proposal drafts should call Bedrock
@@ -212,12 +213,12 @@ SAM.gov is optional. The backend now treats SAM.gov as one source in a nationwid
 
 Keyed sources can also run when the corresponding environment variable is configured:
 
-- `sam_gov` through the SAM.gov Contract Opportunities API using `SAM_GOV_API_KEY`
+- `sam_gov` through the SAM.gov Contract Opportunities API using `SAM_GOV_API_KEY` or `SAM_GOV_API_KEY_SECRET_ARN`
 - `nypa` through the New York Power Authority public RFQ API using `NYPA_API_SUBSCRIPTION_KEY`
 
-The source catalog also tracks identified official portals for Caltrans, FDOT, NYSDOT, GDOT, IDOT, Ohio DOT/OhioBuys, NC eVP, VDOT, ADOT, TVA, BPA, LADWP, Austin Energy, CPS Energy, SRP, Port Authority NY/NJ, LA Metro, SEPTA, MTA, University of California, and Houston Public Works. A generic `public_portal_links` monitor attempts conservative public HTML link detection for these targets. Sources with no matching records report `no_records`; sources with matching electrical bid/spec links import candidate opportunity cards. Sources that require a browser session, captcha, or supplier portal are labeled `portal_gated`.
+The source catalog also tracks identified official portals for Caltrans, FDOT, NYSDOT, GDOT, IDOT, Ohio DOT/OhioBuys, NC eVP, VDOT, ADOT, TVA, BPA, LADWP, Austin Energy, CPS Energy, SRP, Port Authority NY/NJ, LA Metro, SEPTA, MTA, University of California, and Houston Public Works. Source-specific public importers are configured for NYSDOT, VDOT, ADOT, SEPTA, Port Authority NY/NJ construction solicitations, and Austin Energy RFPs. Sources that require a browser session, captcha, supplier portal, or vendor/API access are labeled `portal_gated`; sources routed through another live importer, such as BPA through SAM.gov or LADWP through LA RAMP, are labeled `covered_by_source`.
 
-`GET /api/ingestion/summary` reports source health for every configured source. Statuses include `healthy`, `stale`, `failed`, `portal_gated`, `no_records`, `missing_config`, and `needs_adapter`, so the dashboard can distinguish live coverage from known coverage targets.
+`GET /api/ingestion/summary` reports source health for every configured source. Statuses include `healthy`, `stale`, `failed`, `portal_gated`, `no_current_matches`, `no_records`, `missing_config`, `needs_adapter`, `covered_by_source`, and `directory_only`, so the dashboard can distinguish live importing sources from known coverage targets.
 
 Check SAM.gov status:
 
@@ -225,7 +226,7 @@ Check SAM.gov status:
 curl http://localhost:8000/api/ingestion/sam-gov/status
 ```
 
-Verify live SAM.gov ingestion after setting `SAM_GOV_API_KEY`:
+Verify live SAM.gov ingestion after setting `SAM_GOV_API_KEY` or `SAM_GOV_API_KEY_SECRET_ARN`:
 
 ```bash
 curl -X POST http://localhost:8000/api/ingestion/sam-gov/verify \
@@ -264,6 +265,7 @@ The MVP value filter uses posted or extracted values when available. If no value
 Available adapters:
 
 - `bonfire_portal` for public Bonfire open-opportunity JSON feeds
+- `public_bid_page` for source-configured public bid tables, lists, and JSON pages with embedded HTML tables
 - `public_json_feed` for configurable public JSON bid feeds
 - `public_html_scrape` for configurable public HTML bid listings
 - `public_portal_links` for conservative public portal link monitoring

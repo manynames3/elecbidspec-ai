@@ -5,32 +5,33 @@ locals {
   lambda_zip_hash = filesha256(var.lambda_zip_path)
 
   common_environment = {
-    ENVIRONMENT               = "production"
-    DATABASE_URL              = var.database_url
-    DATABASE_DISABLE_POOL     = "true"
-    FRONTEND_ORIGIN           = var.frontend_origin
-    UPLOAD_BUCKET             = aws_s3_bucket.uploads.bucket
-    UPLOAD_PREFIX             = var.upload_prefix
-    BEDROCK_MODEL_ID          = var.bedrock_model_id
-    BEDROCK_REGION            = var.aws_region
-    BEDROCK_MAX_TOKENS        = tostring(var.bedrock_max_tokens)
-    BEDROCK_TEMPERATURE       = tostring(var.bedrock_temperature)
-    SAM_GOV_API_KEY           = var.sam_gov_api_key
-    ADMIN_API_TOKEN           = var.admin_api_token
-    SMTP_HOST                 = var.smtp_host
-    SMTP_PORT                 = tostring(var.smtp_port)
-    SMTP_USERNAME             = var.smtp_username
-    SMTP_PASSWORD             = var.smtp_password
-    SMTP_USE_TLS              = tostring(var.smtp_use_tls)
-    ALERT_EMAIL_FROM          = var.alert_email_from
-    ALERT_SEND_COOLDOWN_HOURS = tostring(var.alert_send_cooldown_hours)
-    AUTH_REQUIRED             = tostring(var.auth_required)
-    AUTH_SESSION_TTL_HOURS    = tostring(var.auth_session_ttl_hours)
-    AUTH_ADMIN_EMAIL          = var.auth_admin_email
-    AUTH_ADMIN_PASSWORD       = var.auth_admin_password
-    AUTH_USER_EMAIL           = var.auth_user_email
-    AUTH_USER_PASSWORD        = var.auth_user_password
-    NYPA_API_SUBSCRIPTION_KEY = var.nypa_api_subscription_key
+    ENVIRONMENT                = "production"
+    DATABASE_URL               = var.database_url
+    DATABASE_DISABLE_POOL      = "true"
+    FRONTEND_ORIGIN            = var.frontend_origin
+    UPLOAD_BUCKET              = aws_s3_bucket.uploads.bucket
+    UPLOAD_PREFIX              = var.upload_prefix
+    BEDROCK_MODEL_ID           = var.bedrock_model_id
+    BEDROCK_REGION             = var.aws_region
+    BEDROCK_MAX_TOKENS         = tostring(var.bedrock_max_tokens)
+    BEDROCK_TEMPERATURE        = tostring(var.bedrock_temperature)
+    SAM_GOV_API_KEY            = var.sam_gov_api_key
+    SAM_GOV_API_KEY_SECRET_ARN = var.sam_gov_api_key_secret_arn
+    ADMIN_API_TOKEN            = var.admin_api_token
+    SMTP_HOST                  = var.smtp_host
+    SMTP_PORT                  = tostring(var.smtp_port)
+    SMTP_USERNAME              = var.smtp_username
+    SMTP_PASSWORD              = var.smtp_password
+    SMTP_USE_TLS               = tostring(var.smtp_use_tls)
+    ALERT_EMAIL_FROM           = var.alert_email_from
+    ALERT_SEND_COOLDOWN_HOURS  = tostring(var.alert_send_cooldown_hours)
+    AUTH_REQUIRED              = tostring(var.auth_required)
+    AUTH_SESSION_TTL_HOURS     = tostring(var.auth_session_ttl_hours)
+    AUTH_ADMIN_EMAIL           = var.auth_admin_email
+    AUTH_ADMIN_PASSWORD        = var.auth_admin_password
+    AUTH_USER_EMAIL            = var.auth_user_email
+    AUTH_USER_PASSWORD         = var.auth_user_password
+    NYPA_API_SUBSCRIPTION_KEY  = var.nypa_api_subscription_key
   }
 }
 
@@ -141,6 +142,16 @@ data "aws_iam_policy_document" "backend_access" {
       "bedrock:InvokeModelWithResponseStream"
     ]
     resources = ["*"]
+  }
+
+  dynamic "statement" {
+    for_each = var.sam_gov_api_key_secret_arn != "" ? [var.sam_gov_api_key_secret_arn] : []
+    content {
+      actions = [
+        "secretsmanager:GetSecretValue"
+      ]
+      resources = [statement.value]
+    }
   }
 }
 

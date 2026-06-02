@@ -126,6 +126,7 @@ class PublicPortalLinksAdapter(IngestionAdapter):
                 "distribution",
             ]
         procurement_terms = [str(term).lower() for term in (params.get("procurement_terms") or PROCUREMENT_TERMS)]
+        url_patterns = [str(pattern) for pattern in (params.get("url_patterns") or []) if str(pattern).strip()]
         source = params.get("source") or params.get("job_label") or "public_portal_links"
         source_type = params.get("source_type") or "state_local"
         agency = params.get("agency")
@@ -150,6 +151,8 @@ class PublicPortalLinksAdapter(IngestionAdapter):
                 continue
             absolute_url = urljoin(url, href)
             if absolute_url in seen:
+                continue
+            if url_patterns and not any(re.search(pattern, absolute_url, flags=re.IGNORECASE) for pattern in url_patterns):
                 continue
             text = link.get("text") or Path(urlparse(absolute_url).path).stem.replace("-", " ").replace("_", " ")
             combined = f"{text} {absolute_url}".lower()
