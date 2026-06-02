@@ -962,6 +962,10 @@ textarea {
   z-index: 1;
 }
 
+.product-sales-page {
+  word-break: normal;
+}
+
 .sales-nav {
   position: sticky;
   top: 0;
@@ -1067,9 +1071,9 @@ textarea {
 .sales-hero-visual {
   position: absolute;
   top: 82px;
-  right: max(20px, calc((100vw - 1180px) / 2));
-  width: min(56vw, 650px);
-  max-width: 650px;
+  right: max(20px, calc((100vw - 1180px) / 2 - 80px));
+  width: min(46vw, 600px);
+  max-width: 600px;
   opacity: 1;
   filter: drop-shadow(0 28px 38px rgba(9, 51, 137, 0.16));
 }
@@ -1133,7 +1137,7 @@ textarea {
 }
 
 .sales-hero h1 {
-  max-width: 620px;
+  max-width: 590px;
   font-size: 58px;
 }
 
@@ -1496,6 +1500,24 @@ textarea {
   font-size: 25px;
 }
 
+.sales-phase-label {
+  display: inline-flex;
+  margin-bottom: 18px;
+  color: var(--sales-red);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.sales-plan .sales-phase-time {
+  min-height: 0;
+  margin-bottom: 12px;
+  color: var(--sales-blue);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .sales-plan p {
   min-height: 52px;
 }
@@ -1595,7 +1617,8 @@ textarea {
 @media (max-width: 640px) {
   .sales-section-inner,
   .sales-hero-content {
-    width: min(100% - 28px, 1180px);
+    width: calc(100vw - 28px);
+    max-width: calc(100vw - 28px);
   }
 
   .sales-hero-content {
@@ -1604,22 +1627,39 @@ textarea {
   }
 
   .sales-hero h1 {
-    font-size: 32px;
+    width: 100%;
+    max-width: min(100%, 360px);
+    font-size: 30px;
     line-height: 1.14;
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 
   .sales-lineage h2,
   .sales-cta-content h2 {
-    font-size: 34px;
+    max-width: min(100%, 360px);
+    font-size: 31px;
     line-height: 1.18;
+    overflow-wrap: anywhere;
+    word-break: normal;
   }
 
   .sales-section-heading h2,
   .sales-code-copy h2 {
-    font-size: 30px;
+    max-width: min(100%, 360px);
+    font-size: 28px;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .sales-lineage p:last-child,
+  .sales-section-heading > p:not(.sales-kicker),
+  .sales-code-copy > p:not(.sales-kicker) {
+    max-width: min(100%, 360px);
   }
 
   .sales-hero-copy {
+    max-width: min(100%, 360px);
     margin-top: 18px;
     font-size: 16px;
     line-height: 1.42;
@@ -1627,7 +1667,9 @@ textarea {
 
   .sales-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
+    width: min(100%, 360px);
+    max-width: 360px;
     gap: 8px;
     margin-top: 24px;
   }

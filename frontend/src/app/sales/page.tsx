@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
+  AlertTriangle,
   Bell,
   Building2,
   Cable,
@@ -50,11 +51,57 @@ const workflow = [
   },
 ];
 
+const missReasons = [
+  {
+    icon: Radar,
+    title: "Relevant work hides in fragmented sources",
+    copy: "Electrical scope often appears inside DOT bid-item tables, city construction notices, utility procurement pages, school authority postings, and PDFs that do not say \"cable\" in the title.",
+  },
+  {
+    icon: AlertTriangle,
+    title: "Generic bid boards create noisy shortlists",
+    copy: "Broad construction searches pull in too many low-fit jobs, forcing BD and estimating teams to spend scarce time deciding what not to chase.",
+  },
+  {
+    icon: FileText,
+    title: "Late spec review weakens the first response",
+    copy: "When technical documents are read after the bid clock starts, teams have less time to confirm scope, line up partners, spot risks, and shape a credible proposal.",
+  },
+];
+
+const pursuitPhases = [
+  {
+    phase: "PHASE 1",
+    title: "Discover",
+    timing: "Daily source refresh",
+    copy: "Monitor official public sources for electrical infrastructure, data center power, underground, substation, utility replacement, and cable-supply signals.",
+  },
+  {
+    phase: "PHASE 2",
+    title: "Qualify",
+    timing: "First-pass review",
+    copy: "Classify each opportunity, estimate likely value when needed, score fit against company capabilities, and explain why the bid is or is not worth a closer look.",
+  },
+  {
+    phase: "PHASE 3",
+    title: "Prepare",
+    timing: "Before estimator handoff",
+    copy: "Generate bid summaries, scope checklists, missing-information lists, required-document checklists, risk flags, DOCX/PDF drafts, and partner outreach emails.",
+  },
+];
+
 const outcomes = [
   "Stop losing hours to portal hopping, PDF skimming, and low-value public notices.",
   "Prioritize bids by fit score, geography, project type, deadline, source, and likely value.",
   "Spot cable supply plus installation opportunities before competitors build the same shortlist.",
   "Create DOCX and PDF proposal prep outputs your estimating, BD, and partner teams can act on.",
+];
+
+const proofStats = [
+  { value: "33", label: "official source targets tracked across federal, state, utility, authority, education, transit, airport, and local procurement" },
+  { value: "18", label: "live importing sources currently refreshing from public feeds, tables, pages, or source-specific adapters" },
+  { value: "$5M+", label: "priority filter for confirmed or likely high-value public electrical infrastructure work" },
+  { value: "DOCX/PDF", label: "proposal-prep artifacts generated from bid details, specs, and company capability context" },
 ];
 
 const platform = [
@@ -87,6 +134,25 @@ const platform = [
     icon: Mail,
     title: "Partner outreach",
     copy: "Draft emails to installer, supplier, EPC, and joint-venture partners with the bid context already included.",
+  },
+];
+
+const faqs = [
+  {
+    question: "How is this different from a general bid board?",
+    answer: "General bid boards aggregate broad opportunities. ElecBidSpec AI focuses on electrical infrastructure pursuit intelligence: scope extraction, project classification, fit scoring, risk flags, and proposal-prep outputs.",
+  },
+  {
+    question: "Does this replace SAM.gov, BidNet, GovWin, or other tools?",
+    answer: "No. It can complement them. The MVP treats each portal as one possible input, then adds electrical-specific filtering, company-fit scoring, PDF/spec extraction, and proposal drafting.",
+  },
+  {
+    question: "What opportunities does the product prioritize?",
+    answer: "The current workspace prioritizes open public bids that are confirmed or likely above $5M, especially data center power, AI infrastructure, MV/HV cable, underground conduit, substations, utility replacement, and grid-related work.",
+  },
+  {
+    question: "Can the team upload RFPs found elsewhere?",
+    answer: "Yes. Users can upload RFP/spec PDFs or text files, then run extraction, classification, fit scoring, checklists, and proposal drafting even when the opportunity came from another portal.",
   },
 ];
 
@@ -169,6 +235,30 @@ export default function SalesPage() {
         </div>
       </section>
 
+      <section className="sales-section-pad sales-muted-band">
+        <div className="sales-section-inner">
+          <div className="sales-section-heading">
+            <p className="sales-kicker">Why teams miss winnable work</p>
+            <h2>Electrical contracts are easy to overlook before they are easy to lose.</h2>
+            <p>
+              The issue is rarely that the opportunity is secret. It is that the signal is scattered, mislabeled, buried in documents, or found too late to build a confident response.
+            </p>
+          </div>
+          <div className="sales-workflow-grid">
+            {missReasons.map((item) => {
+              const Icon = item.icon;
+              return (
+                <article className="sales-workflow-card" key={item.title}>
+                  <Icon size={22} />
+                  <h3>{item.title}</h3>
+                  <p>{item.copy}</p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       <section className="sales-section-pad sales-muted-band" id="coverage">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
@@ -213,6 +303,28 @@ export default function SalesPage() {
         </div>
       </section>
 
+      <section className="sales-section-pad sales-muted-band">
+        <div className="sales-section-inner">
+          <div className="sales-section-heading">
+            <p className="sales-kicker">From public notice to proposal package</p>
+            <h2>One connected view for discovery, qualification, and bid prep.</h2>
+            <p>
+              ElecBidSpec AI does not stop at alerting. It moves each opportunity through the first pursuit decisions your team already has to make.
+            </p>
+          </div>
+          <div className="sales-plan-grid">
+            {pursuitPhases.map((item) => (
+              <article className="sales-plan" key={item.title}>
+                <span className="sales-phase-label">{item.phase}</span>
+                <h3>{item.title}</h3>
+                <p className="sales-phase-time">{item.timing}</p>
+                <p>{item.copy}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="sales-section-pad sales-muted-band" id="outputs">
         <div className="sales-section-inner sales-code-layout">
           <div className="sales-code-copy">
@@ -249,6 +361,23 @@ export default function SalesPage() {
         </div>
       </section>
 
+      <section className="sales-section-pad">
+        <div className="sales-section-inner">
+          <div className="sales-section-heading">
+            <p className="sales-kicker">The numbers that matter</p>
+            <h2>Coverage is only useful when it turns into a better pursuit decision.</h2>
+          </div>
+          <div className="sales-stat-grid">
+            {proofStats.map((item) => (
+              <div className="sales-stat" key={item.label}>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="sales-section-pad" id="platform">
         <div className="sales-section-inner">
           <div className="sales-section-heading compact">
@@ -266,6 +395,23 @@ export default function SalesPage() {
                 </article>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      <section className="sales-section-pad" id="faq">
+        <div className="sales-section-inner">
+          <div className="sales-section-heading compact">
+            <p className="sales-kicker">Common questions</p>
+            <h2>Built as a focused pursuit layer, not another generic feed.</h2>
+          </div>
+          <div className="sales-platform-grid">
+            {faqs.map((item) => (
+              <article className="sales-platform-item" key={item.question}>
+                <h3>{item.question}</h3>
+                <p>{item.answer}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
