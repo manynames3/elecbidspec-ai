@@ -131,6 +131,10 @@ function taihanScore(opportunity: Opportunity) {
   return opportunity.extracted_specs?.taihan_intelligence?.score ?? 0;
 }
 
+function isHighTaihanPriority(opportunity: Opportunity) {
+  return opportunity.extracted_specs?.taihan_intelligence?.tier === "high";
+}
+
 function hasSignalText(opportunity: Opportunity, terms: string[]) {
   const text = [
     opportunity.title,
@@ -206,7 +210,7 @@ export function Dashboard() {
     () => opportunities.filter((item) => item.project_stage === "early_signal" || item.project_stage === "pre_rfp").length,
     [opportunities]
   );
-  const highTaihanSignalCount = useMemo(() => upstreamSignals.filter((item) => taihanScore(item) >= 75).length, [upstreamSignals]);
+  const highTaihanSignalCount = useMemo(() => upstreamSignals.filter(isHighTaihanPriority).length, [upstreamSignals]);
   const dataCenterSignalCount = useMemo(
     () => upstreamSignals.filter((item) => hasSignalText(item, ["data center", "datacenter", "hyperscale", "ai infrastructure", "large load", "gpu"])).length,
     [upstreamSignals]

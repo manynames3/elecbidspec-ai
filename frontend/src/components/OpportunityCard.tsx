@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CalendarDays, ExternalLink, MapPin, TrendingUp } from "lucide-react";
-import { formatCurrency, formatDate, labelize, sourceLabel, whyThisBidMatters } from "@/lib/api";
+import { formatCurrency, formatDate, labelize, sourceLabel, taihanEvidenceLabels, whyThisBidMatters } from "@/lib/api";
 import { FIT_TOOLTIP, InfoTooltip } from "@/components/InfoTooltip";
 import type { Opportunity } from "@/lib/types";
 
@@ -37,6 +37,7 @@ function attachmentEvidenceExcerpt(opportunity: Opportunity): string | null {
 export function OpportunityCard({ opportunity, explanation, rankScore }: OpportunityCardProps) {
   const keywords = opportunity.extracted_specs?.keywords ?? [];
   const taihanIntel = opportunity.extracted_specs?.taihan_intelligence;
+  const taihanEvidence = taihanEvidenceLabels(opportunity);
   const rationale = whyThisBidMatters(opportunity);
   const evidenceExcerpt = attachmentEvidenceExcerpt(opportunity);
   const timingLabel = opportunity.due_date
@@ -122,6 +123,15 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
             <strong>{taihanIntel.taihan_angle.length ? taihanIntel.taihan_angle.slice(0, 2).join(" · ") : `${taihanIntel.cable_relevance} cable relevance`}</strong>
           </div>
           <p className="compact-copy">{taihanIntel.recommended_action}</p>
+          {taihanEvidence.length ? (
+            <div className="tag-row">
+              {taihanEvidence.map((label) => (
+                <span className="tag" key={label}>
+                  {label}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
       {keywords.length ? (

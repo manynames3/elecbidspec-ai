@@ -40,6 +40,12 @@ export type Opportunity = {
       procurement_path: string;
       taihan_angle: string[];
       recommended_action: string;
+      evidence_strength?: {
+        named_utility?: boolean;
+        explicit_voltage?: boolean;
+        data_center_or_load?: boolean;
+        cable_specific_scope?: boolean;
+      };
       reasons: string[];
       risk_flags: string[];
     };

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Download, ExternalLink, FileSearch, FileText, Lock, RefreshCw, Save, Sparkles } from "lucide-react";
-import { apiFetch, apiUrl, authHeaders, formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
+import { apiFetch, apiUrl, authHeaders, formatCurrency, formatDate, labelize, sourceLabel, taihanEvidenceLabels } from "@/lib/api";
 import { FIT_TOOLTIP, InfoTooltip, VALUE_MATCH_TOOLTIP } from "@/components/InfoTooltip";
 import type { AccountStatus, AttachmentExtraction, AttachmentIngestionResult, Opportunity, OpportunityWorkflow, Proposal } from "@/lib/types";
 
@@ -237,6 +237,7 @@ export function OpportunityDetail() {
 
   const specs = opportunity.extracted_specs ?? {};
   const taihanIntel = specs.taihan_intelligence;
+  const taihanEvidence = taihanEvidenceLabels(opportunity);
   const canExport = accountStatus?.feature_flags.proposal_exports ?? false;
   const canEnhance = accountStatus?.feature_flags.ai_enhance ?? false;
   const canIngestDocuments = accountStatus?.feature_flags.custom_source_requests ?? false;
@@ -332,6 +333,15 @@ export function OpportunityDetail() {
             </div>
           </div>
           <p>{taihanIntel.recommended_action}</p>
+          {taihanEvidence.length ? (
+            <div className="tag-row" aria-label="Taihan priority evidence">
+              {taihanEvidence.map((label) => (
+                <span className="tag" key={label}>
+                  {label}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="tag-row">
             {taihanIntel.taihan_angle.map((angle) => (
               <span className="tag" key={angle}>

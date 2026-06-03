@@ -94,6 +94,27 @@ export function labelize(value: string | null | undefined): string {
   return value.replaceAll("_", " ");
 }
 
+export function taihanEvidenceLabels(opportunity: Opportunity): string[] {
+  const evidence = opportunity.extracted_specs?.taihan_intelligence?.evidence_strength;
+  if (!evidence) {
+    return [];
+  }
+  const labels: string[] = [];
+  if (evidence.named_utility) {
+    labels.push("named utility");
+  }
+  if (evidence.explicit_voltage) {
+    labels.push("voltage");
+  }
+  if (evidence.data_center_or_load) {
+    labels.push("data center / load");
+  }
+  if (evidence.cable_specific_scope) {
+    labels.push("cable scope");
+  }
+  return labels;
+}
+
 export function sourceLabel(source: string): string {
   if (source === "txdot_bid_items") {
     return "TxDOT";
