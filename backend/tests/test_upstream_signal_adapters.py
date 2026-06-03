@@ -97,6 +97,35 @@ def test_pjm_project_construction_adapter_parses_active_upgrade_with_evidence(mo
     assert records[0]["owner_type"] == "investor_owned_utility"
     assert records[0]["estimated_value"] == 12_500_000
     assert records[0]["attachments"][0]["type"] == "evidence"
+    assert "Official PJM project construction signal" in records[0]["extracted_specs"]["evidence_excerpts"][0]
+
+
+def test_pjm_project_construction_adapter_recovers_from_truncated_root(monkeypatch):
+    payload = """<?xml version="1.0" encoding="UTF-8"?>
+    <Upgrades>
+      <Upgrade>
+        <UpgradeId>b2001</UpgradeId>
+        <Description>Install 345 kV underground cable terminal and substation expansion for data center load growth</Description>
+        <ProjectType>Supplemental</ProjectType>
+        <Voltage>345</Voltage>
+        <CostEstimate>42</CostEstimate>
+        <TransmissionOwner>AEP</TransmissionOwner>
+        <State>OH</State>
+        <Status>Active</Status>
+        <LastUpdated>6/2/2026</LastUpdated>
+      </Upgrade>
+    """
+
+    def handler(request):
+        return httpx.Response(200, text=payload)
+
+    _mock_client(monkeypatch, handler)
+
+    records = PjmProjectConstructionAdapter().fetch({"limit": 5})
+
+    assert len(records) == 1
+    assert records[0]["title"].startswith("PJM transmission upgrade b2001")
+    assert records[0]["owner_type"] == "investor_owned_utility"
 
 
 def test_caiso_interconnection_queue_adapter_parses_workbook(monkeypatch):
@@ -488,6 +517,35 @@ def test_texas_puc_dockets_adapter_filters_and_links_dockets(monkeypatch):
     assert records[0]["state"] == "TX"
     assert records[0]["source_url"].endswith("ControlNumber=59818")
     assert records[0]["attachments"][1]["type"] == "evidence"
+
+
+def test_texas_puc_dockets_adapter_falls_back_for_official_tls_chain_issue(monkeypatch):
+    html = """
+    <table>
+      <tr><th>Control</th><th>Filings</th><th>Utility</th><th>Description (Case Style)</th></tr>
+      <tr>
+        <td><a href="/search/filings/?ControlNumber=59818">59818</a></td>
+        <td>1</td>
+        <td>ONCOR ELECTRIC DELIVERY COMPANY LLC</td>
+        <td>APPLICATION FOR CERTIFICATE OF CONVENIENCE AND NECESSITY FOR A 345 KV TRANSMISSION PROJECT</td>
+      </tr>
+    </table>
+    """
+    attempts = {"count": 0}
+
+    def handler(request):
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            raise httpx.ConnectError("[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed", request=request)
+        return httpx.Response(200, text=html, request=request)
+
+    _mock_client(monkeypatch, handler)
+
+    records = TexasPucDocketsAdapter().fetch({"limit": 5, "keywords": ["transmission"]})
+
+    assert attempts["count"] == 2
+    assert len(records) == 1
+    assert records[0]["owner_type"] == "investor_owned_utility"
 
 
 def test_loudoun_land_applications_adapter_queries_arcgis_and_ranks_stronger_signals(monkeypatch):

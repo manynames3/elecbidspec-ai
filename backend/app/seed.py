@@ -14,6 +14,7 @@ from app.services.classification import classify_bid
 from app.services.auth import hash_password
 from app.services.extraction import extract_specs
 from app.services.fit_scoring import score_fit
+from app.services.taihan_intelligence import add_taihan_intelligence
 from app.services.value_assessment import assess_value, infer_owner_type, infer_project_stage, infer_signal_type, infer_source_type, normalize_bid_status
 
 
@@ -100,6 +101,7 @@ def ensure_seed_data(db: Session) -> None:
         opportunity_data.update(assess_value(opportunity_data))
         fit = score_fit(opportunity_data, profile_data)
         opportunity_data.update(fit)
+        opportunity_data = add_taihan_intelligence(opportunity_data)
         db.add(Opportunity(**opportunity_data))
     db.commit()
 

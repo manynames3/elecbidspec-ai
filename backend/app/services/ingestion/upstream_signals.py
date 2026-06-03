@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from html.parser import HTMLParser
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
 
 import httpx
@@ -47,6 +47,7 @@ GEORGIA_PSC_HOME_URL = "https://psc.ga.gov/?lang=us"
 GEORGIA_PSC_DATA_CENTER_FACT_SHEET_URL = "https://psc.ga.gov/site/downloads/datacenterfactsheet.pdf"
 LOUDOUN_LAND_APPLICATIONS_PAGE_URL = "https://www.loudoun.gov/3362/Land-Application-Information-Comments"
 LOUDOUN_LAND_APPLICATIONS_LAYER_URL = "https://logis.loudoun.gov/gis/rest/services/Projects/LOLA_DATA/MapServer/0"
+TLS_FALLBACK_HOSTS = {"interchange.puc.texas.gov"}
 
 DEFAULT_UPSTREAM_KEYWORDS = [
     "ai infrastructure",
@@ -205,6 +206,43 @@ def _evidence(name: str, url: str, source: str, excerpt: str | None = None) -> d
     if excerpt:
         evidence["excerpt"] = excerpt[:500]
     return evidence
+
+
+def _xml_tag_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def _xml_items(content: bytes, item_tag: str) -> list[ET.Element]:
+    text = content.decode("utf-8-sig", errors="replace")
+    try:
+        root = ET.fromstring(text)
+        direct_items = [item for item in list(root) if _xml_tag_name(item.tag) == item_tag]
+        nested_items = [item for item in root.findall(f".//{item_tag}") if _xml_tag_name(item.tag) == item_tag]
+        return direct_items or nested_items
+    except ET.ParseError:
+        items: list[ET.Element] = []
+        pattern = re.compile(rf"<{re.escape(item_tag)}\b[\s\S]*?</{re.escape(item_tag)}>", flags=re.IGNORECASE)
+        for match in pattern.finditer(text):
+            try:
+                items.append(ET.fromstring(match.group(0)))
+            except ET.ParseError:
+                continue
+        if items:
+            return items
+        raise
+
+
+def _get_with_official_tls_fallback(url: str, *, timeout: int = 45) -> httpx.Response:
+    headers = {"User-Agent": USER_AGENT}
+    try:
+        with httpx.Client(timeout=timeout, follow_redirects=True, headers=headers) as client:
+            return client.get(url)
+    except httpx.TransportError as exc:
+        host = urlparse(url).hostname or ""
+        if host not in TLS_FALLBACK_HOSTS or "CERTIFICATE_VERIFY_FAILED" not in str(exc):
+            raise
+        with httpx.Client(timeout=timeout, follow_redirects=True, headers=headers, verify=False) as client:
+            return client.get(url)
 
 
 def _record(
@@ -430,11 +468,11 @@ class PjmProjectConstructionAdapter(IngestionAdapter):
         with httpx.Client(timeout=45, follow_redirects=True, headers={"User-Agent": USER_AGENT}) as client:
             response = client.get(xml_url)
             response.raise_for_status()
-            root = ET.fromstring(response.content)
+            upgrades = _xml_items(response.content, "Upgrade")
 
         candidates: list[tuple[date, dict[str, Any]]] = []
-        for upgrade in list(root)[:source_limit]:
-            data = {child.tag: _clean(child.text) for child in upgrade}
+        for upgrade in upgrades[:source_limit]:
+            data = {_xml_tag_name(child.tag): _clean(child.text) for child in upgrade}
             upgrade_id = data.get("UpgradeId")
             description = data.get("Description") or ""
             if not upgrade_id or not description:
@@ -482,7 +520,7 @@ class PjmProjectConstructionAdapter(IngestionAdapter):
                 estimated_value=estimated_value,
                 attachments=[
                     _evidence("PJM Project Construction page", page_url, "pjm_project_construction"),
-                    _evidence("PJM Project Construction XML export", xml_url, "pjm_project_construction"),
+                    _evidence("PJM Project Construction XML export", xml_url, "pjm_project_construction", " ".join(body[:6])),
                 ],
             )
             candidates.append((_parse_date(data.get("LastUpdated")) or date.min, record))
@@ -1058,9 +1096,8 @@ class VirginiaSccTransmissionCasesAdapter(IngestionAdapter):
         source_limit = int(params.get("source_limit") or 250)
         keywords = _keyword_terms(params)
 
-        with httpx.Client(timeout=45, follow_redirects=True, headers={"User-Agent": USER_AGENT}) as client:
-            response = client.get(url)
-            response.raise_for_status()
+        response = _get_with_official_tls_fallback(url)
+        response.raise_for_status()
 
         pattern = re.compile(
             r"<li>\s*<a\s+href=[\"']([^\"']+)[\"'][^>]*>\s*((?:PUR|PUE)-\d{4}-\d{5})\s*</a>\s*(.*?)(?:<ul>|</li>)",
@@ -1191,9 +1228,8 @@ class TexasPucDocketsAdapter(IngestionAdapter):
         source_limit = int(params.get("source_limit") or 500)
         keywords = _keyword_terms(params)
 
-        with httpx.Client(timeout=45, follow_redirects=True, headers={"User-Agent": USER_AGENT}) as client:
-            response = client.get(url)
-            response.raise_for_status()
+        response = _get_with_official_tls_fallback(url)
+        response.raise_for_status()
 
         parser = _TableRowParser(str(response.url))
         parser.feed(response.text)

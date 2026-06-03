@@ -113,6 +113,24 @@ PUBLIC_AGENCY_SOURCE_TYPES = {
     "water_authority",
 }
 
+RTO_ISO_SOURCES = {
+    "pjm_project_construction",
+    "caiso_interconnection_queue",
+    "ercot_capacity_changes",
+    "iso_ne_interconnection_queue",
+    "miso_eras_interconnection",
+    "nyiso_interconnection_queue",
+    "spp_gi_active_requests",
+}
+
+REGULATORY_SOURCES = {
+    "texas_puc_dockets",
+    "virginia_scc_transmission_cases",
+    "georgia_psc_data_center",
+}
+
+LAND_USE_SOURCES = {"loudoun_land_applications"}
+
 EARLY_SIGNAL_TERMS = {
     "capital improvement program",
     "capital plan",
@@ -260,6 +278,12 @@ def infer_source_type(source: str | None, agency: str | None = None) -> str:
     agency_text = (agency or "").lower()
     if source_text == "sam_gov":
         return "federal"
+    if source_text in RTO_ISO_SOURCES:
+        return "rto_iso"
+    if source_text in REGULATORY_SOURCES:
+        return "regulatory"
+    if source_text in LAND_USE_SOURCES:
+        return "land_use"
     if any(term in f"{source_text} {agency_text}" for term in INVESTOR_OWNED_UTILITY_TERMS):
         return "investor_owned_utility"
     if any(term in agency_text for term in ["city of", "county", "state", "department of transportation", "public works"]):

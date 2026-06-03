@@ -33,6 +33,16 @@ export type Opportunity = {
     source_text_preview?: string;
     evidence_links?: Array<Record<string, unknown>>;
     evidence_excerpts?: string[];
+    taihan_intelligence?: {
+      score: number;
+      tier: "high" | "medium" | "low" | string;
+      cable_relevance: "high" | "medium" | "low" | string;
+      procurement_path: string;
+      taihan_angle: string[];
+      recommended_action: string;
+      reasons: string[];
+      risk_flags: string[];
+    };
   };
   project_type: string;
   confidence_score: number;

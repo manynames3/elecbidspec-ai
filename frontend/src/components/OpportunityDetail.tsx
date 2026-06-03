@@ -236,6 +236,7 @@ export function OpportunityDetail() {
   }
 
   const specs = opportunity.extracted_specs ?? {};
+  const taihanIntel = specs.taihan_intelligence;
   const canExport = accountStatus?.feature_flags.proposal_exports ?? false;
   const canEnhance = accountStatus?.feature_flags.ai_enhance ?? false;
   const canIngestDocuments = accountStatus?.feature_flags.custom_source_requests ?? false;
@@ -305,6 +306,46 @@ export function OpportunityDetail() {
           <Lock size={17} />
           <span>Sign in to a pilot workspace to export DOCX/PDF packages, enhance proposals with AI, and ingest linked source documents.</span>
         </div>
+      ) : null}
+
+      {taihanIntel ? (
+        <section className="panel">
+          <div className="panel-title-row">
+            <div>
+              <span className="field-label">Taihan opportunity read</span>
+              <h2>Recommended pursuit posture</h2>
+            </div>
+            <span className={`source-pill taihan-${taihanIntel.tier}`}>Taihan {taihanIntel.score}</span>
+          </div>
+          <div className="metric-row">
+            <div>
+              <span className="field-label">Cable relevance</span>
+              <strong>{labelize(taihanIntel.cable_relevance)}</strong>
+            </div>
+            <div>
+              <span className="field-label">Procurement path</span>
+              <strong>{labelize(taihanIntel.procurement_path)}</strong>
+            </div>
+            <div>
+              <span className="field-label">Tier</span>
+              <strong>{labelize(taihanIntel.tier)}</strong>
+            </div>
+          </div>
+          <p>{taihanIntel.recommended_action}</p>
+          <div className="tag-row">
+            {taihanIntel.taihan_angle.map((angle) => (
+              <span className="tag" key={angle}>
+                {angle}
+              </span>
+            ))}
+          </div>
+          {taihanIntel.risk_flags.length ? (
+            <p className="compact-copy">
+              <strong>Risks: </strong>
+              {taihanIntel.risk_flags.join(" ")}
+            </p>
+          ) : null}
+        </section>
       ) : null}
 
       {workflowDraft ? (

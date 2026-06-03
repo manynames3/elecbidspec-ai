@@ -36,6 +36,7 @@ function attachmentEvidenceExcerpt(opportunity: Opportunity): string | null {
 
 export function OpportunityCard({ opportunity, explanation, rankScore }: OpportunityCardProps) {
   const keywords = opportunity.extracted_specs?.keywords ?? [];
+  const taihanIntel = opportunity.extracted_specs?.taihan_intelligence;
   const rationale = whyThisBidMatters(opportunity);
   const evidenceExcerpt = attachmentEvidenceExcerpt(opportunity);
   const timingLabel = opportunity.due_date
@@ -55,6 +56,7 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
           {labelize(opportunity.project_stage)}
         </span>
         <span className={`source-pill ${opportunity.source === "seed" ? "sample" : "live"}`}>{sourceLabel(opportunity.source)}</span>
+        {taihanIntel ? <span className={`source-pill taihan-${taihanIntel.tier}`}>Taihan {taihanIntel.score}</span> : null}
         {opportunity.owner_type === "investor_owned_utility" ? <span className="source-pill live">IOU</span> : null}
         <span className="source-pill">{opportunity.source_type.replaceAll("_", " ")}</span>
         {rankScore ? <span className="source-pill">rank {rankScore}</span> : null}
@@ -113,6 +115,15 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
         </p>
       ) : null}
       {opportunity.value_explanation ? <p className="compact-copy">{opportunity.value_explanation}</p> : null}
+      {taihanIntel ? (
+        <div className="taihan-intel-block">
+          <div className="taihan-intel-row">
+            <span className="field-label">Taihan angle</span>
+            <strong>{taihanIntel.taihan_angle.length ? taihanIntel.taihan_angle.slice(0, 2).join(" · ") : `${taihanIntel.cable_relevance} cable relevance`}</strong>
+          </div>
+          <p className="compact-copy">{taihanIntel.recommended_action}</p>
+        </div>
+      ) : null}
       {keywords.length ? (
         <div className="tag-row">
           {keywords.slice(0, 6).map((keyword) => (

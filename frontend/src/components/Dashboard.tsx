@@ -127,8 +127,30 @@ function SourceStatusText({ status }: { status: string }) {
   return status.replaceAll("_", " ");
 }
 
+function taihanScore(opportunity: Opportunity) {
+  return opportunity.extracted_specs?.taihan_intelligence?.score ?? 0;
+}
+
+function hasSignalText(opportunity: Opportunity, terms: string[]) {
+  const text = [
+    opportunity.title,
+    opportunity.agency,
+    opportunity.description,
+    opportunity.project_type,
+    opportunity.signal_type,
+    opportunity.source_type,
+    ...(opportunity.extracted_specs?.keywords ?? []),
+    ...(opportunity.extracted_specs?.required_materials ?? [])
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return terms.some((term) => text.includes(term));
+}
+
 export function Dashboard() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [upstreamSignals, setUpstreamSignals] = useState<Opportunity[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [query, setQuery] = useState("");
@@ -184,6 +206,19 @@ export function Dashboard() {
     () => opportunities.filter((item) => item.project_stage === "early_signal" || item.project_stage === "pre_rfp").length,
     [opportunities]
   );
+  const highTaihanSignalCount = useMemo(() => upstreamSignals.filter((item) => taihanScore(item) >= 75).length, [upstreamSignals]);
+  const dataCenterSignalCount = useMemo(
+    () => upstreamSignals.filter((item) => hasSignalText(item, ["data center", "datacenter", "hyperscale", "ai infrastructure", "large load", "gpu"])).length,
+    [upstreamSignals]
+  );
+  const iouSignalCount = useMemo(
+    () => upstreamSignals.filter((item) => item.owner_type === "investor_owned_utility" || item.source_type === "regulatory" || item.source_type === "utility").length,
+    [upstreamSignals]
+  );
+  const topUpstreamSignals = useMemo(
+    () => [...upstreamSignals].sort((first, second) => taihanScore(second) - taihanScore(first) || (second.fit_score ?? 0) - (first.fit_score ?? 0)).slice(0, 4),
+    [upstreamSignals]
+  );
 
   function opportunityPath(nextFilters: Filters) {
     const params = new URLSearchParams();
@@ -200,9 +235,10 @@ export function Dashboard() {
     setError(null);
     try {
       let activeFilters = nextFilters;
-      let [loadedOpportunities, loadedSummary] = await Promise.all([
+      let [loadedOpportunities, loadedSummary, loadedUpstreamSignals] = await Promise.all([
         apiFetch<Opportunity[]>(opportunityPath(activeFilters)),
-        apiFetch<IngestionSummary>("/ingestion/summary")
+        apiFetch<IngestionSummary>("/ingestion/summary"),
+        apiFetch<Opportunity[]>("/opportunities?real_only=true&minimum_value_match=true")
       ]);
       if (activeFilters.real_only && !loadedOpportunities.length && loadedSummary.real_opportunity_count === 0) {
         activeFilters = { ...activeFilters, real_only: "" };
@@ -210,6 +246,7 @@ export function Dashboard() {
         setFilters(activeFilters);
       }
       setOpportunities(loadedOpportunities);
+      setUpstreamSignals(loadedUpstreamSignals.filter((item) => item.project_stage === "early_signal" || item.project_stage === "pre_rfp"));
       setIngestionSummary(loadedSummary);
       setSearchResults(null);
     } catch (err) {
@@ -285,9 +322,8 @@ export function Dashboard() {
     await loadOpportunities(filters);
   }
 
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!query.trim()) {
+  async function runSearch(searchQuery: string) {
+    if (!searchQuery.trim()) {
       await loadOpportunities(filters);
       return;
     }
@@ -297,7 +333,7 @@ export function Dashboard() {
       setSearchResults(
         await apiFetch<SearchResult[]>("/search", {
           method: "POST",
-          body: JSON.stringify({ query })
+          body: JSON.stringify({ query: searchQuery })
         })
       );
     } catch (err) {
@@ -305,6 +341,11 @@ export function Dashboard() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await runSearch(query);
   }
 
   async function refreshPublicSources() {
@@ -329,6 +370,20 @@ export function Dashboard() {
     } finally {
       setRefreshingSources(false);
     }
+  }
+
+  function applyUpstreamPreset(preset: Partial<Filters>) {
+    const nextFilters = {
+      ...emptyFilters,
+      real_only: "true",
+      minimum_value_match: "true",
+      bid_status: "",
+      open_only: "",
+      ...preset
+    };
+    setFilters(nextFilters);
+    setSearchResults(null);
+    void loadOpportunities(nextFilters);
   }
 
   async function saveAlertPreferences() {
@@ -503,6 +558,76 @@ export function Dashboard() {
             </span>
           ))}
         </div>
+      </section>
+
+      <section className="upstream-intel-panel" aria-label="Upstream intelligence">
+        <div className="panel-title-row">
+          <div>
+            <span className="field-label">Upstream Intelligence</span>
+            <h2>Pre-RFP grid, IOU, and data-center power signals</h2>
+          </div>
+          <div className="card-meta">
+            <span>{upstreamSignals.length} qualified early signals</span>
+            <span>{highTaihanSignalCount} high-priority for Taihan</span>
+          </div>
+        </div>
+        <div className="upstream-metric-grid">
+          <div>
+            <span className="field-label">Taihan high-priority</span>
+            <strong>{highTaihanSignalCount}</strong>
+          </div>
+          <div>
+            <span className="field-label">Data center / AI</span>
+            <strong>{dataCenterSignalCount}</strong>
+          </div>
+          <div>
+            <span className="field-label">IOU / regulatory</span>
+            <strong>{iouSignalCount}</strong>
+          </div>
+          <div>
+            <span className="field-label">RTO / ISO queue</span>
+            <strong>{upstreamSignals.filter((item) => item.source_type === "rto_iso").length}</strong>
+          </div>
+        </div>
+        <div className="upstream-actions" aria-label="Upstream intelligence filters">
+          <button type="button" className="secondary-button" onClick={() => applyUpstreamPreset({ project_stage: "early_signal" })}>
+            Pre-RFP signals
+          </button>
+          <button type="button" className="secondary-button" onClick={() => applyUpstreamPreset({ source_type: "rto_iso", project_stage: "early_signal" })}>
+            RTO/ISO queues
+          </button>
+          <button type="button" className="secondary-button" onClick={() => applyUpstreamPreset({ source_type: "regulatory", project_stage: "early_signal" })}>
+            PUC dockets
+          </button>
+          <button type="button" className="secondary-button" onClick={() => applyUpstreamPreset({ owner_type: "investor_owned_utility", project_stage: "early_signal" })}>
+            IOU signals
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => {
+              const nextQuery = "data center AI infrastructure large load high voltage substation signals";
+              setQuery(nextQuery);
+              void runSearch(nextQuery);
+            }}
+          >
+            Data center / AI
+          </button>
+        </div>
+        {topUpstreamSignals.length ? (
+          <div className="upstream-signal-list">
+            {topUpstreamSignals.map((item) => {
+              const intel = item.extracted_specs?.taihan_intelligence;
+              return (
+                <Link href={`/opportunities?id=${item.id}`} className="upstream-signal-row" key={item.id}>
+                  <strong>{intel ? `Taihan ${intel.score}` : item.fit_score ?? "--"}</strong>
+                  <span>{item.title}</span>
+                  <em>{sourceLabel(item.source)}</em>
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
       </section>
 
       <section className="toolbar-band">

@@ -235,6 +235,10 @@ export function sourceLabel(source: string): string {
 
 export function whyThisBidMatters(opportunity: Opportunity): string {
   const reasons: string[] = [];
+  const taihanIntel = opportunity.extracted_specs?.taihan_intelligence;
+  if (taihanIntel?.tier === "high") {
+    reasons.push("Taihan high-priority signal");
+  }
   if (opportunity.project_stage === "early_signal") {
     reasons.push("early signal before RFP");
   } else if (opportunity.project_stage === "pre_rfp") {

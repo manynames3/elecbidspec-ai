@@ -74,6 +74,7 @@ from app.services.search import (
     search_opportunities,
 )
 from app.services.storage import store_upload
+from app.services.taihan_intelligence import add_taihan_intelligence
 from app.services.tenancy import PUBLIC_TENANT_ID
 from app.services.value_assessment import assess_value, infer_owner_type, infer_project_stage, infer_signal_type, infer_source_type, normalize_bid_status
 from app.worker import process_job
@@ -215,7 +216,7 @@ def opportunity_to_dict(opportunity: Opportunity) -> dict:
         "created_at": opportunity.created_at,
         "updated_at": opportunity.updated_at,
     }
-    return data
+    return add_taihan_intelligence(data)
 
 
 def opportunity_to_dict_for_profile(opportunity: Opportunity, profile: dict | None) -> dict:
@@ -224,6 +225,7 @@ def opportunity_to_dict_for_profile(opportunity: Opportunity, profile: dict | No
         fit = score_fit(data, profile)
         data["fit_score"] = fit.get("fit_score")
         data["fit_explanation"] = fit.get("fit_explanation")
+    data = add_taihan_intelligence(data)
     return data
 
 
@@ -280,7 +282,7 @@ def enrich_opportunity_data(data: dict, db: Session) -> dict:
     profile = get_profile_data(db)
     if profile:
         enriched.update(score_fit(enriched, profile))
-    return enriched
+    return add_taihan_intelligence(enriched)
 
 
 def _job_label(job: IngestionJob) -> str:

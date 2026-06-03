@@ -337,6 +337,77 @@ select {
   padding-top: 12px;
 }
 
+.upstream-intel-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.upstream-intel-panel h2 {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+.upstream-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.upstream-metric-grid > div,
+.taihan-intel-block {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fffefa;
+  padding: 10px 12px;
+}
+
+.upstream-metric-grid strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 20px;
+}
+
+.upstream-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.upstream-signal-list {
+  display: grid;
+  gap: 6px;
+}
+
+.upstream-signal-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 150px;
+  gap: 10px;
+  align-items: center;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fffefa;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.upstream-signal-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upstream-signal-row em {
+  color: var(--muted);
+  font-style: normal;
+  text-align: right;
+}
+
 .alert-digest-header,
 .panel-title-row {
   display: flex;
@@ -726,6 +797,35 @@ textarea {
   color: #9a3412;
 }
 
+.source-pill.taihan-high {
+  background: #e8f4ec;
+  border-color: #b8d9c3;
+  color: var(--green);
+}
+
+.source-pill.taihan-medium {
+  background: #fff4df;
+  border-color: #e6cf9c;
+  color: var(--amber);
+}
+
+.source-pill.taihan-low {
+  background: #f3f4f6;
+  border-color: #cfd5dc;
+  color: #4b5563;
+}
+
+.taihan-intel-block {
+  display: grid;
+  gap: 6px;
+}
+
+.taihan-intel-row strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 14px;
+}
+
 .bid-rationale {
   display: grid;
   gap: 4px;
@@ -1002,6 +1102,8 @@ textarea {
   .saved-search-form,
   .saved-search-item,
   .search-row,
+  .upstream-metric-grid,
+  .upstream-signal-row,
   .filter-grid,
   .form-grid,
   .panel-grid,

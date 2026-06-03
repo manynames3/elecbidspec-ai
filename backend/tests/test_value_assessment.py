@@ -52,6 +52,9 @@ def test_infer_estimated_value_from_notice_text():
 def test_normalizes_portal_status_and_manual_public_agency_type():
     assert normalize_bid_status("Sources Sought", None) == "open"
     assert infer_source_type("manual_upload", "City of Austin Public Works") == "state_local"
+    assert infer_source_type("iso_ne_interconnection_queue", "ISO New England") == "rto_iso"
+    assert infer_source_type("texas_puc_dockets", "Public Utility Commission of Texas") == "regulatory"
+    assert infer_source_type("loudoun_land_applications", "Loudoun County") == "land_use"
 
 
 def test_infers_upstream_iou_signal_context():
