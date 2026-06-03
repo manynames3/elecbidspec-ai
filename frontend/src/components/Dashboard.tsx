@@ -57,7 +57,18 @@ const sourceFilterOptions = [
   "ny_mta",
   "dfw_airport",
   "uc_procurement",
-  "houston_water"
+  "houston_water",
+  "pjm_project_construction",
+  "caiso_interconnection_queue",
+  "ercot_capacity_changes",
+  "iso_ne_interconnection_queue",
+  "miso_eras_interconnection",
+  "nyiso_interconnection_queue",
+  "spp_gi_active_requests",
+  "texas_puc_dockets",
+  "virginia_scc_transmission_cases",
+  "georgia_psc_data_center",
+  "loudoun_land_applications"
 ];
 
 type Filters = {
@@ -144,6 +155,14 @@ export function Dashboard() {
   const coveredSourceCount = sourceHealth.filter((source) => source.status === "covered_by_source").length;
   const noCurrentMatchSourceCount = sourceHealth.filter((source) => source.status === "no_current_matches" || source.status === "no_records").length;
   const needsAttentionSourceCount = sourceHealth.filter((source) => ["failed", "missing_config", "needs_adapter"].includes(source.status)).length;
+  const availableSourceOptions = useMemo(() => {
+    const dynamicSources = [
+      ...sourceHealth.map((source) => source.source),
+      ...opportunities.map((opportunity) => opportunity.source)
+    ].filter(Boolean);
+
+    return Array.from(new Set([...sourceFilterOptions, ...dynamicSources])).sort((first, second) => sourceLabel(first).localeCompare(sourceLabel(second)));
+  }, [opportunities, sourceHealth]);
   const canAdminRefresh = accountStatus?.feature_flags.admin_refresh ?? false;
   const canUseAlerts = accountStatus?.feature_flags.saved_search_alerts ?? false;
   const alertCounts = alertRun?.digest.counts;
@@ -803,7 +822,7 @@ export function Dashboard() {
               }
             >
               <option value="">Any</option>
-              {sourceFilterOptions.map((source) => (
+              {availableSourceOptions.map((source) => (
                 <option value={source} key={source}>
                   {sourceLabel(source)}
                 </option>
