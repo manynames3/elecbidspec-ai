@@ -2,13 +2,11 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, DatabaseZap, Filter, RefreshCw, Save, Search } from "lucide-react";
-import { apiFetch, authHeaders, getAuthToken, sourceLabel } from "@/lib/api";
-import type { AlertPreference, AlertRun, IngestionRefreshResult, IngestionSummary, Opportunity, SavedSearch, SearchResult } from "@/lib/types";
+import { Bell, CheckCircle2, DatabaseZap, Filter, Lock, RefreshCw, Save, Search } from "lucide-react";
+import { apiFetch, sourceLabel } from "@/lib/api";
+import type { AccountStatus, AlertPreference, AlertRun, IngestionRefreshResult, IngestionSummary, Opportunity, SavedSearch, SearchResult } from "@/lib/types";
 import { COVERED_BY_SOURCE_TOOLTIP, FIT_TOOLTIP, InfoTooltip, PORTAL_GATED_TOOLTIP, VALUE_MATCH_TOOLTIP } from "@/components/InfoTooltip";
 import { OpportunityCard } from "@/components/OpportunityCard";
-
-const adminTokenStorageKey = "elecbidspec_admin_token";
 
 const projectTypes = [
   "data_center_power",
@@ -19,6 +17,10 @@ const projectTypes = [
   "substation_related",
   "general_electrical"
 ];
+
+const projectStages = ["early_signal", "pre_rfp", "active_bid", "awarded"];
+
+const ownerTypes = ["investor_owned_utility", "public_power_or_utility", "public_agency", "private_developer"];
 
 const sourceFilterOptions = [
   "seed",
@@ -62,6 +64,8 @@ type Filters = {
   due_before: string;
   state: string;
   project_type: string;
+  project_stage: string;
+  owner_type: string;
   min_fit_score: string;
   min_value: string;
   minimum_value_match: string;
@@ -79,6 +83,8 @@ const emptyFilters: Filters = {
   due_before: "",
   state: "",
   project_type: "",
+  project_stage: "",
+  owner_type: "",
   min_fit_score: "",
   min_value: "",
   minimum_value_match: "true",
@@ -90,6 +96,14 @@ const emptyFilters: Filters = {
   saved_only: "",
   watched_only: "",
   include_hidden: ""
+};
+
+const defaultAlertForm = {
+  email_to: "",
+  min_fit_score: "70",
+  due_within_days: "30",
+  enabled: true,
+  include_source_failures: true
 };
 
 function SourceStatusText({ status }: { status: string }) {
@@ -110,16 +124,16 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshingSources, setRefreshingSources] = useState(false);
   const [ingestionSummary, setIngestionSummary] = useState<IngestionSummary | null>(null);
+  const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [alertPreference, setAlertPreference] = useState<AlertPreference | null>(null);
   const [alertRun, setAlertRun] = useState<AlertRun | null>(null);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [savedSearchName, setSavedSearchName] = useState("");
-  const [alertForm, setAlertForm] = useState({ email_to: "", min_fit_score: "70", due_within_days: "30", enabled: true, include_source_failures: true });
+  const [alertForm, setAlertForm] = useState(defaultAlertForm);
   const [alertLoading, setAlertLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceMessage, setSourceMessage] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [adminToken, setAdminToken] = useState("");
 
   const visibleCount = searchResults ? searchResults.length : opportunities.length;
   const latestPublicRefresh = ingestionSummary?.latest_jobs.find((job) => job.adapter !== "sam_gov");
@@ -127,7 +141,19 @@ export function Dashboard() {
   const publicSourceCount = sourceHealth.length || ingestionSummary?.sources.filter((source) => source.source !== "seed" && source.source !== "manual_upload").length || 0;
   const liveImportingSourceCount = sourceHealth.filter((source) => source.status === "healthy").length;
   const gatedSourceCount = sourceHealth.filter((source) => source.status === "portal_gated").length;
+  const coveredSourceCount = sourceHealth.filter((source) => source.status === "covered_by_source").length;
+  const noCurrentMatchSourceCount = sourceHealth.filter((source) => source.status === "no_current_matches" || source.status === "no_records").length;
+  const needsAttentionSourceCount = sourceHealth.filter((source) => ["failed", "missing_config", "needs_adapter"].includes(source.status)).length;
+  const canAdminRefresh = accountStatus?.feature_flags.admin_refresh ?? false;
+  const canUseAlerts = accountStatus?.feature_flags.saved_search_alerts ?? false;
   const alertCounts = alertRun?.digest.counts;
+  const onboardingSteps = [
+    { label: "Sign in to a pilot workspace", complete: accountStatus?.authenticated ?? false },
+    { label: "Confirm company capability profile", complete: accountStatus?.onboarding.has_profile ?? false },
+    { label: "Load official source coverage", complete: accountStatus?.onboarding.source_summary_loaded ?? false },
+    { label: "Save at least one pursuit search", complete: (accountStatus?.onboarding.saved_search_count ?? savedSearches.length) > 0 },
+    { label: "Turn on daily bid alerts", complete: accountStatus?.onboarding.alert_configured ?? false }
+  ];
   const averageFit = useMemo(() => {
     const scores = opportunities.map((item) => item.fit_score).filter((score): score is number => score !== null);
     if (!scores.length) {
@@ -135,6 +161,10 @@ export function Dashboard() {
     }
     return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
   }, [opportunities]);
+  const earlySignalCount = useMemo(
+    () => opportunities.filter((item) => item.project_stage === "early_signal" || item.project_stage === "pre_rfp").length,
+    [opportunities]
+  );
 
   function opportunityPath(nextFilters: Filters) {
     const params = new URLSearchParams();
@@ -192,32 +222,44 @@ export function Dashboard() {
     }
   }
 
+  function clearAccountOwnedState() {
+    setAlertPreference(null);
+    setAlertRun(null);
+    setSavedSearches([]);
+    setSavedSearchName("");
+    setAlertForm(defaultAlertForm);
+  }
+
+  async function loadAccountStatus() {
+    try {
+      const status = await apiFetch<AccountStatus>("/account/status");
+      setAccountStatus(status);
+      return status;
+    } catch {
+      setAccountStatus(null);
+      return null;
+    }
+  }
+
+  async function refreshAccountState() {
+    const status = await loadAccountStatus();
+    if (status?.feature_flags.saved_search_alerts) {
+      await loadAlerts();
+    } else {
+      clearAccountOwnedState();
+    }
+  }
+
   useEffect(() => {
-    setAdminToken(window.localStorage.getItem(adminTokenStorageKey) ?? "");
+    function handleAuthChange() {
+      void refreshAccountState();
+    }
+
     void loadOpportunities(emptyFilters);
-    void loadAlerts();
+    void refreshAccountState();
+    window.addEventListener("elecbidspec-auth-changed", handleAuthChange);
+    return () => window.removeEventListener("elecbidspec-auth-changed", handleAuthChange);
   }, []);
-
-  function adminHeaders() {
-    if (getAuthToken()) {
-      return authHeaders();
-    }
-    let token = adminToken || window.localStorage.getItem(adminTokenStorageKey) || "";
-    if (!token) {
-      token = window.prompt("Enter the admin refresh token")?.trim() ?? "";
-    }
-    if (token) {
-      window.localStorage.setItem(adminTokenStorageKey, token);
-      setAdminToken(token);
-    }
-    return token ? { Authorization: `Bearer ${token}` } : null;
-  }
-
-  function forgetAdminToken() {
-    window.localStorage.removeItem(adminTokenStorageKey);
-    setAdminToken("");
-    setSourceMessage("Admin token cleared for this browser.");
-  }
 
   async function handleFilter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -251,11 +293,10 @@ export function Dashboard() {
     setError(null);
     setSourceMessage(null);
     try {
-      const headers = adminHeaders();
-      if (!headers) {
-        throw new Error("Admin token required to refresh public sources.");
+      if (!canAdminRefresh) {
+        throw new Error("Admin login required to refresh public sources.");
       }
-      const result = await apiFetch<IngestionRefreshResult>("/ingestion/refresh-defaults", { method: "POST", headers });
+      const result = await apiFetch<IngestionRefreshResult>("/ingestion/refresh-defaults", { method: "POST" });
       const imported = result.jobs.reduce((sum, job) => sum + Number(job.result.imported ?? 0), 0);
       const updated = result.jobs.reduce((sum, job) => sum + Number(job.result.updated ?? 0), 0);
       const queued = result.jobs.reduce((sum, job) => sum + Number(job.result.queued ?? 0), 0);
@@ -263,11 +304,8 @@ export function Dashboard() {
       const skipped = result.jobs.filter((job) => job.status === "skipped").length;
       setSourceMessage(`Public sources refreshed: ${imported} imported, ${updated} updated${queued ? `, ${queued} queued` : ""}${failed ? `, ${failed} failed` : ""}${skipped ? `, ${skipped} skipped` : ""}.`);
       await loadOpportunities(filters);
+      await refreshAccountState();
     } catch (err) {
-      if (err instanceof Error && err.message.includes("401")) {
-        window.localStorage.removeItem(adminTokenStorageKey);
-        setAdminToken("");
-      }
       setError(err instanceof Error ? err.message : "Unable to refresh public sources");
     } finally {
       setRefreshingSources(false);
@@ -291,6 +329,7 @@ export function Dashboard() {
       });
       setAlertPreference(saved);
       setAlertMessage("Alert preferences saved.");
+      await refreshAccountState();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save alert preferences");
     } finally {
@@ -305,6 +344,7 @@ export function Dashboard() {
     try {
       setAlertRun(await apiFetch<AlertRun>("/alerts/run", { method: "POST" }));
       setAlertMessage("Alert digest generated.");
+      await refreshAccountState();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to generate alert digest");
     } finally {
@@ -331,6 +371,7 @@ export function Dashboard() {
       setSavedSearchName("");
       setSavedSearches((current) => [saved, ...current.filter((item) => item.id !== saved.id)]);
       setAlertMessage("Saved search added to daily digest.");
+      await refreshAccountState();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to save search");
     } finally {
@@ -346,6 +387,7 @@ export function Dashboard() {
       await apiFetch<unknown>(`/saved-searches/${savedSearchId}`, { method: "DELETE" });
       setSavedSearches((current) => current.filter((item) => item.id !== savedSearchId));
       setAlertMessage("Saved search removed.");
+      await refreshAccountState();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to delete saved search");
     } finally {
@@ -367,7 +409,7 @@ export function Dashboard() {
           <p className="eyebrow">Bid intelligence workspace</p>
           <h1>Your next big electrical contract is already posted. Find it first.</h1>
           <p className="page-subheading">
-            ElecBidSpec AI monitors 33 official sources nationwide and scores each bid against your capabilities — so you only see the ones worth chasing.
+            ElecBidSpec AI monitors 44 official sources nationwide and scores each bid against your capabilities — so you only see the ones worth chasing.
           </p>
         </div>
         <div className="summary-strip">
@@ -384,6 +426,10 @@ export function Dashboard() {
               <InfoTooltip tooltip={FIT_TOOLTIP}>Avg fit</InfoTooltip>
             </span>
             <strong>{averageFit}</strong>
+          </div>
+          <div>
+            <span className="field-label">Early signals</span>
+            <strong>{earlySignalCount}</strong>
           </div>
         </div>
       </section>
@@ -405,6 +451,40 @@ export function Dashboard() {
           <RefreshCw size={17} />
         </button>
       </form>
+
+      <section className="pilot-readiness-panel">
+        <div className="pilot-readiness-copy">
+          <span className="field-label">Pilot workspace</span>
+          <strong>{accountStatus?.plan_label ?? "Loading workspace"}</strong>
+          <p className="compact-copy">
+            {accountStatus?.authenticated
+              ? `Signed in as ${accountStatus.user?.email ?? "pilot user"} for tenant ${accountStatus.tenant_id}.`
+              : "Demo preview shows live product behavior. Sign in to save pursuits, generate alert digests, and export proposal packages for a real company profile."}
+          </p>
+        </div>
+        <div className="pilot-feature-grid" aria-label="Pilot feature access">
+          <div>
+            <span className="field-label">Proposal exports</span>
+            <strong>{accountStatus?.feature_flags.proposal_exports ? "Enabled" : "Pilot login"}</strong>
+          </div>
+          <div>
+            <span className="field-label">Daily alerts</span>
+            <strong>{accountStatus?.feature_flags.saved_search_alerts ? "Enabled" : "Pilot login"}</strong>
+          </div>
+          <div>
+            <span className="field-label">Admin refresh</span>
+            <strong>{canAdminRefresh ? "Enabled" : "Admin only"}</strong>
+          </div>
+        </div>
+        <div className="onboarding-list" aria-label="Pilot onboarding checklist">
+          {onboardingSteps.map((step) => (
+            <span className={step.complete ? "onboarding-step complete" : "onboarding-step"} key={step.label}>
+              {step.complete ? <CheckCircle2 size={15} /> : <Lock size={15} />}
+              {step.label}
+            </span>
+          ))}
+        </div>
+      </section>
 
       <section className="toolbar-band">
         <div className="source-health">
@@ -432,15 +512,44 @@ export function Dashboard() {
             <span className="field-label">Last public refresh</span>
             <strong>{latestPublicRefresh ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(latestPublicRefresh.updated_at)) : "--"}</strong>
           </div>
-          <button className="secondary-button" type="button" onClick={() => void refreshPublicSources()} disabled={refreshingSources}>
-            <DatabaseZap size={17} />
-            {refreshingSources ? "Refreshing" : "Admin refresh"}
-          </button>
-          {adminToken ? (
-            <button className="secondary-button" type="button" onClick={forgetAdminToken}>
-              Clear token
+          {canAdminRefresh ? (
+            <button className="secondary-button" type="button" onClick={() => void refreshPublicSources()} disabled={refreshingSources}>
+              <DatabaseZap size={17} />
+              {refreshingSources ? "Refreshing" : "Admin refresh"}
             </button>
-          ) : null}
+          ) : (
+            <div className="source-card source-admin-card">
+              <span className="field-label">Refresh controls</span>
+              <strong>Admin only</strong>
+            </div>
+          )}
+        </div>
+        <div className="coverage-trust-grid" aria-label="Source coverage trust">
+          <div>
+            <span className="field-label">Live importing</span>
+            <strong>{liveImportingSourceCount}</strong>
+            <p className="compact-copy">Recent official records are flowing into ranked opportunity cards.</p>
+          </div>
+          <div>
+            <span className="field-label">Portal gated</span>
+            <strong>{gatedSourceCount}</strong>
+            <p className="compact-copy">Tracked agencies that require a separate login or manual portal review.</p>
+          </div>
+          <div>
+            <span className="field-label">Covered by source</span>
+            <strong>{coveredSourceCount}</strong>
+            <p className="compact-copy">Duplicate agency coverage is included through another connected feed.</p>
+          </div>
+          <div>
+            <span className="field-label">No current matches</span>
+            <strong>{noCurrentMatchSourceCount}</strong>
+            <p className="compact-copy">Connected or tracked sources with no current $5M+ electrical matches.</p>
+          </div>
+          <div>
+            <span className="field-label">Needs attention</span>
+            <strong>{needsAttentionSourceCount}</strong>
+            <p className="compact-copy">Adapters or credentials that need admin follow-up before production use.</p>
+          </div>
         </div>
         {sourceHealth.length ? (
           <div className="source-health-list" aria-label="Official source health">
@@ -476,6 +585,7 @@ export function Dashboard() {
               {alertRun ? <span>last run {new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(alertRun.created_at))}</span> : null}
             </div>
           </div>
+          {!canUseAlerts ? <p className="compact-copy">Sign in to a pilot workspace to save searches and generate daily pursuit digests.</p> : null}
           <div className="alert-controls">
             <label>
               <span>
@@ -499,11 +609,11 @@ export function Dashboard() {
               <input type="checkbox" checked={alertForm.include_source_failures} onChange={(event) => setAlertForm({ ...alertForm, include_source_failures: event.target.checked })} />
               <span>Source failures</span>
             </label>
-            <button className="secondary-button" type="button" onClick={() => void saveAlertPreferences()} disabled={alertLoading}>
+            <button className="secondary-button" type="button" onClick={() => void saveAlertPreferences()} disabled={alertLoading || !canUseAlerts}>
               <Save size={17} />
               Save alerts
             </button>
-            <button className="primary-button" type="button" onClick={() => void runAlertDigest()} disabled={alertLoading}>
+            <button className="primary-button" type="button" onClick={() => void runAlertDigest()} disabled={alertLoading || !canUseAlerts}>
               <Bell size={17} />
               {alertLoading ? "Working" : "Generate digest"}
             </button>
@@ -514,7 +624,7 @@ export function Dashboard() {
                 <span>Saved search name</span>
                 <input value={savedSearchName} onChange={(event) => setSavedSearchName(event.target.value)} placeholder="Underground cable due soon" />
               </label>
-              <button className="secondary-button" type="button" onClick={() => void saveCurrentSearch()} disabled={alertLoading}>
+              <button className="secondary-button" type="button" onClick={() => void saveCurrentSearch()} disabled={alertLoading || !canUseAlerts}>
                 <Save size={17} />
                 Save current search
               </button>
@@ -527,7 +637,7 @@ export function Dashboard() {
                       {savedSearch.name}
                     </button>
                     <span>{savedSearch.query || "filter search"}</span>
-                    <button type="button" className="text-link danger-link" onClick={() => void deleteSavedSearch(savedSearch.id)} disabled={alertLoading}>
+                    <button type="button" className="text-link danger-link" onClick={() => void deleteSavedSearch(savedSearch.id)} disabled={alertLoading || !canUseAlerts}>
                       Remove
                     </button>
                   </div>
@@ -572,6 +682,7 @@ export function Dashboard() {
           <label>
             <span>Workflow</span>
             <select
+              disabled={!accountStatus?.authenticated}
               value={filters.saved_only ? "saved" : filters.watched_only ? "watched" : filters.include_hidden ? "hidden" : ""}
               onChange={(event) => {
                 const value = event.target.value;
@@ -609,6 +720,28 @@ export function Dashboard() {
             </select>
           </label>
           <label>
+            <span>Stage</span>
+            <select value={filters.project_stage} onChange={(event) => setFilters({ ...filters, project_stage: event.target.value })}>
+              <option value="">Any</option>
+              {projectStages.map((stage) => (
+                <option key={stage} value={stage}>
+                  {stage.replaceAll("_", " ")}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Owner</span>
+            <select value={filters.owner_type} onChange={(event) => setFilters({ ...filters, owner_type: event.target.value })}>
+              <option value="">Any</option>
+              {ownerTypes.map((ownerType) => (
+                <option key={ownerType} value={ownerType}>
+                  {ownerType.replaceAll("_", " ")}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             <span>
               <InfoTooltip tooltip={FIT_TOOLTIP}>Min fit</InfoTooltip>
             </span>
@@ -635,6 +768,11 @@ export function Dashboard() {
               <option value="federal">Federal</option>
               <option value="state_local">State/local</option>
               <option value="utility">Utility</option>
+              <option value="investor_owned_utility">Investor-owned utility</option>
+              <option value="regulatory">Regulatory</option>
+              <option value="rto_iso">RTO/ISO</option>
+              <option value="land_use">Land use</option>
+              <option value="private_developer">Private developer</option>
               <option value="education">Education</option>
               <option value="state_dot">State DOT</option>
               <option value="airport_authority">Airport authority</option>

@@ -188,9 +188,9 @@ select {
 
 .summary-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(84px, 1fr));
+  grid-template-columns: repeat(4, minmax(84px, 1fr));
   gap: 8px;
-  min-width: 300px;
+  min-width: 392px;
 }
 
 .summary-strip > div,
@@ -225,9 +225,76 @@ select {
   padding: 14px;
 }
 
+.pilot-readiness-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(300px, 0.85fr);
+  gap: 12px;
+  align-items: start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 14px;
+}
+
+.pilot-readiness-copy strong {
+  display: block;
+  margin: 4px 0 6px;
+  font-size: 18px;
+}
+
+.pilot-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pilot-feature-grid > div,
+.coverage-trust-grid > div {
+  min-height: 62px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fffefa;
+  padding: 10px 12px;
+}
+
+.pilot-feature-grid strong,
+.coverage-trust-grid strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 18px;
+}
+
+.onboarding-list {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.onboarding-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fffefa;
+  color: var(--muted);
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.onboarding-step.complete {
+  background: #e8f4ec;
+  border-color: #b8d9c3;
+  color: var(--green);
+}
+
 .source-health {
   display: grid;
-  grid-template-columns: repeat(6, minmax(108px, 1fr)) auto auto;
+  grid-template-columns: repeat(6, minmax(108px, 1fr)) minmax(128px, auto);
   gap: 10px;
   align-items: stretch;
 }
@@ -245,6 +312,16 @@ select {
   margin-top: 4px;
   font-size: 18px;
   overflow-wrap: anywhere;
+}
+
+.source-admin-card strong {
+  font-size: 16px;
+}
+
+.coverage-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 10px;
 }
 
 .source-health-list {
@@ -667,6 +744,26 @@ textarea {
   text-transform: uppercase;
 }
 
+.evidence-excerpt {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #dbe6d2;
+  border-radius: var(--radius);
+  background: #f7fbf4;
+  color: #2f4632;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.evidence-excerpt span {
+  color: #51765a;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
 .compact-copy {
   color: var(--muted);
   font-size: 14px;
@@ -697,6 +794,20 @@ textarea {
 
 .empty-state {
   color: var(--muted);
+}
+
+.pilot-gate-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fffefa;
+  color: var(--muted);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .panel-grid {
@@ -873,7 +984,7 @@ textarea {
   }
 
   .nav-links {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     margin-top: 12px;
   }
 
@@ -883,6 +994,9 @@ textarea {
   }
 
   .summary-strip,
+  .pilot-readiness-panel,
+  .pilot-feature-grid,
+  .coverage-trust-grid,
   .source-health,
   .alert-controls,
   .saved-search-form,

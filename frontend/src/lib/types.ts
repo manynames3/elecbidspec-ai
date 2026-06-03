@@ -2,6 +2,7 @@ export type MoneyValue = number | string | null;
 
 export type Opportunity = {
   id: number;
+  tenant_id: string;
   title: string;
   agency: string | null;
   location: string | null;
@@ -13,6 +14,10 @@ export type Opportunity = {
   source_type: string;
   source_url: string | null;
   bid_status: string;
+  project_stage: string;
+  signal_type: string | null;
+  owner_type: string;
+  forecast_rfp_date: string | null;
   estimated_value: MoneyValue;
   value_confidence: string;
   value_explanation: string | null;
@@ -26,6 +31,8 @@ export type Opportunity = {
     bonding_insurance_requirements?: string[];
     submission_instructions?: string[];
     source_text_preview?: string;
+    evidence_links?: Array<Record<string, unknown>>;
+    evidence_excerpts?: string[];
   };
   project_type: string;
   confidence_score: number;
@@ -114,6 +121,10 @@ export type AlertDigestOpportunity = {
   source: string;
   source_type: string;
   source_url: string | null;
+  project_stage: string;
+  signal_type: string | null;
+  owner_type: string;
+  forecast_rfp_date: string | null;
   estimated_value: MoneyValue;
   value_confidence: string;
   minimum_value_match: boolean;
@@ -242,4 +253,29 @@ export type LoginResponse = {
   token: string;
   user: AuthUser;
   expires_at: string;
+};
+
+export type AccountStatus = {
+  authenticated: boolean;
+  user: AuthUser | null;
+  role: string;
+  tenant_id: string;
+  plan: "demo_preview" | "paid_pilot" | string;
+  plan_label: string;
+  feature_flags: {
+    admin_refresh: boolean;
+    ai_enhance: boolean;
+    proposal_exports: boolean;
+    saved_search_alerts: boolean;
+    custom_source_requests: boolean;
+  };
+  onboarding: {
+    has_profile: boolean;
+    saved_search_count: number;
+    alert_configured: boolean;
+    source_summary_loaded: boolean;
+    live_importing_sources: number;
+    total_sources: number;
+    real_opportunity_count: number;
+  };
 };

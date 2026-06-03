@@ -15,29 +15,29 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "ElecBidSpec AI | Public bid intelligence for electrical contractors",
+  title: "ElecBidSpec AI | Early signals and bid intelligence for electrical infrastructure",
   description:
-    "A sales-ready bid intelligence and proposal-prep workspace for electrical contractors, GCs, and cable suppliers chasing $5M+ public infrastructure work.",
+    "A sales-ready pursuit intelligence and proposal-prep workspace for electrical contractors, GCs, and cable suppliers chasing $5M+ grid, data-center, and utility infrastructure work.",
 };
 
 const heroStats = [
-  { value: "33", label: "official sources tracked" },
+  { value: "44", label: "official sources tracked" },
   { value: "$5M+", label: "priority opportunity threshold" },
-  { value: "85+", label: "strong-fit bid signal" },
+  { value: "Pre-RFP", label: "early-signal pursuit stage" },
 ];
 
 const sourceStats = [
   { value: "Federal", label: "SAM.gov and public federal opportunities" },
   { value: "State DOT", label: "transportation infrastructure and bid-item feeds" },
-  { value: "Utilities", label: "public power, energy, water, and authority sources" },
-  { value: "Local", label: "cities, schools, airports, transit, and universities" },
+  { value: "Utilities", label: "public power, utility, and investor-owned utility signals" },
+  { value: "Early", label: "PUC, RTO/ISO, zoning, permitting, and data-center load signals" },
 ];
 
 const workflow = [
   {
     icon: Radar,
-    title: "Monitor the right public sources",
-    copy: "Track fragmented federal, state, utility, education, transit, airport, and municipal bid sources from one workspace instead of checking portals by hand.",
+    title: "Monitor active bids and early signals",
+    copy: "Track fragmented public bid sources plus upstream PUC, RTO/ISO, zoning, permitting, utility capital-plan, and data-center interconnection signals from one workspace.",
   },
   {
     icon: Search,
@@ -54,8 +54,8 @@ const workflow = [
 const missReasons = [
   {
     icon: Radar,
-    title: "Relevant work hides in fragmented sources",
-    copy: "Electrical scope often appears inside DOT bid-item tables, city construction notices, utility procurement pages, school authority postings, and PDFs that do not say \"cable\" in the title.",
+    title: "Relevant work appears before the RFP",
+    copy: "Grid and data-center power scope can surface first in capital plans, PUC dockets, RTO transmission studies, zoning files, utility notices, and PDFs that do not say \"cable\" in the title.",
   },
   {
     icon: AlertTriangle,
@@ -73,14 +73,14 @@ const pursuitPhases = [
   {
     phase: "PHASE 1",
     title: "Discover",
-    timing: "Daily source refresh",
-    copy: "Monitor official public sources for electrical infrastructure, data center power, underground, substation, utility replacement, and cable-supply signals.",
+    timing: "Before gated procurement",
+    copy: "Monitor official public sources and upstream signals for electrical infrastructure, data center power, underground, substation, utility replacement, and cable-supply opportunities.",
   },
   {
     phase: "PHASE 2",
     title: "Qualify",
-    timing: "First-pass review",
-    copy: "Classify each opportunity, estimate likely value when needed, score fit against company capabilities, and explain why the bid is or is not worth a closer look.",
+    timing: "AVL and partner window",
+    copy: "Classify each opportunity by stage and owner type, estimate likely value when needed, score fit against company capabilities, and explain whether to pursue prequalification, partners, or bid prep.",
   },
   {
     phase: "PHASE 3",
@@ -93,22 +93,22 @@ const pursuitPhases = [
 const outcomes = [
   "Stop losing hours to portal hopping, PDF skimming, and low-value public notices.",
   "Prioritize bids by fit score, geography, project type, deadline, source, and likely value.",
-  "Spot cable supply plus installation opportunities before competitors build the same shortlist.",
+  "Spot cable supply, installation, IOU, and data-center power opportunities before competitors build the same shortlist.",
   "Create DOCX and PDF proposal prep outputs your estimating, BD, and partner teams can act on.",
 ];
 
 const proofStats = [
-  { value: "33", label: "official source targets tracked across federal, state, utility, authority, education, transit, airport, and local procurement" },
+  { value: "44", label: "official source targets tracked across federal, state, utility, RTO/ISO, regulatory, land-use, authority, education, transit, airport, and local procurement" },
   { value: "18", label: "live importing sources currently refreshing from public feeds, tables, pages, or source-specific adapters" },
-  { value: "$5M+", label: "priority filter for confirmed or likely high-value public electrical infrastructure work" },
+  { value: "Stage", label: "early signal, pre-RFP, active bid, and award fields keep pursuit timing explicit" },
   { value: "DOCX/PDF", label: "proposal-prep artifacts generated from bid details, specs, and company capability context" },
 ];
 
 const platform = [
   {
     icon: Building2,
-    title: "Contractor and GC fit scoring",
-    copy: "Score opportunities against states served, bonding capacity, cable types, installation capabilities, labor model, and project history.",
+    title: "Company-fit and owner-fit scoring",
+    copy: "Score opportunities against states served, bonding capacity, cable types, installation capabilities, labor model, project history, stage, and owner context.",
   },
   {
     icon: Cable,
@@ -148,7 +148,7 @@ const faqs = [
   },
   {
     question: "What opportunities does the product prioritize?",
-    answer: "The current workspace prioritizes open public bids that are confirmed or likely above $5M, especially data center power, AI infrastructure, MV/HV cable, underground conduit, substations, utility replacement, and grid-related work.",
+    answer: "The current workspace prioritizes public notices and early signals that are confirmed or likely above $5M, especially data center power, AI infrastructure, MV/HV cable, underground conduit, substations, utility replacement, investor-owned utility, and grid-related work.",
   },
   {
     question: "Can the team upload RFPs found elsewhere?",
@@ -200,10 +200,10 @@ export default function SalesPage() {
         <div className="sales-hero-overlay" aria-hidden="true"></div>
 
         <div className="sales-hero-content">
-          <p className="sales-kicker">Public bid intelligence for electrical work</p>
+          <p className="sales-kicker">Early signals and bid intelligence for electrical work</p>
           <h1>Your next big electrical contract is already posted. Find it first.</h1>
           <p className="sales-hero-copy">
-            ElecBidSpec AI monitors fragmented public bid sources nationwide, filters for high-value electrical infrastructure work, scores each bid against your capabilities, and prepares the proposal package before your team starts reading.
+            ElecBidSpec AI monitors fragmented public sources nationwide, surfaces upstream grid and data-center power signals, scores each pursuit against your capabilities, and prepares the proposal package before your team starts reading.
           </p>
           <div className="sales-actions">
             <Link href="/" className="sales-primary">
@@ -228,9 +228,9 @@ export default function SalesPage() {
       <section className="sales-lineage sales-section-pad">
         <div className="sales-section-inner sales-two-column">
           <p className="sales-kicker">Built for bid teams under pressure</p>
-          <h2>Public work is visible. The hard part is knowing what is worth chasing.</h2>
+          <h2>The work is visible before procurement. The hard part is seeing the signal early enough.</h2>
           <p>
-            Electrical contractors, GCs, and cable suppliers do not need another spreadsheet of public notices. They need a bid radar that understands scope, value, deadline, source credibility, partner needs, and company fit before the opportunity reaches the estimating desk.
+            Electrical contractors, GCs, and cable suppliers do not need another spreadsheet of public notices. They need a pursuit radar that understands stage, owner type, scope, value, source credibility, partner needs, and company fit before the opportunity reaches the estimating desk.
           </p>
         </div>
       </section>
@@ -263,9 +263,9 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading">
             <p className="sales-kicker">Nationwide opportunity radar</p>
-            <h2>One workspace for high-value public electrical opportunities.</h2>
+            <h2>One workspace for early signals and high-value electrical opportunities.</h2>
             <p>
-              ElecBidSpec AI tracks the fragmented sources that matter for public infrastructure: federal opportunities, state DOTs, utilities, public power, transit, airport authorities, universities, schools, cities, and county procurement sites.
+              ElecBidSpec AI tracks the fragmented sources that matter for infrastructure pursuit: federal opportunities, state DOTs, public power, investor-owned utility signals, PUC dockets, RTO/ISO planning, zoning files, transit, airport authorities, universities, schools, cities, and county procurement sites.
             </p>
           </div>
           <div className="sales-stat-grid">
@@ -282,10 +282,10 @@ export default function SalesPage() {
       <section className="sales-section-pad" id="workflow">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">From posted bid to bid/no-bid decision</p>
-            <h2>Find, qualify, and prepare public electrical bids in one flow.</h2>
+            <p className="sales-kicker">From capital signal to bid/no-bid decision</p>
+            <h2>Find, qualify, and prepare electrical pursuits in one flow.</h2>
             <p>
-              The platform compresses the first pass of business development, estimating, and proposal prep into a repeatable review workflow your team can trust.
+              The platform compresses the first pass of business development, prequalification, estimating, and proposal prep into a repeatable review workflow your team can trust.
             </p>
           </div>
           <div className="sales-workflow-grid">
@@ -306,10 +306,10 @@ export default function SalesPage() {
       <section className="sales-section-pad sales-muted-band">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">From public notice to proposal package</p>
-            <h2>One connected view for discovery, qualification, and bid prep.</h2>
+            <p className="sales-kicker">From capital plan to proposal package</p>
+            <h2>One connected view for early discovery, qualification, and bid prep.</h2>
             <p>
-              ElecBidSpec AI does not stop at alerting. It moves each opportunity through the first pursuit decisions your team already has to make.
+              ElecBidSpec AI does not stop at alerting. It moves each opportunity through the first pursuit decisions your team already has to make: prequalify, partner, watch, bid, or pass.
             </p>
           </div>
           <div className="sales-plan-grid">
@@ -347,12 +347,15 @@ export default function SalesPage() {
             </div>
             <pre className="sales-code-block"><code>{`{
   "query": "Show conduit bids over $5M in Texas",
-  "opportunity": "Substation duct bank and MV feeder upgrade",
+  "stage": "early_signal",
+  "owner_type": "investor_owned_utility",
+  "opportunity": "AI campus interconnection and MV feeder upgrade",
   "fit_score": 87,
   "why_it_matters": [
-    "Open public source",
+    "PUC/RTO signal before gated RFP",
     "$5M+ likely value",
     "Underground conduit and medium-voltage cable scope",
+    "AVL timing for utility supplier qualification",
     "Partner installer outreach draft ready"
   ],
   "outputs": ["checklist", "risk flags", "DOCX", "PDF"]

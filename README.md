@@ -1,6 +1,6 @@
 # ElecBidSpec AI
 
-ElecBidSpec AI is a full-stack bid intelligence and proposal-prep platform for electrical contractors, GCs, and cable suppliers pursuing public infrastructure work. It ingests fragmented public bid sources and uploaded RFP/spec documents, extracts electrical scope signals, classifies project type, scores each opportunity against a company capability profile, and generates bid-readiness and proposal artifacts.
+ElecBidSpec AI is a full-stack pursuit intelligence and proposal-prep platform for electrical contractors, GCs, and cable suppliers pursuing grid, data-center, and public infrastructure work. It ingests fragmented public bid sources, models upstream PUC/RTO/permitting/capital-plan signals, accepts uploaded RFP/spec documents, extracts electrical scope, classifies project type and pursuit stage, scores each opportunity against a company capability profile, and generates bid-readiness and proposal artifacts.
 
 **Live demo:** https://elecbidspec-ai.pages.dev
 
@@ -12,7 +12,7 @@ ElecBidSpec AI is a full-stack bid intelligence and proposal-prep platform for e
 
 ## About
 
-This project was built as an MVP for a realistic B2B workflow: helping electrical infrastructure teams find and qualify high-value public opportunities before the bid window gets crowded. The product problem is fragmented public bid data. Relevant work can be buried in federal postings, state DOT bid-item tables, public utility pages, school authority notices, city/county procurement sites, Bonfire portals, and PDFs with inconsistent titles and value signals.
+This project was built as an MVP for a realistic B2B workflow: helping electrical infrastructure teams find and qualify high-value opportunities before the bid window gets crowded. The product problem is fragmented opportunity data. Relevant work can be buried in federal postings, state DOT bid-item tables, public utility pages, investor-owned utility signals, PUC dockets, RTO/ISO transmission plans and interconnection queues, zoning and permitting records, school authority notices, city/county procurement sites, Bonfire portals, and PDFs with inconsistent titles and value signals.
 
 The app works without live SAM.gov access. Local startup seeds sample electrical/data-center/grid replacement opportunities and a sample company profile, while manual PDF/text upload supports spec extraction and proposal prep from documents found elsewhere.
 
@@ -23,7 +23,7 @@ The app works without live SAM.gov access. Local startup seeds sample electrical
 | Frontend | Next.js 15, React 19, TypeScript, static export for Cloudflare Pages |
 | Backend | FastAPI, Python, Mangum for AWS Lambda |
 | Data | PostgreSQL, SQLAlchemy 2, Alembic migrations, JSON/JSONB for extracted specs and artifacts |
-| Ingestion | Adapter registry for SAM.gov, public JSON feeds, public HTML pages, bid-item tables, Bonfire portals, and source-specific public adapters |
+| Ingestion | Adapter registry for SAM.gov, public JSON feeds, public HTML pages, bid-item tables, Bonfire portals, RTO/ISO workbooks, PUC dockets, ArcGIS land-use layers, and source-specific public adapters |
 | Documents | PDF/text upload, `pypdf` extraction, generated DOCX/PDF proposal outputs |
 | AI | Optional Amazon Bedrock proposal enhancement with deterministic fallback |
 | Auth | First-party email/password auth, hashed passwords, bearer sessions, admin/user roles, tenant-aware profiles |
@@ -33,13 +33,13 @@ The app works without live SAM.gov access. Local startup seeds sample electrical
 ## Engineering Highlights
 
 - Built an extensible ingestion layer where each public source is an adapter, not one hardcoded scraper.
-- Normalizes bid records into a common opportunity model with source health, value confidence, project classification, extracted specs, and fit scoring.
+- Normalizes bid and upstream-signal records into a common opportunity model with source health, value confidence, pursuit stage, owner type, signal type, project classification, extracted specs, and fit scoring.
 - Keeps the MVP useful without third-party keys through seed data, public no-key adapters, and manual RFP/spec upload.
 - Separates deterministic proposal generation from optional Bedrock enhancement so demo flows continue when AI services are disabled or unavailable.
-- Uses SQLAlchemy/Alembic migrations with tenant-aware records for profiles, workflows, proposal artifacts, alert preferences, and saved searches.
+- Uses SQLAlchemy/Alembic migrations with tenant-aware records for manual opportunities, profiles, workflows, proposal artifacts, alert preferences, and saved searches.
 - Implements low-idle deployment with Cloudflare Pages, Lambda Function URL, EventBridge-scheduled worker, S3, and pooled Postgres rather than always-on compute.
 - Protects admin ingestion refreshes and mutating job endpoints behind admin auth or a bootstrap token.
-- Includes 49 backend tests across core domain logic and ingestion adapter behavior.
+- Includes 68 backend tests across core domain logic, tenant boundaries, and ingestion adapter behavior.
 
 ## Architecture
 
@@ -47,16 +47,19 @@ The system has three main surfaces:
 
 - A static Next.js frontend hosted on Cloudflare Pages.
 - A FastAPI backend that runs locally under Uvicorn or in AWS Lambda through Mangum.
-- A scheduled worker that queues and processes ingestion jobs, source refreshes, and alert digests.
+- A scheduled worker that queues and processes ingestion jobs, source refreshes, upstream-signal normalization, and alert digests.
 
 See [docs/architecture.md](docs/architecture.md) for a C4-style container diagram, runtime flows, deployment shape, and constraints. See [docs/adrs/README.md](docs/adrs/README.md) for the main architecture decisions.
 
 ## Core Features
 
-- Dashboard filters by due date, state, project type, source, value match, and fit score.
+- Dashboard filters by due date, state, project type, pursuit stage, owner type, source, value match, and fit score.
 - Natural-language search for opportunity discovery.
 - Manual PDF/text upload for RFP/spec intake.
 - Public source ingestion with health reporting and portal-gated source labels.
+- Admin source-operations view for source status, record counts, gated portals, covered duplicate sources, and follow-up notes.
+- Early-signal modeling for PUC dockets, RTO/ISO transmission plans, zoning/permitting records, data-center interconnection signals, utility capital plans, pre-RFP/prequalification windows, and investor-owned utility owner context.
+- Source evidence excerpts on opportunity cards so users can see the official row, docket, or fact-sheet basis before opening detail.
 - Electrical spec extraction for cable, conduit, trenching, transformer, substation, fiber, data center, emergency repair, and related terms.
 - Project classification into data center power, utility replacement, fire damage rebuild, underground installation, overhead/pole installation, substation-related, and general electrical.
 - Company fit scoring based on states served, bonding capacity, cable supply, installation capabilities, labor model, and experience.
@@ -79,6 +82,17 @@ Default no-key sources include:
 - `chicago_solicitations` through the public City of Chicago/CTA solicitation table
 - `jea_procurement` for JEA public formal/informal solicitation packages grouped by solicitation number
 - `bonfire_portal` for Bonfire public portal JSON feeds, including DFW Airport
+- `pjm_project_construction` for official PJM transmission upgrade and cost-allocation signals
+- `caiso_interconnection_queue` for official CAISO interconnection queue workbook signals
+- `ercot_capacity_changes` for ERCOT planned capacity/interconnection workbook signals, including data-center-adjacent records
+- `iso_ne_interconnection_queue` for the official ISO New England public queue table covering generation, storage, and elective transmission upgrade signals
+- `miso_eras_interconnection` for official MISO ERAS interconnection requests tied to generation, storage, substations, and transmission owners
+- `nyiso_interconnection_queue` for official NYISO interconnection queue signals, including large-load and data-center interconnection records
+- `spp_gi_active_requests` for the official Southwest Power Pool GI Active Requests CSV
+- `virginia_scc_transmission_cases` for Virginia SCC CPCN and high-voltage transmission case signals in data-center-heavy corridors
+- `georgia_psc_data_center` for Georgia PSC data-center large-load and Georgia Power regulatory planning signals
+- `texas_puc_dockets` for Texas PUCT electric dockets around CCN, transmission, large-load, and cost-recovery proceedings
+- `loudoun_land_applications` for Loudoun County ArcGIS land-use applications tied to data-center, substation, industrial, and transmission signals
 
 Keyed sources can also run when the corresponding environment variable is configured:
 
@@ -88,6 +102,8 @@ Keyed sources can also run when the corresponding environment variable is config
 The source catalog also tracks official portals for Caltrans, FDOT, NYSDOT, GDOT, IDOT, Ohio DOT/OhioBuys, NC eVP, VDOT, ADOT, TVA, BPA, LADWP, Austin Energy, CPS Energy, SRP, Port Authority NY/NJ, LA Metro, SEPTA, MTA, University of California, and Houston Public Works. Sources that require a browser session, captcha, supplier portal, or vendor/API access are labeled `portal_gated`; sources routed through another live importer are labeled `covered_by_source`.
 
 The scraper adapter is intentionally conservative: public pages only, HTTP GET requests, configurable selectors, optional detail-page fetches, and no login, captcha bypass, or browser automation.
+
+The MVP includes both live no-key upstream signal adapters and seeded sample records for investor-owned utility, PUC, RTO/ISO, zoning, and data-center interconnection scenarios. Seeded records are deliberately labeled as sample data; production-grade private utility coverage still depends on additional official regulatory feeds, planning datasets, portal/vendor access, or legally permitted partner-access ingestion.
 
 ## Quick Start
 
@@ -233,11 +249,11 @@ AUTH_USER_PASSWORD=use-a-generated-password
 AUTH_SESSION_TTL_HOURS=168
 ```
 
-Passwords are stored as salted PBKDF2 hashes. Session tokens are stored only as SHA-256 hashes. Set `AUTH_REQUIRED=true` to require login for tenant-specific profile/proposal operations; leave it `false` for public demo mode while still allowing users to sign in.
+Passwords are stored as salted PBKDF2 hashes. Session tokens are stored only as SHA-256 hashes. Public demo mode can browse/search public-source opportunities and view proposal previews, but account-owned actions require login even when `AUTH_REQUIRED=false`: company profile editing, workflow notes, saved searches, alert digests, uploads, linked-document ingestion, and DOCX/PDF proposal exports. Manual uploads are tenant-owned and are only visible to the owning tenant plus admins with direct database/API access. Set `AUTH_REQUIRED=true` when the deployed API should require login for all tenant-specific reads.
 
 Manual ingestion refreshes can create outbound requests and mutate production opportunity records, so they are protected. A logged-in user with role `admin` can refresh sources from the dashboard. `ADMIN_API_TOKEN` remains available as a bootstrap or break-glass token.
 
-Protected endpoints accept either:
+Admin-only endpoints accept either:
 
 ```bash
 Authorization: Bearer $ADMIN_API_TOKEN

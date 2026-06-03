@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, Download, ExternalLink, FileSearch, FileText, RefreshCw, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, CalendarDays, Download, ExternalLink, FileSearch, FileText, Lock, RefreshCw, Save, Sparkles } from "lucide-react";
 import { apiFetch, apiUrl, authHeaders, formatCurrency, formatDate, labelize, sourceLabel } from "@/lib/api";
 import { FIT_TOOLTIP, InfoTooltip, VALUE_MATCH_TOOLTIP } from "@/components/InfoTooltip";
-import type { AttachmentExtraction, AttachmentIngestionResult, Opportunity, OpportunityWorkflow, Proposal } from "@/lib/types";
+import type { AccountStatus, AttachmentExtraction, AttachmentIngestionResult, Opportunity, OpportunityWorkflow, Proposal } from "@/lib/types";
 
 function ListBlock({ title, items }: { title: string; items: string[] }) {
   return (
@@ -21,11 +21,25 @@ function ListBlock({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+function attachmentLabel(attachment: Record<string, unknown>) {
+  return String(attachment.name ?? attachment.filename ?? attachment.url ?? attachment.stored_path ?? "Attachment");
+}
+
+function attachmentUrl(attachment: Record<string, unknown>) {
+  const url = attachment.url ?? attachment.source_url;
+  return typeof url === "string" && url.length > 0 ? url : null;
+}
+
+function isEvidenceAttachment(attachment: Record<string, unknown>) {
+  return String(attachment.type ?? "").toLowerCase() === "evidence";
+}
+
 export function OpportunityDetail() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [workflow, setWorkflow] = useState<OpportunityWorkflow | null>(null);
   const [workflowDraft, setWorkflowDraft] = useState<OpportunityWorkflow | null>(null);
   const [attachmentExtractions, setAttachmentExtractions] = useState<AttachmentExtraction[]>([]);
@@ -51,6 +65,9 @@ export function OpportunityDetail() {
       setActionMessage(null);
       const nextOpportunity = await apiFetch<Opportunity>(`/opportunities/${id}`);
       setOpportunity(nextOpportunity);
+      void apiFetch<AccountStatus>("/account/status")
+        .then(setAccountStatus)
+        .catch(() => setAccountStatus(null));
       setLoading(false);
       const [nextWorkflow, nextExtractions] = await Promise.allSettled([
         apiFetch<OpportunityWorkflow>(`/opportunities/${id}/workflow`),
@@ -81,6 +98,10 @@ export function OpportunityDetail() {
 
   async function rescore() {
     if (!opportunity) {
+      return;
+    }
+    if (!accountStatus?.feature_flags.admin_refresh) {
+      setError("Admin login required to rescore public opportunity records.");
       return;
     }
     setOpportunity(await apiFetch<Opportunity>(`/opportunities/${opportunity.id}/rescore`, { method: "POST" }));
@@ -128,6 +149,10 @@ export function OpportunityDetail() {
     if (!opportunity) {
       return;
     }
+    if (!accountStatus?.feature_flags.ai_enhance) {
+      setProposalError("Pilot login required to enhance proposal packages with AI.");
+      return;
+    }
     setEnhancing(true);
     setProposalError(null);
     setActionMessage(null);
@@ -143,6 +168,10 @@ export function OpportunityDetail() {
 
   async function ingestDocuments() {
     if (!opportunity) {
+      return;
+    }
+    if (!accountStatus?.feature_flags.custom_source_requests) {
+      setError("Pilot login required to ingest linked source documents.");
       return;
     }
     setIngesting(true);
@@ -167,6 +196,9 @@ export function OpportunityDetail() {
     if (!opportunity) {
       return;
     }
+    if (!accountStatus?.feature_flags.proposal_exports) {
+      throw new Error("Pilot login required to export proposal packages.");
+    }
     const response = await fetch(apiUrl(`/opportunities/${opportunity.id}/proposal.${format}`), {
       headers: authHeaders()
     });
@@ -185,7 +217,15 @@ export function OpportunityDetail() {
   }
 
   useEffect(() => {
+    function refreshAccountState() {
+      void apiFetch<AccountStatus>("/account/status")
+        .then(setAccountStatus)
+        .catch(() => setAccountStatus(null));
+    }
+
     void load();
+    window.addEventListener("elecbidspec-auth-changed", refreshAccountState);
+    return () => window.removeEventListener("elecbidspec-auth-changed", refreshAccountState);
   }, [id]);
 
   if (loading) {
@@ -196,6 +236,12 @@ export function OpportunityDetail() {
   }
 
   const specs = opportunity.extracted_specs ?? {};
+  const canExport = accountStatus?.feature_flags.proposal_exports ?? false;
+  const canEnhance = accountStatus?.feature_flags.ai_enhance ?? false;
+  const canIngestDocuments = accountStatus?.feature_flags.custom_source_requests ?? false;
+  const canRescore = accountStatus?.feature_flags.admin_refresh ?? false;
+  const evidenceAttachments = opportunity.attachments.filter(isEvidenceAttachment);
+  const documentAttachments = opportunity.attachments.filter((attachment) => !isEvidenceAttachment(attachment));
 
   return (
     <div className="page-stack">
@@ -204,23 +250,23 @@ export function OpportunityDetail() {
           <ArrowLeft size={16} />
           Dashboard
         </Link>
-        <button className="secondary-button" onClick={() => void rescore()} type="button">
+        <button className="secondary-button" onClick={() => void rescore()} type="button" disabled={!canRescore}>
           <RefreshCw size={16} />
-          Rescore
+          Admin rescore
         </button>
-        <button className="secondary-button" onClick={() => void downloadProposal("docx").catch((err) => setError(err instanceof Error ? err.message : "DOCX download failed"))} type="button">
+        <button className="secondary-button" onClick={() => void downloadProposal("docx").catch((err) => setError(err instanceof Error ? err.message : "DOCX download failed"))} type="button" disabled={!canExport}>
           <Download size={16} />
           DOCX
         </button>
-        <button className="secondary-button" onClick={() => void downloadProposal("pdf").catch((err) => setError(err instanceof Error ? err.message : "PDF download failed"))} type="button">
+        <button className="secondary-button" onClick={() => void downloadProposal("pdf").catch((err) => setError(err instanceof Error ? err.message : "PDF download failed"))} type="button" disabled={!canExport}>
           <Download size={16} />
           PDF
         </button>
-        <button className="secondary-button" onClick={() => void enhanceProposal()} type="button" disabled={enhancing}>
+        <button className="secondary-button" onClick={() => void enhanceProposal()} type="button" disabled={enhancing || !canEnhance}>
           <Sparkles size={16} />
           {enhancing ? "Enhancing" : "AI enhance"}
         </button>
-        <button className="secondary-button" onClick={() => void ingestDocuments()} type="button" disabled={ingesting}>
+        <button className="secondary-button" onClick={() => void ingestDocuments()} type="button" disabled={ingesting || !canIngestDocuments}>
           <FileSearch size={16} />
           {ingesting ? "Ingesting" : "Ingest docs"}
         </button>
@@ -238,6 +284,8 @@ export function OpportunityDetail() {
             <span>{opportunity.location ?? opportunity.state ?? "Location TBD"}</span>
             <span>{sourceLabel(opportunity.source)}</span>
             <span>{labelize(opportunity.project_type)}</span>
+            <span>{labelize(opportunity.project_stage)}</span>
+            <span>{labelize(opportunity.owner_type)}</span>
             <span>{opportunity.bid_status}</span>
           </div>
         </div>
@@ -252,6 +300,12 @@ export function OpportunityDetail() {
       </section>
 
       {actionMessage ? <div className="success">{actionMessage}</div> : null}
+      {!canExport ? (
+        <div className="pilot-gate-banner">
+          <Lock size={17} />
+          <span>Sign in to a pilot workspace to export DOCX/PDF packages, enhance proposals with AI, and ingest linked source documents.</span>
+        </div>
+      ) : null}
 
       {workflowDraft ? (
         <section className="panel">
@@ -338,6 +392,14 @@ export function OpportunityDetail() {
               <strong>{opportunity.source_type.replaceAll("_", " ")}</strong>
             </div>
             <div>
+              <span className="field-label">Stage</span>
+              <strong>{labelize(opportunity.project_stage)}</strong>
+            </div>
+            <div>
+              <span className="field-label">Owner</span>
+              <strong>{labelize(opportunity.owner_type)}</strong>
+            </div>
+            <div>
               <span className="field-label">
                 <InfoTooltip tooltip={VALUE_MATCH_TOOLTIP}>Value match</InfoTooltip>
               </span>
@@ -348,6 +410,33 @@ export function OpportunityDetail() {
           <p>{opportunity.value_explanation}</p>
           <p className="compact-copy">{opportunity.fit_explanation}</p>
         </section>
+      </section>
+
+      <section className="panel">
+        <h2>Pursuit Timing</h2>
+        <div className="metric-row">
+          <div>
+            <span className="field-label">Stage</span>
+            <strong>{labelize(opportunity.project_stage)}</strong>
+          </div>
+          <div>
+            <span className="field-label">Signal type</span>
+            <strong>{labelize(opportunity.signal_type)}</strong>
+          </div>
+          <div>
+            <span className="field-label">Owner type</span>
+            <strong>{labelize(opportunity.owner_type)}</strong>
+          </div>
+          <div>
+            <span className="field-label">Forecast RFP</span>
+            <strong>{formatDate(opportunity.forecast_rfp_date)}</strong>
+          </div>
+        </div>
+        <p className="compact-copy">
+          {opportunity.project_stage === "early_signal" || opportunity.project_stage === "pre_rfp"
+            ? "Use this before the formal RFP window to pursue AVL/prequalification, partner positioning, and utility stakeholder outreach."
+            : "Use this to manage active bid review, partner outreach, compliance checks, and proposal preparation before the due date."}
+        </p>
       </section>
 
       <section className="panel">
@@ -479,16 +568,48 @@ export function OpportunityDetail() {
         </section>
       ) : null}
 
-      {opportunity.attachments.length ? (
+      {evidenceAttachments.length ? (
+        <section className="panel">
+          <h2>Source Evidence</h2>
+          <ul className="check-list">
+            {evidenceAttachments.map((attachment, index) => {
+              const url = attachmentUrl(attachment);
+              return (
+                <li key={`${attachmentLabel(attachment)}-${index}`}>
+                  <ExternalLink size={15} />
+                  {url ? (
+                    <a className="text-link" href={url} target="_blank" rel="noreferrer">
+                      {attachmentLabel(attachment)}
+                    </a>
+                  ) : (
+                    attachmentLabel(attachment)
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      {documentAttachments.length ? (
         <section className="panel">
           <h2>Attachments</h2>
           <ul className="check-list">
-            {opportunity.attachments.map((attachment, index) => (
-              <li key={`${attachment.name}-${index}`}>
-                <FileText size={15} />
-                {String(attachment.name ?? attachment.url ?? attachment.stored_path ?? "Attachment")}
-              </li>
-            ))}
+            {documentAttachments.map((attachment, index) => {
+              const url = attachmentUrl(attachment);
+              return (
+                <li key={`${attachmentLabel(attachment)}-${index}`}>
+                  <FileText size={15} />
+                  {url ? (
+                    <a className="text-link" href={url} target="_blank" rel="noreferrer">
+                      {attachmentLabel(attachment)}
+                    </a>
+                  ) : (
+                    attachmentLabel(attachment)
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}

@@ -25,9 +25,24 @@ function fitClass(score: number | null) {
   return "poor";
 }
 
+function attachmentEvidenceExcerpt(opportunity: Opportunity): string | null {
+  const specExcerpt = opportunity.extracted_specs?.evidence_excerpts?.find(Boolean);
+  if (specExcerpt) {
+    return specExcerpt;
+  }
+  const attachment = opportunity.attachments.find((item) => typeof item.excerpt === "string" && item.excerpt.trim().length > 0);
+  return typeof attachment?.excerpt === "string" ? attachment.excerpt : null;
+}
+
 export function OpportunityCard({ opportunity, explanation, rankScore }: OpportunityCardProps) {
   const keywords = opportunity.extracted_specs?.keywords ?? [];
   const rationale = whyThisBidMatters(opportunity);
+  const evidenceExcerpt = attachmentEvidenceExcerpt(opportunity);
+  const timingLabel = opportunity.due_date
+    ? formatDate(opportunity.due_date)
+    : opportunity.forecast_rfp_date
+      ? `Forecast RFP ${formatDate(opportunity.forecast_rfp_date)}`
+      : "No posted deadline";
   return (
     <article className="opportunity-card">
       <div className="card-topline">
@@ -36,7 +51,11 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
           {opportunity.fit_score ?? "--"} <InfoTooltip tooltip={FIT_TOOLTIP}>fit</InfoTooltip>
         </span>
         <span className="source-pill">{opportunity.bid_status}</span>
+        <span className={opportunity.project_stage === "early_signal" || opportunity.project_stage === "pre_rfp" ? "source-pill pending" : "source-pill"}>
+          {labelize(opportunity.project_stage)}
+        </span>
         <span className={`source-pill ${opportunity.source === "seed" ? "sample" : "live"}`}>{sourceLabel(opportunity.source)}</span>
+        {opportunity.owner_type === "investor_owned_utility" ? <span className="source-pill live">IOU</span> : null}
         <span className="source-pill">{opportunity.source_type.replaceAll("_", " ")}</span>
         {rankScore ? <span className="source-pill">rank {rankScore}</span> : null}
       </div>
@@ -50,7 +69,7 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
         </span>
         <span>
           <CalendarDays size={14} />
-          {formatDate(opportunity.due_date)}
+          {timingLabel}
         </span>
       </div>
       <div className="card-grid">
@@ -67,6 +86,18 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
           <strong>{formatCurrency(opportunity.estimated_value)}</strong>
         </div>
         <div>
+          <span className="field-label">Stage</span>
+          <strong>{labelize(opportunity.project_stage)}</strong>
+        </div>
+        <div>
+          <span className="field-label">Owner</span>
+          <strong>{labelize(opportunity.owner_type)}</strong>
+        </div>
+        <div>
+          <span className="field-label">Forecast RFP</span>
+          <strong>{formatDate(opportunity.forecast_rfp_date)}</strong>
+        </div>
+        <div>
           <span className="field-label">Value read</span>
           <strong>{opportunity.value_confidence.replaceAll("_", " ")}</strong>
         </div>
@@ -75,6 +106,12 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
         <span>Why it matters</span>
         {rationale}
       </p>
+      {evidenceExcerpt ? (
+        <p className="evidence-excerpt">
+          <span>Source evidence</span>
+          {evidenceExcerpt}
+        </p>
+      ) : null}
       {opportunity.value_explanation ? <p className="compact-copy">{opportunity.value_explanation}</p> : null}
       {keywords.length ? (
         <div className="tag-row">

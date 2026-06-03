@@ -24,6 +24,130 @@ PROJECT_QUERY_MAP = {
     "substation": "substation_related",
 }
 
+PROJECT_STAGE_QUERY_MAP = {
+    "early signal": "early_signal",
+    "early signals": "early_signal",
+    "capital plan": "early_signal",
+    "capital project": "early_signal",
+    "capital projects": "early_signal",
+    "puc": "early_signal",
+    "rate case": "early_signal",
+    "docket": "early_signal",
+    "regulatory filing": "early_signal",
+    "transmission plan": "early_signal",
+    "transmission planning": "early_signal",
+    "interconnection queue": "early_signal",
+    "large load": "early_signal",
+    "zoning": "early_signal",
+    "permitting": "early_signal",
+    "before rfp": "early_signal",
+    "before bidding": "early_signal",
+    "long before bidding": "early_signal",
+    "ahead of bidding": "early_signal",
+    "future project": "early_signal",
+    "future projects": "early_signal",
+    "upcoming project": "early_signal",
+    "upcoming projects": "early_signal",
+    "planning signal": "early_signal",
+    "planning signals": "early_signal",
+    "pre rfp": "pre_rfp",
+    "pre-rfp": "pre_rfp",
+    "pre solicitation": "pre_rfp",
+    "pre-solicitation": "pre_rfp",
+    "sources sought": "pre_rfp",
+    "prequalification": "pre_rfp",
+    "approved vendor list": "pre_rfp",
+    "avl": "pre_rfp",
+    "posted bid": "active_bid",
+    "active bid": "active_bid",
+    "active bids": "active_bid",
+    "open bid": "active_bid",
+    "open bids": "active_bid",
+    "rfp": "active_bid",
+    "solicitation": "active_bid",
+    "awarded": "awarded",
+    "award": "awarded",
+}
+
+OWNER_QUERY_MAP = {
+    "investor-owned": "investor_owned_utility",
+    "investor owned": "investor_owned_utility",
+    "iou": "investor_owned_utility",
+    "private utility": "investor_owned_utility",
+    "private investor owned utility": "investor_owned_utility",
+    "dominion": "investor_owned_utility",
+    "duke energy": "investor_owned_utility",
+    "aep": "investor_owned_utility",
+    "xcel": "investor_owned_utility",
+    "pg&e": "investor_owned_utility",
+    "pge": "investor_owned_utility",
+    "southern california edison": "investor_owned_utility",
+    "sce": "investor_owned_utility",
+    "oncor": "investor_owned_utility",
+    "centerpoint": "investor_owned_utility",
+    "nextera": "investor_owned_utility",
+    "fpl": "investor_owned_utility",
+    "public agency": "public_agency",
+    "public utility": "public_power_or_utility",
+    "public power": "public_power_or_utility",
+    "private developer": "private_developer",
+    "data center developer": "private_developer",
+}
+
+STATE_QUERY_MAP = {
+    "alabama": "AL",
+    "alaska": "AK",
+    "arizona": "AZ",
+    "arkansas": "AR",
+    "california": "CA",
+    "colorado": "CO",
+    "connecticut": "CT",
+    "delaware": "DE",
+    "florida": "FL",
+    "georgia": "GA",
+    "hawaii": "HI",
+    "idaho": "ID",
+    "illinois": "IL",
+    "indiana": "IN",
+    "iowa": "IA",
+    "kansas": "KS",
+    "kentucky": "KY",
+    "louisiana": "LA",
+    "maine": "ME",
+    "maryland": "MD",
+    "massachusetts": "MA",
+    "michigan": "MI",
+    "minnesota": "MN",
+    "mississippi": "MS",
+    "missouri": "MO",
+    "montana": "MT",
+    "nebraska": "NE",
+    "nevada": "NV",
+    "new hampshire": "NH",
+    "new jersey": "NJ",
+    "new mexico": "NM",
+    "new york": "NY",
+    "north carolina": "NC",
+    "north dakota": "ND",
+    "ohio": "OH",
+    "oklahoma": "OK",
+    "oregon": "OR",
+    "pennsylvania": "PA",
+    "rhode island": "RI",
+    "south carolina": "SC",
+    "south dakota": "SD",
+    "tennessee": "TN",
+    "texas": "TX",
+    "utah": "UT",
+    "vermont": "VT",
+    "virginia": "VA",
+    "washington": "WA",
+    "west virginia": "WV",
+    "wisconsin": "WI",
+    "wyoming": "WY",
+    "district of columbia": "DC",
+}
+
 
 def contains_term(text: str, term: str) -> bool:
     if term == "hpc":
@@ -67,12 +191,52 @@ def parse_value_threshold(query: str) -> int | None:
     return int(amount)
 
 
+def parse_due_before(query: str) -> date | None:
+    next_days_match = re.search(r"next\s+(\d+)\s+days", query.lower())
+    return date.today() + timedelta(days=int(next_days_match.group(1))) if next_days_match else None
+
+
+def parse_state_filter(query: str) -> str | None:
+    lower_query = query.lower()
+    for state_name, abbreviation in STATE_QUERY_MAP.items():
+        if re.search(rf"\b{re.escape(state_name)}\b", lower_query):
+            return abbreviation
+
+    abbreviation_match = re.search(
+        r"\b(?:in|for|near|within|across)\s+([A-Z]{2})\b|\b([A-Z]{2})\s+(?:bids|opportunities|projects|rfps)\b",
+        query,
+    )
+    if abbreviation_match:
+        abbreviation = (abbreviation_match.group(1) or abbreviation_match.group(2) or "").upper()
+        if abbreviation in set(STATE_QUERY_MAP.values()):
+            return abbreviation
+    return None
+
+
+def parse_project_stage(query: str) -> str | None:
+    lower_query = query.lower()
+    for phrase, stage in PROJECT_STAGE_QUERY_MAP.items():
+        if re.search(rf"\b{re.escape(phrase)}\b", lower_query):
+            return stage
+    return None
+
+
+def parse_owner_type(query: str) -> str | None:
+    lower_query = query.lower()
+    for phrase, owner_type in OWNER_QUERY_MAP.items():
+        if re.search(rf"\b{re.escape(phrase)}\b", lower_query):
+            return owner_type
+    return None
+
+
 def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[dict]:
     lower_query = query.lower()
     desired_project_type = next((ptype for phrase, ptype in PROJECT_QUERY_MAP.items() if phrase in lower_query), None)
+    desired_state = parse_state_filter(query)
+    desired_project_stage = parse_project_stage(query)
+    desired_owner_type = parse_owner_type(query)
     value_threshold = parse_value_threshold(query)
-    next_days_match = re.search(r"next\s+(\d+)\s+days", lower_query)
-    due_before = date.today() + timedelta(days=int(next_days_match.group(1))) if next_days_match else None
+    due_before = parse_due_before(query)
     wants_supply_and_install = "supply and installation" in lower_query or "supply and install" in lower_query or "both cable supply and installation" in lower_query
     wants_open = any(term in lower_query for term in ["open", "active", "bidding", "solicitation"])
     wants_public = any(term in lower_query for term in ["public", "publicly notified", "nationwide"])
@@ -102,6 +266,10 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
                 str(opp.get("title") or ""),
                 str(opp.get("description") or ""),
                 str(opp.get("source_type") or ""),
+                str(opp.get("project_stage") or ""),
+                str(opp.get("signal_type") or ""),
+                str(opp.get("owner_type") or ""),
+                str(opp.get("forecast_rfp_date") or ""),
                 str(opp.get("bid_status") or ""),
                 str(opp.get("value_confidence") or ""),
                 " ".join((opp.get("extracted_specs") or {}).get("keywords", [])),
@@ -120,10 +288,28 @@ def search_opportunities(query: str, opportunities: Iterable[Mapping]) -> list[d
         elif desired_project_type:
             score -= 10
 
+        if desired_project_stage and opp.get("project_stage") == desired_project_stage:
+            score += 26
+            reasons.append(f"Stage matches {desired_project_stage.replace('_', ' ')}.")
+        elif desired_project_stage:
+            score -= 10
+
+        if desired_owner_type and opp.get("owner_type") == desired_owner_type:
+            score += 24
+            reasons.append(f"Owner type matches {desired_owner_type.replace('_', ' ')}.")
+        elif desired_owner_type:
+            score -= 10
+
         if due_before and opp.get("due_date") and opp["due_date"] <= due_before:
             score += 20
             reasons.append(f"Due by {due_before.isoformat()}.")
         elif due_before:
+            score -= 10
+
+        if desired_state and str(opp.get("state") or "").upper() == desired_state:
+            score += 20
+            reasons.append(f"Located in {desired_state}.")
+        elif desired_state:
             score -= 10
 
         estimated_value = opp.get("estimated_value")

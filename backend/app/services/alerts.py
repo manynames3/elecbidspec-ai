@@ -5,10 +5,13 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Query, Session
 
 from app.models import AlertPreference, IngestionJob, Opportunity, OpportunityWorkflow, SavedSearch
 from app.services.search import search_opportunities
+from app.services.fit_scoring import score_fit
+from app.services.tenancy import PUBLIC_TENANT_ID
 
 
 def _json_safe(value: Any) -> Any:
@@ -23,30 +26,42 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
-def _opportunity_card(opportunity: Opportunity) -> dict:
-    return _json_safe(
-        {
-            "id": opportunity.id,
-            "title": opportunity.title,
-            "agency": opportunity.agency,
-            "state": opportunity.state,
-            "location": opportunity.location,
-            "due_date": opportunity.due_date,
-            "source": opportunity.source,
-            "source_type": opportunity.source_type,
-            "source_url": opportunity.source_url,
-            "estimated_value": opportunity.estimated_value,
-            "value_confidence": opportunity.value_confidence,
-            "minimum_value_match": opportunity.minimum_value_match,
-            "project_type": opportunity.project_type,
-            "fit_score": opportunity.fit_score,
-            "fit_explanation": opportunity.fit_explanation,
-        }
-    )
+def _visible_query(query: Query, tenant_id: str) -> Query:
+    return query.filter(or_(Opportunity.tenant_id == PUBLIC_TENANT_ID, Opportunity.tenant_id == tenant_id))
 
 
-def _opportunity_search_record(opportunity: Opportunity) -> dict:
-    record = _opportunity_card(opportunity)
+def _opportunity_card(opportunity: Opportunity, profile: Mapping | None = None) -> dict:
+    data = {
+        "id": opportunity.id,
+        "tenant_id": opportunity.tenant_id,
+        "title": opportunity.title,
+        "agency": opportunity.agency,
+        "state": opportunity.state,
+        "location": opportunity.location,
+        "due_date": opportunity.due_date,
+        "source": opportunity.source,
+        "source_type": opportunity.source_type,
+        "source_url": opportunity.source_url,
+        "project_stage": opportunity.project_stage,
+        "signal_type": opportunity.signal_type,
+        "owner_type": opportunity.owner_type,
+        "forecast_rfp_date": opportunity.forecast_rfp_date,
+        "estimated_value": opportunity.estimated_value,
+        "value_confidence": opportunity.value_confidence,
+        "minimum_value_match": opportunity.minimum_value_match,
+        "project_type": opportunity.project_type,
+        "fit_score": opportunity.fit_score,
+        "fit_explanation": opportunity.fit_explanation,
+    }
+    if profile:
+        fit = score_fit({**data, "extracted_specs": opportunity.extracted_specs or {}}, profile)
+        data["fit_score"] = fit.get("fit_score")
+        data["fit_explanation"] = fit.get("fit_explanation")
+    return _json_safe(data)
+
+
+def _opportunity_search_record(opportunity: Opportunity, profile: Mapping | None = None) -> dict:
+    record = _opportunity_card(opportunity, profile)
     record["description"] = opportunity.description
     record["extracted_specs"] = opportunity.extracted_specs or {}
     record["bid_status"] = opportunity.bid_status
@@ -96,6 +111,12 @@ def _apply_saved_search_filters(query: Query, filters: Mapping[str, Any]) -> Que
         query = query.filter(Opportunity.source == filters["source"])
     if filters.get("source_type"):
         query = query.filter(Opportunity.source_type == filters["source_type"])
+    if filters.get("project_stage"):
+        query = query.filter(Opportunity.project_stage == filters["project_stage"])
+    if filters.get("signal_type"):
+        query = query.filter(Opportunity.signal_type == filters["signal_type"])
+    if filters.get("owner_type"):
+        query = query.filter(Opportunity.owner_type == filters["owner_type"])
     if filters.get("bid_status"):
         query = query.filter(Opportunity.bid_status == filters["bid_status"])
     if _coerce_bool(filters.get("open_only")):
@@ -105,7 +126,7 @@ def _apply_saved_search_filters(query: Query, filters: Mapping[str, Any]) -> Que
     return query
 
 
-def saved_search_results(db: Session, tenant_id: str, saved_search: SavedSearch, limit: int = 10) -> list[dict]:
+def saved_search_results(db: Session, tenant_id: str, saved_search: SavedSearch, limit: int = 10, profile: Mapping | None = None) -> list[dict]:
     filters = saved_search.filters or {}
     hidden_ids = {
         item.opportunity_id
@@ -113,22 +134,25 @@ def saved_search_results(db: Session, tenant_id: str, saved_search: SavedSearch,
         .filter(OpportunityWorkflow.tenant_id == tenant_id, OpportunityWorkflow.hidden == True)  # noqa: E712
         .all()
     }
-    query = _apply_saved_search_filters(db.query(Opportunity), filters)
+    query = _apply_saved_search_filters(_visible_query(db.query(Opportunity), tenant_id), filters)
     if hidden_ids:
         query = query.filter(Opportunity.id.notin_(hidden_ids))
 
     opportunities = query.order_by(Opportunity.due_date.asc().nullslast(), Opportunity.fit_score.desc().nullslast()).limit(250).all()
     if saved_search.query and saved_search.query.strip():
-        ranked = search_opportunities(saved_search.query, [_opportunity_search_record(item) for item in opportunities])
+        ranked = search_opportunities(saved_search.query, [_opportunity_search_record(item, profile) for item in opportunities])
         return ranked[:limit]
-    return [
-        {
-            "opportunity": _opportunity_card(item),
-            "rank_score": item.fit_score or 0,
-            "search_explanation": "Matches saved filters.",
-        }
-        for item in opportunities[:limit]
-    ]
+    results = []
+    for item in opportunities[:limit]:
+        card = _opportunity_card(item, profile)
+        results.append(
+            {
+                "opportunity": card,
+                "rank_score": card.get("fit_score") or 0,
+                "search_explanation": "Matches saved filters.",
+            }
+        )
+    return results
 
 
 def get_or_create_alert_preference(db: Session, tenant_id: str) -> AlertPreference:
@@ -142,7 +166,7 @@ def get_or_create_alert_preference(db: Session, tenant_id: str) -> AlertPreferen
     return preference
 
 
-def build_alert_digest(db: Session, tenant_id: str, preference: AlertPreference) -> dict:
+def build_alert_digest(db: Session, tenant_id: str, preference: AlertPreference, profile: Mapping | None = None) -> dict:
     today = date.today()
     due_cutoff = today + timedelta(days=preference.due_within_days)
     hidden_ids = {
@@ -152,13 +176,12 @@ def build_alert_digest(db: Session, tenant_id: str, preference: AlertPreference)
         .all()
     }
 
-    high_fit_query = db.query(Opportunity).filter(
+    high_fit_query = _visible_query(db.query(Opportunity), tenant_id).filter(
         Opportunity.source != "seed",
         Opportunity.bid_status == "open",
         Opportunity.minimum_value_match == True,  # noqa: E712
-        Opportunity.fit_score >= preference.min_fit_score,
     )
-    due_soon_query = db.query(Opportunity).filter(
+    due_soon_query = _visible_query(db.query(Opportunity), tenant_id).filter(
         Opportunity.source != "seed",
         Opportunity.bid_status == "open",
         Opportunity.due_date.isnot(None),
@@ -182,6 +205,7 @@ def build_alert_digest(db: Session, tenant_id: str, preference: AlertPreference)
         watched = (
             db.query(Opportunity)
             .filter(Opportunity.id.in_(watched_ids), Opportunity.bid_status == "open")
+            .filter(or_(Opportunity.tenant_id == PUBLIC_TENANT_ID, Opportunity.tenant_id == tenant_id))
             .order_by(Opportunity.due_date.asc().nullslast(), Opportunity.fit_score.desc().nullslast())
             .limit(15)
             .all()
@@ -211,7 +235,7 @@ def build_alert_digest(db: Session, tenant_id: str, preference: AlertPreference)
         .limit(20)
         .all()
     ):
-        matches = saved_search_results(db, tenant_id, saved_search, limit=10)
+        matches = saved_search_results(db, tenant_id, saved_search, limit=10, profile=profile)
         saved_search_match_count += len(matches)
         saved_search_blocks.append(
             _json_safe(
@@ -225,9 +249,8 @@ def build_alert_digest(db: Session, tenant_id: str, preference: AlertPreference)
             )
         )
 
-    high_fit = (
-        high_fit_query.order_by(Opportunity.fit_score.desc().nullslast(), Opportunity.due_date.asc().nullslast()).limit(20).all()
-    )
+    high_fit_candidates = high_fit_query.order_by(Opportunity.fit_score.desc().nullslast(), Opportunity.due_date.asc().nullslast()).limit(250).all()
+    high_fit = [item for item in high_fit_candidates if ((_opportunity_card(item, profile).get("fit_score") or 0) >= preference.min_fit_score)][:20]
     due_soon = due_soon_query.order_by(Opportunity.due_date.asc(), Opportunity.fit_score.desc().nullslast()).limit(20).all()
     digest = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -247,9 +270,9 @@ def build_alert_digest(db: Session, tenant_id: str, preference: AlertPreference)
             "saved_searches": len(saved_search_blocks),
             "saved_search_matches": saved_search_match_count,
         },
-        "high_fit": [_opportunity_card(item) for item in high_fit],
-        "due_soon": [_opportunity_card(item) for item in due_soon],
-        "watched": [_opportunity_card(item) for item in watched],
+        "high_fit": [_opportunity_card(item, profile) for item in high_fit],
+        "due_soon": [_opportunity_card(item, profile) for item in due_soon],
+        "watched": [_opportunity_card(item, profile) for item in watched],
         "saved_searches": saved_search_blocks,
         "source_failures": source_failures,
     }

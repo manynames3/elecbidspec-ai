@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ClipboardList, DatabaseZap, Upload, UserRoundCog } from "lucide-react";
+import { Activity, ClipboardList, DatabaseZap, Upload, UserRoundCog } from "lucide-react";
 import { AuthStatus } from "@/components/AuthStatus";
 
 export default function AppLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -25,6 +25,10 @@ export default function AppLayout({ children }: Readonly<{ children: React.React
           <Link href="/profile">
             <UserRoundCog size={18} />
             Profile
+          </Link>
+          <Link href="/admin/sources">
+            <Activity size={18} />
+            Source Ops
           </Link>
         </nav>
         <AuthStatus />

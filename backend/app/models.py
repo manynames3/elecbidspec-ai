@@ -21,6 +21,7 @@ class Opportunity(Base):
     __tablename__ = "opportunities"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    tenant_id: Mapped[str] = mapped_column(String(80), default="public", index=True)
     title: Mapped[str] = mapped_column(String(280), index=True)
     agency: Mapped[Optional[str]] = mapped_column(String(220), nullable=True)
     location: Mapped[Optional[str]] = mapped_column(String(220), nullable=True)
@@ -32,6 +33,10 @@ class Opportunity(Base):
     source_type: Mapped[str] = mapped_column(String(80), default="manual", index=True)
     source_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     bid_status: Mapped[str] = mapped_column(String(40), default="open", index=True)
+    project_stage: Mapped[str] = mapped_column(String(40), default="active_bid", index=True)
+    signal_type: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
+    owner_type: Mapped[str] = mapped_column(String(80), default="public_agency", index=True)
+    forecast_rfp_date: Mapped[Optional[date]] = mapped_column(Date, index=True, nullable=True)
     estimated_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(14, 2), nullable=True)
     value_confidence: Mapped[str] = mapped_column(String(40), default="unknown", index=True)
     value_explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

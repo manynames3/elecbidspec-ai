@@ -14,7 +14,7 @@ from app.services.classification import classify_bid
 from app.services.auth import hash_password
 from app.services.extraction import extract_specs
 from app.services.fit_scoring import score_fit
-from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
+from app.services.value_assessment import assess_value, infer_owner_type, infer_project_stage, infer_signal_type, infer_source_type, normalize_bid_status
 
 
 SEED_DIR = Path(__file__).parent / "seed_data"
@@ -77,12 +77,16 @@ def ensure_seed_data(db: Session) -> None:
 
     for item in load_json("sample_opportunities.json"):
         specs = extract_specs(item.get("description") or "")
+        attachments = item.get("attachments") or []
+        if attachments:
+            specs["evidence_links"] = attachments
         classification = classify_bid(item["title"], item.get("description") or "", specs)
         opportunity_data = {
             **item,
             "due_date": _parse_date(item.get("due_date")),
+            "forecast_rfp_date": _parse_date(item.get("forecast_rfp_date")),
             "estimated_value": Decimal(str(item["estimated_value"])) if item.get("estimated_value") else None,
-            "attachments": [],
+            "attachments": attachments,
             "extracted_specs": specs,
             "source_type": item.get("source_type") or infer_source_type(item.get("source"), item.get("agency")),
             "bid_status": normalize_bid_status(item.get("bid_status"), _parse_date(item.get("due_date"))),
@@ -90,6 +94,9 @@ def ensure_seed_data(db: Session) -> None:
             "confidence_score": classification["confidence_score"],
             "classification_explanation": classification["explanation"],
         }
+        opportunity_data["owner_type"] = infer_owner_type(opportunity_data)
+        opportunity_data["project_stage"] = infer_project_stage(opportunity_data)
+        opportunity_data["signal_type"] = infer_signal_type(opportunity_data)
         opportunity_data.update(assess_value(opportunity_data))
         fit = score_fit(opportunity_data, profile_data)
         opportunity_data.update(fit)

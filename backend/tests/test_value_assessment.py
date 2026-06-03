@@ -1,4 +1,12 @@
-from app.services.value_assessment import assess_value, infer_estimated_value, infer_source_type, normalize_bid_status
+from app.services.value_assessment import (
+    assess_value,
+    infer_estimated_value,
+    infer_owner_type,
+    infer_project_stage,
+    infer_signal_type,
+    infer_source_type,
+    normalize_bid_status,
+)
 
 
 def test_assess_value_confirms_posted_value_over_minimum():
@@ -44,3 +52,19 @@ def test_infer_estimated_value_from_notice_text():
 def test_normalizes_portal_status_and_manual_public_agency_type():
     assert normalize_bid_status("Sources Sought", None) == "open"
     assert infer_source_type("manual_upload", "City of Austin Public Works") == "state_local"
+
+
+def test_infers_upstream_iou_signal_context():
+    data = {
+        "title": "PUC docket for Dominion Energy data center interconnection",
+        "agency": "Virginia State Corporation Commission",
+        "description": "Rate case filing describes large load interconnection, 230kV substation work, and future EHV cable procurement.",
+        "source_type": "regulatory",
+        "bid_status": "open",
+        "project_stage": "active_bid",
+        "owner_type": "public_agency",
+    }
+
+    assert infer_owner_type(data) == "investor_owned_utility"
+    assert infer_project_stage(data) == "early_signal"
+    assert infer_signal_type(data) == "puc_docket"

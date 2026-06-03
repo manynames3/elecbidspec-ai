@@ -1,9 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Save } from "lucide-react";
+import { Lock, Save } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import type { CompanyProfile } from "@/lib/types";
+import type { AccountStatus, CompanyProfile } from "@/lib/types";
 
 const experienceKeys = [
   "data_center_power",
@@ -35,15 +35,21 @@ export function ProfileForm() {
   });
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
+        const nextAccountStatus = await apiFetch<AccountStatus>("/account/status");
+        setAccountStatus(nextAccountStatus);
+        if (!nextAccountStatus.authenticated) {
+          return;
+        }
         const profile = await apiFetch<CompanyProfile>("/company-profile");
         setProfileId(profile.id);
         setForm({
           name: profile.name,
-          tenant_id: profile.tenant_id,
+          tenant_id: nextAccountStatus.tenant_id,
           states_served: profile.states_served.join(", "),
           bonding_capacity: profile.bonding_capacity ? String(profile.bonding_capacity) : "",
           cable_types_supplied: profile.cable_types_supplied.join(", "),
@@ -62,6 +68,10 @@ export function ProfileForm() {
     event.preventDefault();
     setStatus(null);
     setError(null);
+    if (!accountStatus?.authenticated) {
+      setError("Pilot login required to edit the company capability profile.");
+      return;
+    }
     try {
       const payload = {
         name: form.name,
@@ -94,6 +104,13 @@ export function ProfileForm() {
         {profileId ? <span className="source-pill">profile #{profileId}</span> : null}
         <span className="source-pill">tenant {form.tenant_id}</span>
       </section>
+
+      {!accountStatus?.authenticated ? (
+        <div className="pilot-gate-banner">
+          <Lock size={17} />
+          <span>Sign in to a pilot workspace to edit company capabilities and refresh fit scoring.</span>
+        </div>
+      ) : null}
 
       <form className="form-panel" onSubmit={save}>
         <div className="form-grid">
@@ -151,7 +168,7 @@ export function ProfileForm() {
 
         {error ? <div className="alert">{error}</div> : null}
         {status ? <div className="success">{status}</div> : null}
-        <button className="primary-button" type="submit">
+        <button className="primary-button" type="submit" disabled={!accountStatus?.authenticated}>
           <Save size={17} />
           Save profile
         </button>

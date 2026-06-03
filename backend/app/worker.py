@@ -15,7 +15,8 @@ from app.services.email_alerts import send_alert_digest_email
 from app.services.fit_scoring import score_fit
 from app.services.ingestion.defaults import available_default_public_bid_jobs
 from app.services.ingestion.registry import ADAPTERS
-from app.services.value_assessment import assess_value, infer_source_type, normalize_bid_status
+from app.services.tenancy import PUBLIC_TENANT_ID
+from app.services.value_assessment import assess_value, infer_owner_type, infer_project_stage, infer_signal_type, infer_source_type, normalize_bid_status
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("elecbidspec.worker")
@@ -38,7 +39,7 @@ def _same_default_job(job: IngestionJob, adapter: str, label: str) -> bool:
 
 
 def _profile_data(db: Session) -> dict | None:
-    profile = db.query(CompanyProfile).first()
+    profile = db.query(CompanyProfile).filter(CompanyProfile.tenant_id == "default").first() or db.query(CompanyProfile).first()
     if not profile:
         return None
     return {
@@ -68,16 +69,24 @@ def process_job(db: Session, job: IngestionJob) -> None:
     deleted_existing = 0
     replace_source = params.get("source") or params.get("job_label")
     if params.get("replace_source_records") and replace_source:
-        deleted_existing = db.query(Opportunity).filter(Opportunity.source == str(replace_source)).delete(synchronize_session=False)
+        deleted_existing = (
+            db.query(Opportunity)
+            .filter(Opportunity.tenant_id == PUBLIC_TENANT_ID, Opportunity.source == str(replace_source))
+            .delete(synchronize_session=False)
+        )
         db.commit()
     for data in records:
+        data["tenant_id"] = PUBLIC_TENANT_ID
         existing = None
         if data.get("source_url"):
-            existing = db.query(Opportunity).filter(Opportunity.source_url == data["source_url"]).first()
+            existing = db.query(Opportunity).filter(Opportunity.tenant_id == PUBLIC_TENANT_ID, Opportunity.source_url == data["source_url"]).first()
         inferred_source_type = infer_source_type(data.get("source"), data.get("agency"))
         if not data.get("source_type") or (data.get("source_type") == "manual" and inferred_source_type != "manual"):
             data["source_type"] = inferred_source_type
         data["bid_status"] = normalize_bid_status(data.get("bid_status"), data.get("due_date"))
+        data["owner_type"] = infer_owner_type(data)
+        data["project_stage"] = infer_project_stage(data)
+        data["signal_type"] = infer_signal_type(data)
         data.update(assess_value(data))
         if profile:
             data.update(score_fit(data, profile))

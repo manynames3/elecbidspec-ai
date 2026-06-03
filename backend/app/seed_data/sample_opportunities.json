@@ -138,5 +138,109 @@
     "bid_status": "open",
     "source_url": "https://example.gov/harris-emergency-underground",
     "estimated_value": 2900000
+  },
+  {
+    "title": "PUC Filing Signal: Investor-Owned Utility 500kV Underground Cable Program",
+    "agency": "Virginia State Corporation Commission",
+    "location": "Northern Virginia",
+    "state": "VA",
+    "due_date": null,
+    "naics_code": "237130",
+    "description": "Sample early signal from a public utility commission docket for an investor-owned utility capital plan. Filing references AI data center load growth, 500kV transmission expansion, EHV XLPE underground cable, duct bank, substation interconnection, and future supplier prequalification before a gated utility RFP.",
+    "source": "seed",
+    "source_type": "regulatory",
+    "bid_status": "open",
+    "project_stage": "early_signal",
+    "signal_type": "puc_docket",
+    "owner_type": "investor_owned_utility",
+    "forecast_rfp_date": "2027-03-31",
+    "source_url": "https://example.com/puc-docket-iou-500kv-cable",
+    "attachments": [
+      {
+        "name": "Sample PUC docket evidence",
+        "url": "https://example.com/puc-docket-iou-500kv-cable",
+        "source": "seed",
+        "type": "evidence"
+      }
+    ],
+    "estimated_value": null
+  },
+  {
+    "title": "RTO Transmission Plan Signal: EHV Substation Tie-In for AI Load Growth",
+    "agency": "PJM Interconnection",
+    "location": "Virginia and Maryland",
+    "state": "VA",
+    "due_date": null,
+    "naics_code": "237130",
+    "description": "Sample RTO/ISO transmission planning signal tied to hyperscale AI infrastructure and large-load interconnection requests. Scope indicators include 230kV and 500kV substation expansion, high voltage cable terminations, transmission interconnection equipment, fiber controls, and utility procurement expected after planning approval.",
+    "source": "seed",
+    "source_type": "rto_iso",
+    "bid_status": "open",
+    "project_stage": "early_signal",
+    "signal_type": "rto_transmission_plan",
+    "owner_type": "investor_owned_utility",
+    "forecast_rfp_date": "2027-06-30",
+    "source_url": "https://example.com/rto-transmission-plan-ai-load",
+    "attachments": [
+      {
+        "name": "Sample RTO transmission plan evidence",
+        "url": "https://example.com/rto-transmission-plan-ai-load",
+        "source": "seed",
+        "type": "evidence"
+      }
+    ],
+    "estimated_value": null
+  },
+  {
+    "title": "Municipal Zoning Signal: 230kV Substation for Data Center Campus",
+    "agency": "Town of Marana Planning Commission",
+    "location": "Marana, AZ",
+    "state": "AZ",
+    "due_date": null,
+    "naics_code": "237130",
+    "description": "Sample zoning and land-use signal for a private data center campus requesting a new 230kV substation, underground duct bank, MV distribution feeders, fiber controls, and utility interconnection. Early-stage opportunity for cable supply positioning and EPC partner outreach before formal procurement.",
+    "source": "seed",
+    "source_type": "land_use",
+    "bid_status": "open",
+    "project_stage": "early_signal",
+    "signal_type": "zoning_or_permit",
+    "owner_type": "private_developer",
+    "forecast_rfp_date": "2027-01-15",
+    "source_url": "https://example.com/zoning-signal-data-center-substation",
+    "attachments": [
+      {
+        "name": "Sample zoning application evidence",
+        "url": "https://example.com/zoning-signal-data-center-substation",
+        "source": "seed",
+        "type": "evidence"
+      }
+    ],
+    "estimated_value": null
+  },
+  {
+    "title": "IOU Grid Hardening Capital Plan: XLPE Undergrounding and EHV Cable Program",
+    "agency": "Pacific Gas and Electric Company",
+    "location": "Central Valley, CA",
+    "state": "CA",
+    "due_date": null,
+    "naics_code": "237130",
+    "description": "Sample investor-owned utility capital program signal for wildfire resilience and grid hardening. Planning documents reference XLPE underground cable, conduit, trenching, distribution feeder replacement, EHV cable accessories, splice kits, and approved vendor list prequalification before future utility sourcing events.",
+    "source": "seed",
+    "source_type": "investor_owned_utility",
+    "bid_status": "open",
+    "project_stage": "pre_rfp",
+    "signal_type": "capital_plan",
+    "owner_type": "investor_owned_utility",
+    "forecast_rfp_date": "2026-11-30",
+    "source_url": "https://example.com/iou-grid-hardening-capital-plan",
+    "attachments": [
+      {
+        "name": "Sample IOU capital plan evidence",
+        "url": "https://example.com/iou-grid-hardening-capital-plan",
+        "source": "seed",
+        "type": "evidence"
+      }
+    ],
+    "estimated_value": null
   }
 ]

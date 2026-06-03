@@ -54,7 +54,118 @@ HIGH_VALUE_SCOPE_TERMS = {
     "performance bond": 1,
     "payment bond": 1,
     "bid bond": 1,
+    "capital plan": 3,
+    "capital program": 3,
+    "integrated resource plan": 3,
+    "rate case": 3,
+    "puc docket": 3,
+    "transmission expansion": 4,
+    "interconnection queue": 4,
+    "large load": 3,
+    "ehv": 4,
+    "xlpe": 4,
 }
+
+INVESTOR_OWNED_UTILITY_TERMS = {
+    "investor-owned utility",
+    "investor owned utility",
+    "iou",
+    "dominion energy",
+    "duke energy",
+    "american electric power",
+    "aep",
+    "xcel energy",
+    "pg&e",
+    "pacific gas and electric",
+    "southern california edison",
+    "sce",
+    "san diego gas & electric",
+    "sdg&e",
+    "centerpoint energy",
+    "oncor",
+    "entergy",
+    "firstenergy",
+    "national grid",
+    "eversource",
+    "dte energy",
+    "consumers energy",
+    "arizona public service",
+    "florida power & light",
+    "fpl",
+    "nextera",
+    "ppl electric",
+    "we energies",
+    "ameren",
+    "con edison",
+    "consolidated edison",
+    "pseg",
+    "pse&g",
+}
+
+PUBLIC_AGENCY_SOURCE_TYPES = {
+    "airport_authority",
+    "education",
+    "federal",
+    "state_dot",
+    "state_local",
+    "transit",
+    "university",
+    "water_authority",
+}
+
+EARLY_SIGNAL_TERMS = {
+    "capital improvement program",
+    "capital plan",
+    "capital program",
+    "integrated resource plan",
+    "irp",
+    "rate case",
+    "puc",
+    "public utility commission",
+    "docket",
+    "transmission plan",
+    "transmission expansion",
+    "rto",
+    "iso",
+    "pjm",
+    "ercot",
+    "caiso",
+    "miso",
+    "spp",
+    "interconnection queue",
+    "large load",
+    "zoning",
+    "right-of-way",
+    "right of way",
+    "substation permit",
+    "data center interconnection",
+}
+
+PRE_RFP_TERMS = {
+    "pre-rfp",
+    "pre rfp",
+    "pre solicitation",
+    "pre-solicitation",
+    "sources sought",
+    "request for information",
+    "rfi",
+    "request for qualifications",
+    "rfq",
+    "prequalification",
+    "pre-qualified",
+    "supplier registration",
+    "approved vendor list",
+    "avl",
+}
+
+SIGNAL_TYPE_TERMS = [
+    ("puc_docket", ["puc", "public utility commission", "rate case", "docket", "commission filing"]),
+    ("rto_transmission_plan", ["rto", "iso", "pjm", "ercot", "caiso", "miso", "spp", "transmission plan", "transmission expansion"]),
+    ("data_center_interconnection", ["data center interconnection", "large load", "load interconnection", "hyperscale", "ai infrastructure", "gpu"]),
+    ("zoning_or_permit", ["zoning", "right-of-way", "right of way", "permit", "substation permit", "council approval"]),
+    ("capital_plan", ["capital plan", "capital program", "capital improvement program", "integrated resource plan", "irp"]),
+    ("prequalification", ["prequalification", "pre-qualified", "supplier registration", "approved vendor list", "avl"]),
+]
 
 OPEN_STATUS_TERMS = {
     "open",
@@ -149,6 +260,8 @@ def infer_source_type(source: str | None, agency: str | None = None) -> str:
     agency_text = (agency or "").lower()
     if source_text == "sam_gov":
         return "federal"
+    if any(term in f"{source_text} {agency_text}" for term in INVESTOR_OWNED_UTILITY_TERMS):
+        return "investor_owned_utility"
     if any(term in agency_text for term in ["city of", "county", "state", "department of transportation", "public works"]):
         return "state_local"
     if any(term in agency_text for term in ["energy", "electric", "power", "utility", "cooperative"]):
@@ -158,6 +271,64 @@ def infer_source_type(source: str | None, agency: str | None = None) -> str:
     if source_text in {"manual_upload", "manual"}:
         return "manual"
     return source_text or "other"
+
+
+def _opportunity_text(data: dict) -> str:
+    return " ".join(
+        [
+            str(data.get("title") or ""),
+            str(data.get("agency") or ""),
+            str(data.get("description") or ""),
+            str(data.get("source") or ""),
+            str(data.get("source_type") or ""),
+            str(data.get("project_type") or ""),
+        ]
+    ).lower()
+
+
+def infer_owner_type(data: dict) -> str:
+    explicit = str(data.get("owner_type") or "").strip().lower()
+
+    source_type = str(data.get("source_type") or "").strip().lower()
+    text = _opportunity_text(data)
+    if source_type == "investor_owned_utility" or any(term in text for term in INVESTOR_OWNED_UTILITY_TERMS):
+        return "investor_owned_utility"
+    if any(term in text for term in ["private developer", "hyperscale developer", "data center developer", "private campus"]):
+        return "private_developer"
+    if explicit and explicit not in {"manual", "unknown", "public_agency"}:
+        return explicit
+    if source_type in PUBLIC_AGENCY_SOURCE_TYPES:
+        return "public_agency"
+    if source_type == "utility":
+        return "public_power_or_utility"
+    return "public_agency"
+
+
+def infer_project_stage(data: dict) -> str:
+    explicit = str(data.get("project_stage") or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if explicit in {"early_signal", "pre_rfp", "awarded"}:
+        return explicit
+
+    text = _opportunity_text(data)
+    status = str(data.get("bid_status") or "").lower()
+    if "award" in status or "awarded" in text:
+        return "awarded"
+    if any(term in text for term in PRE_RFP_TERMS):
+        return "pre_rfp"
+    if any(term in text for term in EARLY_SIGNAL_TERMS):
+        return "early_signal"
+    return "active_bid"
+
+
+def infer_signal_type(data: dict) -> str | None:
+    explicit = str(data.get("signal_type") or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if explicit:
+        return explicit
+    text = _opportunity_text(data)
+    for signal_type, terms in SIGNAL_TYPE_TERMS:
+        if any(term in text for term in terms):
+            return signal_type
+    return None
 
 
 def high_value_scope_score(data: dict) -> int:

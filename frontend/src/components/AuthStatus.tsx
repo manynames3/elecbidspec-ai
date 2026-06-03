@@ -33,6 +33,7 @@ export function AuthStatus() {
       setAuthToken(response.token);
       setUser(response.user);
       setPassword("");
+      window.dispatchEvent(new Event("elecbidspec-auth-changed"));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     }
@@ -46,6 +47,7 @@ export function AuthStatus() {
     }
     clearAuthToken();
     setUser(null);
+    window.dispatchEvent(new Event("elecbidspec-auth-changed"));
   }
 
   if (user) {

@@ -164,6 +164,39 @@ export function sourceLabel(source: string): string {
   if (source === "houston_water") {
     return "Houston Public Works";
   }
+  if (source === "pjm_project_construction") {
+    return "PJM Construction";
+  }
+  if (source === "caiso_interconnection_queue") {
+    return "CAISO Queue";
+  }
+  if (source === "ercot_capacity_changes") {
+    return "ERCOT Planned Capacity";
+  }
+  if (source === "iso_ne_interconnection_queue") {
+    return "ISO-NE Queue";
+  }
+  if (source === "miso_eras_interconnection") {
+    return "MISO ERAS";
+  }
+  if (source === "nyiso_interconnection_queue") {
+    return "NYISO Queue";
+  }
+  if (source === "spp_gi_active_requests") {
+    return "SPP GI Active";
+  }
+  if (source === "virginia_scc_transmission_cases") {
+    return "Virginia SCC";
+  }
+  if (source === "georgia_psc_data_center") {
+    return "Georgia PSC";
+  }
+  if (source === "texas_puc_dockets") {
+    return "Texas PUCT";
+  }
+  if (source === "loudoun_land_applications") {
+    return "Loudoun Land Use";
+  }
   if (source === "chicago_solicitations") {
     return "Chicago/CTA";
   }
@@ -193,11 +226,22 @@ export function sourceLabel(source: string): string {
 
 export function whyThisBidMatters(opportunity: Opportunity): string {
   const reasons: string[] = [];
+  if (opportunity.project_stage === "early_signal") {
+    reasons.push("early signal before RFP");
+  } else if (opportunity.project_stage === "pre_rfp") {
+    reasons.push("pre-RFP pursuit window");
+  }
+  if (opportunity.owner_type === "investor_owned_utility") {
+    reasons.push("investor-owned utility / AVL timing");
+  }
+  if (opportunity.signal_type) {
+    reasons.push(labelize(opportunity.signal_type));
+  }
   if (opportunity.minimum_value_match) {
     reasons.push(opportunity.estimated_value ? `${formatCurrency(opportunity.estimated_value)} posted or inferred` : "$5M+ target likely");
   }
   if ((opportunity.fit_score ?? 0) >= 75) {
-    reasons.push(`${opportunity.fit_score} fit for Taihan capabilities`);
+    reasons.push(`${opportunity.fit_score} fit for company capabilities`);
   } else if ((opportunity.fit_score ?? 0) >= 55) {
     reasons.push("worth review against profile gaps");
   }
@@ -232,5 +276,5 @@ export function whyThisBidMatters(opportunity: Opportunity): string {
   if (!reasons.length && opportunity.fit_explanation) {
     return opportunity.fit_explanation;
   }
-  return reasons.length ? reasons.slice(0, 4).join(" · ") : "Needs review: value, scope, and fit are not fully established yet.";
+  return reasons.length ? reasons.slice(0, 5).join(" · ") : "Needs review: value, scope, and fit are not fully established yet.";
 }

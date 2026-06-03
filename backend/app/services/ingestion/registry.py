@@ -14,6 +14,19 @@ from app.services.ingestion.public_portal_links import PublicPortalLinksAdapter
 from app.services.ingestion.sam_gov import SamGovAdapter
 from app.services.ingestion.sf_open_bids import SfOpenBidsAdapter
 from app.services.ingestion.txdot_bid_items import TxdotBidItemsAdapter
+from app.services.ingestion.upstream_signals import (
+    CaisoInterconnectionQueueAdapter,
+    ErcotCapacityChangesAdapter,
+    GeorgiaPscDataCenterAdapter,
+    IsoNeInterconnectionQueueAdapter,
+    LoudounLandApplicationsAdapter,
+    MisoErasInterconnectionAdapter,
+    NyisoInterconnectionQueueAdapter,
+    PjmProjectConstructionAdapter,
+    SppGiActiveRequestsAdapter,
+    TexasPucDocketsAdapter,
+    VirginiaSccTransmissionCasesAdapter,
+)
 
 
 ADAPTERS: dict[str, IngestionAdapter] = {
@@ -26,6 +39,17 @@ ADAPTERS: dict[str, IngestionAdapter] = {
     SamGovAdapter.name: SamGovAdapter(),
     SfOpenBidsAdapter.name: SfOpenBidsAdapter(),
     TxdotBidItemsAdapter.name: TxdotBidItemsAdapter(),
+    PjmProjectConstructionAdapter.name: PjmProjectConstructionAdapter(),
+    CaisoInterconnectionQueueAdapter.name: CaisoInterconnectionQueueAdapter(),
+    ErcotCapacityChangesAdapter.name: ErcotCapacityChangesAdapter(),
+    IsoNeInterconnectionQueueAdapter.name: IsoNeInterconnectionQueueAdapter(),
+    SppGiActiveRequestsAdapter.name: SppGiActiveRequestsAdapter(),
+    MisoErasInterconnectionAdapter.name: MisoErasInterconnectionAdapter(),
+    NyisoInterconnectionQueueAdapter.name: NyisoInterconnectionQueueAdapter(),
+    VirginiaSccTransmissionCasesAdapter.name: VirginiaSccTransmissionCasesAdapter(),
+    GeorgiaPscDataCenterAdapter.name: GeorgiaPscDataCenterAdapter(),
+    TexasPucDocketsAdapter.name: TexasPucDocketsAdapter(),
+    LoudounLandApplicationsAdapter.name: LoudounLandApplicationsAdapter(),
     PublicBidPageAdapter.name: PublicBidPageAdapter(),
     PublicJsonFeedAdapter.name: PublicJsonFeedAdapter(),
     PublicHtmlScrapeAdapter.name: PublicHtmlScrapeAdapter(),

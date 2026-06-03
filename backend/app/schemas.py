@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class OpportunityBase(BaseModel):
+    tenant_id: str = "public"
     title: str
     agency: str | None = None
     location: str | None = None
@@ -18,6 +19,10 @@ class OpportunityBase(BaseModel):
     source_type: str = "manual"
     source_url: str | None = None
     bid_status: str = "open"
+    project_stage: str = "active_bid"
+    signal_type: str | None = None
+    owner_type: str = "public_agency"
+    forecast_rfp_date: date | None = None
     estimated_value: Decimal | None = None
     value_confidence: str = "unknown"
     value_explanation: str | None = None
@@ -41,6 +46,10 @@ class OpportunityUpdate(BaseModel):
     source_type: str | None = None
     source_url: str | None = None
     bid_status: str | None = None
+    project_stage: str | None = None
+    signal_type: str | None = None
+    owner_type: str | None = None
+    forecast_rfp_date: date | None = None
     estimated_value: Decimal | None = None
     value_confidence: str | None = None
     value_explanation: str | None = None
@@ -114,6 +123,35 @@ class LoginResponse(BaseModel):
     token: str
     user: UserRead
     expires_at: datetime
+
+
+class AccountFeatureFlags(BaseModel):
+    admin_refresh: bool
+    ai_enhance: bool
+    proposal_exports: bool
+    saved_search_alerts: bool
+    custom_source_requests: bool
+
+
+class AccountOnboardingStatus(BaseModel):
+    has_profile: bool
+    saved_search_count: int
+    alert_configured: bool
+    source_summary_loaded: bool
+    live_importing_sources: int
+    total_sources: int
+    real_opportunity_count: int
+
+
+class AccountStatusRead(BaseModel):
+    authenticated: bool
+    user: UserRead | None = None
+    role: str
+    tenant_id: str
+    plan: str
+    plan_label: str
+    feature_flags: AccountFeatureFlags
+    onboarding: AccountOnboardingStatus
 
 
 class ProposalRead(BaseModel):

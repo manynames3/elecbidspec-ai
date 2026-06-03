@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Upload } from "lucide-react";
+import { Lock, Upload } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import type { Opportunity } from "@/lib/types";
+import type { AccountStatus, Opportunity } from "@/lib/types";
 
 export function UploadForm() {
   const router = useRouter();
@@ -21,9 +21,25 @@ export function UploadForm() {
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
+
+  useEffect(() => {
+    async function loadAccountStatus() {
+      try {
+        setAccountStatus(await apiFetch<AccountStatus>("/account/status"));
+      } catch {
+        setAccountStatus(null);
+      }
+    }
+    void loadAccountStatus();
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!accountStatus?.authenticated) {
+      setError("Pilot login required to upload RFP/spec documents.");
+      return;
+    }
     if (!file) {
       setError("Choose a PDF or text file first.");
       return;
@@ -55,6 +71,13 @@ export function UploadForm() {
           <h1>Upload RFP or spec documents</h1>
         </div>
       </section>
+
+      {!accountStatus?.authenticated ? (
+        <div className="pilot-gate-banner">
+          <Lock size={17} />
+          <span>Sign in to a pilot workspace before uploading RFP/spec documents.</span>
+        </div>
+      ) : null}
 
       <form className="form-panel" onSubmit={submit}>
         <label className="file-drop">
@@ -103,7 +126,7 @@ export function UploadForm() {
         </div>
 
         {error ? <div className="alert">{error}</div> : null}
-        <button className="primary-button" type="submit" disabled={saving}>
+        <button className="primary-button" type="submit" disabled={saving || !accountStatus?.authenticated}>
           <Upload size={17} />
           {saving ? "Processing..." : "Extract specs"}
         </button>
