@@ -6,6 +6,31 @@ import { apiFetch, formatDate, sourceLabel } from "@/lib/api";
 import type { AccountStatus, IngestionSummary, SourceHealth } from "@/lib/types";
 import { COVERED_BY_SOURCE_TOOLTIP, InfoTooltip, PORTAL_GATED_TOOLTIP } from "@/components/InfoTooltip";
 
+const demoAccountStatus: AccountStatus = {
+  authenticated: false,
+  user: null,
+  role: "demo",
+  tenant_id: "default",
+  plan: "demo_preview",
+  plan_label: "Demo preview",
+  feature_flags: {
+    admin_refresh: false,
+    ai_enhance: false,
+    proposal_exports: false,
+    saved_search_alerts: false,
+    custom_source_requests: false
+  },
+  onboarding: {
+    has_profile: false,
+    saved_search_count: 0,
+    alert_configured: false,
+    source_summary_loaded: false,
+    live_importing_sources: 0,
+    total_sources: 0,
+    real_opportunity_count: 0
+  }
+};
+
 function sourceStatusLabel(source: SourceHealth) {
   if (source.status === "portal_gated") {
     return <InfoTooltip tooltip={PORTAL_GATED_TOOLTIP}>Portal Gated</InfoTooltip>;
@@ -24,10 +49,20 @@ export function SourceAdmin() {
   useEffect(() => {
     async function load() {
       try {
-        const nextAccountStatus = await apiFetch<AccountStatus>("/account/status");
+        let nextAccountStatus = demoAccountStatus;
+        try {
+          nextAccountStatus = await apiFetch<AccountStatus>("/account/status");
+        } catch {
+          nextAccountStatus = demoAccountStatus;
+        }
         setAccountStatus(nextAccountStatus);
-        if (nextAccountStatus.feature_flags.admin_refresh) {
+        try {
           setSummary(await apiFetch<IngestionSummary>("/ingestion/summary"));
+        } catch (summaryError) {
+          if (summaryError instanceof Error && summaryError.message === "Not Found") {
+            throw new Error("Source coverage endpoint is not available on the current backend. Redeploy the FastAPI backend, then refresh this page.");
+          }
+          throw summaryError;
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to load source coverage.");
@@ -52,24 +87,6 @@ export function SourceAdmin() {
   }
 
   const canUseAdminView = accountStatus?.feature_flags.admin_refresh ?? false;
-
-  if (accountStatus && !canUseAdminView) {
-    return (
-      <div className="page-stack">
-        <section className="page-header">
-          <div>
-            <p className="eyebrow">Source operations</p>
-            <h1>Coverage and ingestion health</h1>
-            <p className="page-subheading">Detailed source operations are limited to admin users.</p>
-          </div>
-        </section>
-        <div className="pilot-gate-banner">
-          <ShieldCheck size={17} />
-          <span>Admin login required for source operations. Public users can still see summarized coverage on the dashboard.</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="page-stack">
@@ -101,6 +118,12 @@ export function SourceAdmin() {
         <div className="pilot-gate-banner">
           <ShieldCheck size={17} />
           <span>Checking admin access...</span>
+        </div>
+      ) : null}
+      {accountStatus && !canUseAdminView ? (
+        <div className="pilot-gate-banner">
+          <ShieldCheck size={17} />
+          <span>Read-only source coverage preview. Admin login required for refresh controls and source operations.</span>
         </div>
       ) : null}
 

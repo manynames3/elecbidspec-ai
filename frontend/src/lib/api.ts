@@ -43,7 +43,16 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     if (response.status === 401 && typeof window !== "undefined") {
       clearAuthToken();
     }
-    const message = await response.text();
+    const rawMessage = await response.text();
+    let message = rawMessage;
+    try {
+      const parsed = JSON.parse(rawMessage) as { detail?: unknown };
+      if (typeof parsed.detail === "string") {
+        message = parsed.detail;
+      }
+    } catch {
+      message = rawMessage;
+    }
     throw new Error(message || `Request failed with ${response.status}`);
   }
   if (response.status === 204) {
