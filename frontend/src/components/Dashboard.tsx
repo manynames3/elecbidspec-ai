@@ -212,6 +212,7 @@ export function Dashboard() {
   const [savedSearchName, setSavedSearchName] = useState("");
   const [alertForm, setAlertForm] = useState(defaultAlertForm);
   const [alertLoading, setAlertLoading] = useState(false);
+  const [reportDownloading, setReportDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceMessage, setSourceMessage] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -516,25 +517,27 @@ export function Dashboard() {
   }
 
   async function downloadWeeklyReport() {
-    if (!accountStatus?.feature_flags.proposal_exports) {
-      setError("Pilot login required to export weekly intelligence reports.");
-      return;
+    setReportDownloading(true);
+    setError(null);
+    try {
+      const response = await fetch(apiUrl("/intelligence/weekly-report.pdf"), {
+        headers: authHeaders()
+      });
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = "taihan-weekly-intelligence-report.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } finally {
+      setReportDownloading(false);
     }
-    const response = await fetch(apiUrl("/intelligence/weekly-report.pdf"), {
-      headers: authHeaders()
-    });
-    if (!response.ok) {
-      throw new Error(await response.text());
-    }
-    const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = objectUrl;
-    link.download = "taihan-weekly-intelligence-report.pdf";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(objectUrl);
   }
 
   async function deleteSavedSearch(savedSearchId: number) {
@@ -570,9 +573,9 @@ export function Dashboard() {
             ElecBidSpec AI monitors 44 official sources nationwide, ranks early public signals against your capabilities, and keeps active bid handoff ready when procurement opens.
           </p>
           <div className="header-actions">
-            <button className="primary-button" type="button" onClick={() => void downloadWeeklyReport().catch((err) => setError(err instanceof Error ? err.message : "Weekly report download failed"))}>
+            <button className="primary-button" type="button" onClick={() => void downloadWeeklyReport().catch((err) => setError(err instanceof Error ? err.message : "Weekly report download failed"))} disabled={reportDownloading}>
               <Download size={17} />
-              Weekly intelligence PDF
+              {reportDownloading ? "Preparing PDF" : "Weekly intelligence PDF"}
             </button>
           </div>
         </div>

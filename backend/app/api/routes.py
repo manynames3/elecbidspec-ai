@@ -926,7 +926,7 @@ def get_weekly_intelligence_report(
 @router.get("/intelligence/weekly-report.pdf")
 def download_weekly_intelligence_report_pdf(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_user),
+    current_user: User | None = Depends(get_current_user_optional),
 ) -> Response:
     records, profile, source_health = _intelligence_report_records(db, current_user)
     report = build_weekly_intelligence_report(records, source_health, profile)
