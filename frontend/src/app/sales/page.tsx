@@ -15,163 +15,163 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "ElecBidSpec AI | Early signals and bid intelligence for electrical infrastructure",
+  title: "ElecBidSpec AI | Pre-RFP opportunity intelligence for power infrastructure",
   description:
-    "A sales-ready pursuit intelligence and proposal-prep workspace for electrical contractors, GCs, and cable suppliers chasing $5M+ grid, data-center, and utility infrastructure work.",
+    "Pre-RFP pursuit intelligence for cable suppliers, utility sales teams, and electrical infrastructure contractors tracking grid, IOU, data-center, and high-voltage power opportunities before procurement opens.",
 };
 
 const heroStats = [
-  { value: "44", label: "official sources tracked" },
-  { value: "$5M+", label: "priority opportunity threshold" },
-  { value: "Pre-RFP", label: "early-signal pursuit stage" },
+  { value: "44", label: "official source targets tracked" },
+  { value: "Pre-RFP", label: "primary intelligence stage" },
+  { value: "$5M+", label: "high-value pursuit threshold" },
 ];
 
 const sourceStats = [
-  { value: "Federal", label: "SAM.gov and public federal opportunities" },
-  { value: "State DOT", label: "transportation infrastructure and bid-item feeds" },
-  { value: "Utilities", label: "public power, utility, and investor-owned utility signals" },
-  { value: "Early", label: "PUC, RTO/ISO, zoning, permitting, and data-center load signals" },
+  { value: "RTO/ISO", label: "transmission queues, upgrade plans, and interconnection signals" },
+  { value: "PUC", label: "utility dockets, rate cases, and large-load filings" },
+  { value: "Land use", label: "data-center, substation, zoning, and permit indicators" },
+  { value: "Bid handoff", label: "active solicitations monitored once procurement opens" },
 ];
 
 const workflow = [
   {
     icon: Radar,
-    title: "Monitor active bids and early signals",
-    copy: "Track fragmented public bid sources plus upstream PUC, RTO/ISO, zoning, permitting, utility capital-plan, and data-center interconnection signals from one workspace.",
+    title: "Detect demand before the RFP",
+    copy: "Monitor fragmented public signals where electrical demand forms first: PUC dockets, RTO/ISO queues, utility plans, land-use filings, data-center load requests, and capital programs.",
   },
   {
     icon: Search,
-    title: "Find the jobs that match your edge",
-    copy: "Search in plain English for conduit, underground, pole line, substation, data center, emergency repair, and cable-supply opportunities.",
+    title: "Rank what is worth pursuing",
+    copy: "Classify each signal by owner, stage, likely value, scope, voltage, cable relevance, data-center/load evidence, and fit against company capabilities.",
   },
   {
     icon: ClipboardCheck,
-    title: "Move straight into bid prep",
-    copy: "Turn each posting into a bid summary, scope checklist, missing-info list, required-document checklist, risk flags, and partner email.",
+    title: "Turn signals into pursuit action",
+    copy: "Generate a short why-now narrative, evidence excerpt, recommended next step, partner outreach angle, and bid-readiness package when the opportunity matures.",
   },
 ];
 
 const missReasons = [
   {
     icon: Radar,
-    title: "Relevant work appears before the RFP",
-    copy: "Grid and data-center power scope can surface first in capital plans, PUC dockets, RTO transmission studies, zoning files, utility notices, and PDFs that do not say \"cable\" in the title.",
+    title: "The buying signal appears months before procurement",
+    copy: "Grid and data-center power scope can surface first in dockets, interconnection queues, transmission plans, site approvals, and utility filings long before a bid title says cable.",
   },
   {
     icon: AlertTriangle,
-    title: "Generic bid boards create noisy shortlists",
-    copy: "Broad construction searches pull in too many low-fit jobs, forcing BD and estimating teams to spend scarce time deciding what not to chase.",
+    title: "Internal teams already monitor pieces of this, not the whole picture",
+    copy: "Large suppliers usually have BD, utility sales, proposal, and strategy teams. The gap is a shared, ranked view that connects early evidence to action.",
   },
   {
     icon: FileText,
-    title: "Late spec review weakens the first response",
-    copy: "When technical documents are read after the bid clock starts, teams have less time to confirm scope, line up partners, spot risks, and shape a credible proposal.",
+    title: "Late discovery weakens supplier positioning",
+    copy: "If a team first sees the project at RFP release, it may already be late for AVL work, EPC relationships, owner education, partner selection, and bid/no-bid strategy.",
   },
 ];
 
 const pursuitPhases = [
   {
     phase: "PHASE 1",
-    title: "Discover",
-    timing: "Before gated procurement",
-    copy: "Monitor official public sources and upstream signals for electrical infrastructure, data center power, underground, substation, utility replacement, and cable-supply opportunities.",
+    title: "Signal",
+    timing: "Before formal procurement",
+    copy: "Find public evidence of future high-voltage cable, substation, transmission, distribution, data-center power, and large-load infrastructure demand.",
   },
   {
     phase: "PHASE 2",
-    title: "Qualify",
-    timing: "AVL and partner window",
-    copy: "Classify each opportunity by stage and owner type, estimate likely value when needed, score fit against company capabilities, and explain whether to pursue prequalification, partners, or bid prep.",
+    title: "Position",
+    timing: "Owner, AVL, EPC, and partner window",
+    copy: "Score each opportunity, explain why it matters now, and recommend whether to monitor, engage, prequalify, partner, or prepare for bid release.",
   },
   {
     phase: "PHASE 3",
-    title: "Prepare",
-    timing: "Before estimator handoff",
-    copy: "Generate bid summaries, scope checklists, missing-information lists, required-document checklists, risk flags, DOCX/PDF drafts, and partner outreach emails.",
+    title: "Capture",
+    timing: "When the RFP appears",
+    copy: "Carry forward the evidence trail into bid summaries, scope checklists, missing-information lists, risk flags, compliance matrices, DOCX/PDF drafts, and partner emails.",
   },
 ];
 
 const outcomes = [
-  "Stop losing hours to portal hopping, PDF skimming, and low-value public notices.",
-  "Prioritize bids by fit score, geography, project type, deadline, source, and likely value.",
-  "Spot cable supply, installation, IOU, and data-center power opportunities before competitors build the same shortlist.",
-  "Create DOCX and PDF proposal prep outputs your estimating, BD, and partner teams can act on.",
+  "Stop waiting for bid boards to tell you about projects that were visible upstream.",
+  "Give BD and utility sales a weekly ranked shortlist of high-value grid and data-center power signals.",
+  "Connect each signal to evidence, owner context, likely scope, why-now timing, and the next commercial action.",
+  "Keep proposal prep attached to the early intelligence so context is not lost when procurement opens.",
 ];
 
 const proofStats = [
-  { value: "44", label: "official source targets tracked across federal, state, utility, RTO/ISO, regulatory, land-use, authority, education, transit, airport, and local procurement" },
-  { value: "18", label: "live importing sources currently refreshing from public feeds, tables, pages, or source-specific adapters" },
-  { value: "Stage", label: "early signal, pre-RFP, active bid, and award fields keep pursuit timing explicit" },
-  { value: "DOCX/PDF", label: "proposal-prep artifacts generated from bid details, specs, and company capability context" },
+  { value: "44", label: "official source targets across federal, state, utility, RTO/ISO, regulatory, land-use, authority, education, transit, airport, and local procurement" },
+  { value: "Pre-RFP", label: "early signal, pre-RFP, active bid, and award fields keep pursuit timing explicit instead of mixing everything into one bid feed" },
+  { value: "Evidence", label: "each opportunity is built around source links, excerpts, why-now notes, and fit explanations rather than unqualified lead titles" },
+  { value: "DOCX/PDF", label: "proposal-prep artifacts are generated from opportunity details, technical specs, and company capability context when a pursuit becomes actionable" },
 ];
 
 const platform = [
   {
     icon: Building2,
     title: "Company-fit and owner-fit scoring",
-    copy: "Score opportunities against states served, bonding capacity, cable types, installation capabilities, labor model, project history, stage, and owner context.",
+    copy: "Score opportunities against geography, bonding capacity, cable types, installation capabilities, labor model, owner type, voltage evidence, and project history.",
   },
   {
     icon: Cable,
-    title: "Electrical scope extraction",
-    copy: "Extract underground cable, overhead line, distribution, transmission, conduit, trenching, transformer, substation, fiber, and repair terms.",
+    title: "Cable and power-scope extraction",
+    copy: "Extract underground cable, overhead line, distribution, transmission, medium voltage, high voltage, conduit, transformer, substation, fiber, and repair terms.",
   },
   {
     icon: ShieldCheck,
-    title: "Bid-readiness guardrails",
-    copy: "Surface due dates, bonding and insurance language, submission instructions, missing attachments, and risk flags.",
+    title: "Evidence-backed why-now narratives",
+    copy: "Show why each signal matters now, where the evidence came from, and what action the pursuit team should take before a formal RFP exists.",
   },
   {
     icon: Bell,
-    title: "Saved searches and alerts",
-    copy: "Save high-fit searches and generate daily digests for open opportunities, due-soon work, and source updates.",
+    title: "Saved searches and opportunity alerts",
+    copy: "Track high-fit searches for data-center power, AI load, IOU upgrades, substations, transmission lines, and utility replacement programs.",
   },
   {
     icon: FileText,
-    title: "Proposal artifacts",
-    copy: "Generate executive summaries, compliance matrices, bid/no-bid memos, checklist packages, DOCX drafts, and PDF exports.",
+    title: "Bid-readiness artifacts",
+    copy: "Generate executive summaries, compliance matrices, bid/no-bid memos, checklists, DOCX drafts, and PDF exports once the opportunity moves toward procurement.",
   },
   {
     icon: Mail,
-    title: "Partner outreach",
-    copy: "Draft emails to installer, supplier, EPC, and joint-venture partners with the bid context already included.",
+    title: "Partner and EPC outreach",
+    copy: "Draft early outreach to installers, EPCs, suppliers, distributors, and utility-facing partners with signal context already included.",
   },
 ];
 
 const faqs = [
   {
-    question: "How is this different from a general bid board?",
-    answer: "General bid boards aggregate broad opportunities. ElecBidSpec AI focuses on electrical infrastructure pursuit intelligence: scope extraction, project classification, fit scoring, risk flags, and proposal-prep outputs.",
+    question: "How is this different from a bid board?",
+    answer: "A bid board starts when procurement opens. ElecBidSpec AI is focused on pre-RFP opportunity intelligence: public signals, owner context, evidence, fit scoring, why-now timing, and pursuit actions before the RFP clock starts.",
   },
   {
-    question: "Does this replace SAM.gov, BidNet, GovWin, or other tools?",
-    answer: "No. It can complement them. The MVP treats each portal as one possible input, then adds electrical-specific filtering, company-fit scoring, PDF/spec extraction, and proposal drafting.",
+    question: "Does this replace an internal BD or utility sales team?",
+    answer: "No. It gives those teams a better radar. Large suppliers already have people watching customers and markets; the product creates a shared, ranked, evidence-backed view so teams do not miss fragmented signals.",
   },
   {
     question: "What opportunities does the product prioritize?",
-    answer: "The current workspace prioritizes public notices and early signals that are confirmed or likely above $5M, especially data center power, AI infrastructure, MV/HV cable, underground conduit, substations, utility replacement, investor-owned utility, and grid-related work.",
+    answer: "The workspace prioritizes high-value grid, IOU, data-center, AI infrastructure, MV/HV cable, underground conduit, substation, transmission, utility replacement, and public infrastructure opportunities.",
   },
   {
-    question: "Can the team upload RFPs found elsewhere?",
-    answer: "Yes. Users can upload RFP/spec PDFs or text files, then run extraction, classification, fit scoring, checklists, and proposal drafting even when the opportunity came from another portal.",
+    question: "Is this software or a consulting service?",
+    answer: "The strongest pilot is both: a live workspace plus a managed weekly opportunity desk. The software handles monitoring, scoring, search, and artifacts; analyst review turns the top signals into commercial recommendations.",
   },
 ];
 
 const pilotPlans = [
   {
-    title: "Free beta access",
-    copy: "Use the live workspace to test real public-bid discovery and proposal prep without a credit card.",
-    items: ["Nationwide source dashboard", "Manual RFP upload", "Fit scoring and filters"],
+    title: "Signal scan",
+    copy: "A fast first pass to prove whether the system can surface relevant pre-RFP grid and data-center opportunities your team is not already tracking.",
+    items: ["Two-week source scan", "Ranked opportunity sample", "Evidence links and why-now notes"],
   },
   {
-    title: "Paid pilot",
-    copy: "A focused pilot for a BD or estimating team that needs higher-confidence coverage and repeatable proposal prep.",
-    items: ["Saved searches and daily digests", "DOCX/PDF proposal outputs", "Company-specific capability profile"],
+    title: "Managed opportunity desk",
+    copy: "A paid pilot for BD, utility sales, or strategy teams that want weekly pre-RFP intelligence plus access to the live workspace.",
+    items: ["Weekly ranked signal brief", "Dashboard access and saved searches", "Monthly pursuit review call"],
     featured: true,
   },
   {
     title: "Coverage expansion",
-    copy: "Add priority portals and agency-specific adapters around your region, trade focus, and customer list.",
-    items: ["State and local source adapters", "Attachment ingestion improvements", "Role-based access controls"],
+    copy: "Add priority utilities, PUCs, ISOs/RTOs, data-center markets, EPC targets, and private/public portals around the customer's North America strategy.",
+    items: ["Source-specific adapters", "Custom fit model", "Proposal and partner-outreach templates"],
   },
 ];
 
@@ -184,7 +184,7 @@ export default function SalesPage() {
             <span>ElecBidSpec AI</span>
           </Link>
           <nav aria-label="Sales page navigation">
-            <a href="#coverage">Coverage</a>
+            <a href="#coverage">Signals</a>
             <a href="#workflow">Workflow</a>
             <a href="#outputs">Outputs</a>
             <a href="#pilot">Pilot</a>
@@ -195,23 +195,23 @@ export default function SalesPage() {
         <img
           className="sales-hero-visual"
           src="/assets/elecbidspec-console-preview-dark.svg"
-          alt="ElecBidSpec AI dashboard preview showing source status, fit score, bid cards, and proposal outputs"
+          alt="ElecBidSpec AI dashboard preview showing pre-RFP signals, source status, fit score, opportunity cards, and proposal outputs"
         />
         <div className="sales-hero-overlay" aria-hidden="true"></div>
 
         <div className="sales-hero-content">
-          <p className="sales-kicker">Early signals and bid intelligence for electrical work</p>
-          <h1>Your next big electrical contract is already posted. Find it first.</h1>
+          <p className="sales-kicker">Pre-RFP opportunity intelligence for power infrastructure</p>
+          <h1>Find grid and data-center power projects before they become bids.</h1>
           <p className="sales-hero-copy">
-            ElecBidSpec AI monitors fragmented public sources nationwide, surfaces upstream grid and data-center power signals, scores each pursuit against your capabilities, and prepares the proposal package before your team starts reading.
+            ElecBidSpec AI monitors fragmented public signals nationwide, ranks early-stage grid and data-center power opportunities against your capabilities, and gives BD teams the evidence and next action before procurement opens.
           </p>
           <div className="sales-actions">
             <Link href="/" className="sales-primary">
-              Start free access
+              Open live workspace
               <ArrowRight size={18} />
             </Link>
-            <a href="#workflow" className="sales-secondary">
-              See workflow
+            <a href="#pilot" className="sales-secondary">
+              See pilot model
             </a>
           </div>
           <dl className="sales-hero-stats" aria-label="ElecBidSpec AI proof points">
@@ -227,10 +227,10 @@ export default function SalesPage() {
 
       <section className="sales-lineage sales-section-pad">
         <div className="sales-section-inner sales-two-column">
-          <p className="sales-kicker">Built for bid teams under pressure</p>
-          <h2>The work is visible before procurement. The hard part is seeing the signal early enough.</h2>
+          <p className="sales-kicker">Not another bid board</p>
+          <h2>Large electrical suppliers do not need more raw notices. They need earlier pursuit timing.</h2>
           <p>
-            Electrical contractors, GCs, and cable suppliers do not need another spreadsheet of public notices. They need a pursuit radar that understands stage, owner type, scope, value, source credibility, partner needs, and company fit before the opportunity reaches the estimating desk.
+            Public RFPs are the late-stage artifact. The opportunity often starts in a utility filing, interconnection queue, data-center site plan, capital program, or transmission upgrade notice. ElecBidSpec AI turns those scattered signals into a ranked pursuit pipeline for cable suppliers, utility sales teams, and electrical infrastructure contractors.
           </p>
         </div>
       </section>
@@ -239,9 +239,9 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading">
             <p className="sales-kicker">Why teams miss winnable work</p>
-            <h2>Electrical contracts are easy to overlook before they are easy to lose.</h2>
+            <h2>The project is usually public before it is purchasable.</h2>
             <p>
-              The issue is rarely that the opportunity is secret. It is that the signal is scattered, mislabeled, buried in documents, or found too late to build a confident response.
+              The commercial advantage is not finding a bid title faster. It is knowing which future projects deserve relationship-building, AVL work, partner outreach, and proposal preparation before competitors see the same solicitation.
             </p>
           </div>
           <div className="sales-workflow-grid">
@@ -262,10 +262,10 @@ export default function SalesPage() {
       <section className="sales-section-pad sales-muted-band" id="coverage">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">Nationwide opportunity radar</p>
-            <h2>One workspace for early signals and high-value electrical opportunities.</h2>
+            <p className="sales-kicker">Nationwide pre-RFP radar</p>
+            <h2>Track the public signals that create future cable demand.</h2>
             <p>
-              ElecBidSpec AI tracks the fragmented sources that matter for infrastructure pursuit: federal opportunities, state DOTs, public power, investor-owned utility signals, PUC dockets, RTO/ISO planning, zoning files, transit, airport authorities, universities, schools, cities, and county procurement sites.
+              ElecBidSpec AI watches fragmented sources that matter before the bid: RTO/ISO queues, PUC dockets, utility and public-power signals, land-use filings, data-center and AI load indicators, transportation authorities, schools, universities, airports, cities, counties, state DOTs, and formal bids once procurement opens.
             </p>
           </div>
           <div className="sales-stat-grid">
@@ -282,10 +282,10 @@ export default function SalesPage() {
       <section className="sales-section-pad" id="workflow">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">From capital signal to bid/no-bid decision</p>
-            <h2>Find, qualify, and prepare electrical pursuits in one flow.</h2>
+            <p className="sales-kicker">From early signal to pursuit decision</p>
+            <h2>Find, qualify, and act before the bid clock starts.</h2>
             <p>
-              The platform compresses the first pass of business development, prequalification, estimating, and proposal prep into a repeatable review workflow your team can trust.
+              The platform compresses the first pass of business development, utility sales, market strategy, prequalification, partner outreach, and proposal readiness into a repeatable workflow.
             </p>
           </div>
           <div className="sales-workflow-grid">
@@ -306,10 +306,10 @@ export default function SalesPage() {
       <section className="sales-section-pad sales-muted-band">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">From capital plan to proposal package</p>
-            <h2>One connected view for early discovery, qualification, and bid prep.</h2>
+            <p className="sales-kicker">From demand signal to bid handoff</p>
+            <h2>Keep context alive from first public evidence through proposal prep.</h2>
             <p>
-              ElecBidSpec AI does not stop at alerting. It moves each opportunity through the first pursuit decisions your team already has to make: prequalify, partner, watch, bid, or pass.
+              Early intelligence only matters if it changes action. ElecBidSpec AI keeps the signal, evidence, fit score, owner context, and pursuit recommendation attached as the opportunity moves toward procurement.
             </p>
           </div>
           <div className="sales-plan-grid">
@@ -329,9 +329,9 @@ export default function SalesPage() {
         <div className="sales-section-inner sales-code-layout">
           <div className="sales-code-copy">
             <p className="sales-kicker">What changes for your team</p>
-            <h2>Less searching. Better shortlists. Faster proposal starts.</h2>
+            <h2>A ranked weekly opportunity desk, not a pile of links.</h2>
             <p>
-              Every opportunity is translated from posting language into practical pursuit context: why it matters, what the scope requires, what is missing, and what your team should do next.
+              Every signal is translated into practical pursuit context: why it matters, what evidence supports it, who owns it, what scope is likely, and what your team should do next.
             </p>
             <ul className="sales-feature-list">
               {outcomes.map((item) => (
@@ -339,26 +339,27 @@ export default function SalesPage() {
               ))}
             </ul>
           </div>
-          <div className="sales-code-panel" aria-label="Example bid intelligence record">
+          <div className="sales-code-panel" aria-label="Example pre-RFP opportunity intelligence record">
             <div className="sales-tabs">
-              <span>Bid</span>
+              <span>Signal</span>
               <span>Fit</span>
-              <span>Proposal</span>
+              <span>Action</span>
             </div>
             <pre className="sales-code-block"><code>{`{
-  "query": "Show conduit bids over $5M in Texas",
+  "query": "data center load and 230 kV substation signals",
   "stage": "early_signal",
+  "source_type": "rto_iso",
   "owner_type": "investor_owned_utility",
-  "opportunity": "AI campus interconnection and MV feeder upgrade",
-  "fit_score": 87,
-  "why_it_matters": [
-    "PUC/RTO signal before gated RFP",
-    "$5M+ likely value",
-    "Underground conduit and medium-voltage cable scope",
-    "AVL timing for utility supplier qualification",
-    "Partner installer outreach draft ready"
+  "opportunity": "230 kV transmission line and substation upgrade",
+  "taihan_priority": "high",
+  "why_now": [
+    "public queue signal before gated RFP",
+    "named utility and voltage evidence",
+    "large-load / data-center indicators",
+    "AVL and EPC positioning window is open"
   ],
-  "outputs": ["checklist", "risk flags", "DOCX", "PDF"]
+  "next_action": "monitor, map EPCs, prepare utility-owner outreach",
+  "handoff_outputs": ["brief", "evidence", "partner email", "DOCX", "PDF"]
 }`}</code></pre>
           </div>
         </div>
@@ -367,8 +368,8 @@ export default function SalesPage() {
       <section className="sales-section-pad">
         <div className="sales-section-inner">
           <div className="sales-section-heading">
-            <p className="sales-kicker">The numbers that matter</p>
-            <h2>Coverage is only useful when it turns into a better pursuit decision.</h2>
+            <p className="sales-kicker">The proof that matters</p>
+            <h2>Coverage is only valuable when it produces a better pursuit decision.</h2>
           </div>
           <div className="sales-stat-grid">
             {proofStats.map((item) => (
@@ -385,7 +386,7 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading compact">
             <p className="sales-kicker">Platform capabilities</p>
-            <h2>The bid intelligence layer your CRM and estimators do not have.</h2>
+            <h2>The pre-RFP intelligence layer your CRM and bid tools do not have.</h2>
           </div>
           <div className="sales-platform-grid">
             {platform.map((item) => {
@@ -406,7 +407,7 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading compact">
             <p className="sales-kicker">Common questions</p>
-            <h2>Built as a focused pursuit layer, not another generic feed.</h2>
+            <h2>Built for early pursuit intelligence, not generic bid aggregation.</h2>
           </div>
           <div className="sales-platform-grid">
             {faqs.map((item) => (
@@ -423,9 +424,9 @@ export default function SalesPage() {
         <div className="sales-section-inner">
           <div className="sales-section-heading">
             <p className="sales-kicker">Pilot path</p>
-            <h2>Start with live bid discovery. Expand when coverage proves value.</h2>
+            <h2>Sell the first pilot as an opportunity desk, then productize the workflow.</h2>
             <p>
-              The MVP is designed for low-volume pilots: real public data, manual uploads, company capability scoring, and proposal artifacts without heavyweight infrastructure or long onboarding.
+              The best first buyer is a BD, utility sales, or strategy leader who wants proof that earlier signal coverage can create real commercial action. The pilot combines live software with reviewed weekly intelligence.
             </p>
           </div>
           <div className="sales-plan-grid">
@@ -447,8 +448,8 @@ export default function SalesPage() {
       <section className="sales-cta-band">
         <div className="sales-section-inner sales-cta-content">
           <div>
-            <p className="sales-kicker">Free during beta</p>
-            <h2>Give your bid team a smarter first look at public electrical work.</h2>
+            <p className="sales-kicker">Pre-RFP intelligence pilot</p>
+            <h2>Give your BD team the first look at future grid and data-center power demand.</h2>
           </div>
           <div className="sales-cta-actions">
             <Link href="/" className="sales-primary">
@@ -456,7 +457,7 @@ export default function SalesPage() {
               <ArrowRight size={18} />
             </Link>
             <a href="#coverage" className="sales-secondary on-dark">
-              Review coverage
+              Review signals
             </a>
           </div>
         </div>
@@ -464,7 +465,7 @@ export default function SalesPage() {
 
       <footer className="sales-footer">
         <span>©2026 ElecBidSpec AI</span>
-        <span>Public bid intelligence and proposal prep for electrical contractors, GCs, and cable suppliers.</span>
+        <span>Pre-RFP opportunity intelligence for grid, utility, data-center, and electrical infrastructure pursuits.</span>
       </footer>
     </main>
   );
