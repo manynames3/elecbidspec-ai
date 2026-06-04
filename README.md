@@ -265,6 +265,15 @@ or:
 X-Admin-Token: $ADMIN_API_TOKEN
 ```
 
+After deploying scoring or intelligence changes, backfill existing records with:
+
+```bash
+curl -X POST "$API_BASE_URL/api/opportunities/rescore-all" \
+  -H "X-Admin-Token: $ADMIN_API_TOKEN"
+```
+
+Optional query parameters: `source`, `tenant_id`, and `limit`. Use `limit` for a small production smoke test before running the full backfill.
+
 ## Bedrock Proposal Generation
 
 The proposal assistant can use Amazon Bedrock to write company-specific proposal content. When enabled, the backend sends Bedrock the opportunity, extracted specs, fit score, and current company capability profile, then validates the returned JSON against the existing proposal response shape.
@@ -287,8 +296,11 @@ AWS credentials are not stored in the app. `boto3` uses the normal AWS credentia
 - `GET /api/opportunities/{id}/proposal` for proposal-prep output
 - `GET /api/opportunities/{id}/proposal.docx` for downloadable DOCX proposal package
 - `GET /api/opportunities/{id}/proposal.pdf` for downloadable PDF proposal package
+- `GET /api/opportunities/{id}/brief` and `.pdf` for source-backed one-page opportunity briefs
+- `GET /api/intelligence/weekly-report` and `.pdf` for Taihan-specific weekly pre-RFP intelligence reports
 - `GET/PUT /api/company-profile` for fit-scoring capabilities
 - `POST /api/auth/login`, `GET /api/auth/me`, and `POST /api/auth/logout` for pilot authentication
+- `POST /api/opportunities/rescore-all` for admin-only backfill of classification, value, fit, Taihan scoring, and pursuit intelligence
 - `POST /api/ingestion/jobs` for background ingestion, protected by `ADMIN_API_TOKEN`
 - `POST /api/ingestion/refresh-defaults` for protected refresh of all default public sources
 - `GET /api/ingestion/summary` for public source coverage and source health counts

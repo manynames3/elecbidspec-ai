@@ -28,6 +28,7 @@ function fitClass(score: number | null) {
 export function OpportunityCard({ opportunity, explanation, rankScore }: OpportunityCardProps) {
   const keywords = opportunity.extracted_specs?.keywords ?? [];
   const taihanIntel = opportunity.extracted_specs?.taihan_intelligence;
+  const pursuitIntel = opportunity.extracted_specs?.pursuit_intelligence;
   const taihanEvidence = taihanEvidenceLabels(opportunity);
   const rationale = whyThisBidMatters(opportunity);
   const whyNow = whyNowNarrative(opportunity);
@@ -39,33 +40,47 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
       : "No posted deadline";
   return (
     <article className="opportunity-card">
-      <div className="card-topline">
-        <span className={`score-pill ${fitClass(opportunity.fit_score)}`}>
-          <TrendingUp size={14} />
-          {opportunity.fit_score ?? "--"} <InfoTooltip tooltip={FIT_TOOLTIP}>fit</InfoTooltip>
-        </span>
-        <span className="source-pill">{opportunity.bid_status}</span>
-        <span className={opportunity.project_stage === "early_signal" || opportunity.project_stage === "pre_rfp" ? "source-pill pending" : "source-pill"}>
-          {labelize(opportunity.project_stage)}
-        </span>
-        <span className={`source-pill ${opportunity.source === "seed" ? "sample" : "live"}`}>{sourceLabel(opportunity.source)}</span>
-        {taihanIntel ? <span className={`source-pill taihan-${taihanIntel.tier}`}>Taihan {taihanIntel.score}</span> : null}
-        {opportunity.owner_type === "investor_owned_utility" ? <span className="source-pill live">IOU</span> : null}
-        <span className="source-pill">{opportunity.source_type.replaceAll("_", " ")}</span>
-        {rankScore ? <span className="source-pill">rank {rankScore}</span> : null}
+      <div className="opportunity-card-header">
+        <div className="opportunity-card-main">
+          <div className="card-topline">
+            <span className={`score-pill ${fitClass(opportunity.fit_score)}`}>
+              <TrendingUp size={14} />
+              {opportunity.fit_score ?? "--"} <InfoTooltip tooltip={FIT_TOOLTIP}>fit</InfoTooltip>
+            </span>
+            {taihanIntel ? <span className={`source-pill taihan-${taihanIntel.tier}`}>Taihan {taihanIntel.score}</span> : null}
+            <span className={opportunity.project_stage === "early_signal" || opportunity.project_stage === "pre_rfp" ? "source-pill pending" : "source-pill"}>
+              {labelize(opportunity.project_stage)}
+            </span>
+            {opportunity.owner_type === "investor_owned_utility" ? <span className="source-pill live">IOU</span> : null}
+            {rankScore ? <span className="source-pill">rank {rankScore}</span> : null}
+            {pursuitIntel?.evidence_grade ? <span className={`source-pill evidence-${pursuitIntel.evidence_grade}`}>{pursuitIntel.evidence_grade} evidence</span> : null}
+          </div>
+          <Link href={`/opportunities?id=${opportunity.id}`} className="card-title">
+            {opportunity.title}
+          </Link>
+          <div className="card-meta">
+            <span>
+              <MapPin size={14} />
+              {opportunity.location ?? opportunity.state ?? "Location TBD"}
+            </span>
+            <span>
+              <CalendarDays size={14} />
+              {timingLabel}
+            </span>
+            <span>{sourceLabel(opportunity.source)}</span>
+          </div>
+        </div>
+        <div className="opportunity-value-panel">
+          <span className="field-label">Estimated value</span>
+          <strong>{formatCurrency(opportunity.estimated_value)}</strong>
+          <span>{opportunity.value_confidence.replaceAll("_", " ")}</span>
+        </div>
       </div>
-      <Link href={`/opportunities?id=${opportunity.id}`} className="card-title">
-        {opportunity.title}
-      </Link>
-      <div className="card-meta">
-        <span>
-          <MapPin size={14} />
-          {opportunity.location ?? opportunity.state ?? "Location TBD"}
-        </span>
-        <span>
-          <CalendarDays size={14} />
-          {timingLabel}
-        </span>
+      <div className="card-secondary-badges">
+        <span className="source-pill">{opportunity.bid_status}</span>
+        <span className={`source-pill ${opportunity.source === "seed" ? "sample" : "live"}`}>{sourceLabel(opportunity.source)}</span>
+        <span className="source-pill">{opportunity.source_type.replaceAll("_", " ")}</span>
+        {pursuitIntel?.signal_change?.status ? <span className="source-pill">{labelize(pursuitIntel.signal_change.status)}</span> : null}
       </div>
       <div className="card-grid">
         <div>
@@ -75,10 +90,6 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
         <div>
           <span className="field-label">Project type</span>
           <strong>{labelize(opportunity.project_type)}</strong>
-        </div>
-        <div>
-          <span className="field-label">Estimated value</span>
-          <strong>{formatCurrency(opportunity.estimated_value)}</strong>
         </div>
         <div>
           <span className="field-label">Stage</span>
@@ -92,10 +103,6 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
           <span className="field-label">Forecast RFP</span>
           <strong>{formatDate(opportunity.forecast_rfp_date)}</strong>
         </div>
-        <div>
-          <span className="field-label">Value read</span>
-          <strong>{opportunity.value_confidence.replaceAll("_", " ")}</strong>
-        </div>
       </div>
       <p className="bid-rationale">
         <span>Why it matters</span>
@@ -105,6 +112,12 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
         <span>Why now</span>
         {whyNow}
       </p>
+      {pursuitIntel?.next_actions?.length ? (
+        <p className="next-action-callout">
+          <span>Next action</span>
+          {pursuitIntel.next_actions[0]}
+        </p>
+      ) : null}
       <p className="evidence-excerpt">
         <span>Source evidence</span>
         {evidenceExcerpt}

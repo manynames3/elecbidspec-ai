@@ -119,13 +119,28 @@ def _paginate(lines: list[tuple[str, int]]) -> list[list[tuple[str, int]]]:
 
 def _content_stream(lines: list[tuple[str, int]], page_number: int, page_count: int) -> bytes:
     y = TOP_Y
-    commands: list[str] = []
+    commands: list[str] = [
+        "0.97 0.98 0.99 rg 0 0 612 792 re f",
+        "1 1 1 rg 36 42 540 708 re f",
+        "0.03 0.13 0.28 rg 36 750 540 6 re f",
+        "0.88 0.92 0.97 RG 36 42 540 708 re S",
+        "0.93 0.96 1 rg 36 42 540 34 re f",
+    ]
     for text, size in lines:
         height = max(LINE_HEIGHT, size + 4)
         if text:
-            commands.append(f"BT /F1 {size} Tf {MARGIN_X} {y} Td ({_pdf_string(text)}) Tj ET")
+            if size >= 18:
+                commands.append(f"0.03 0.13 0.28 rg {MARGIN_X} {y - 12} 220 3 re f")
+                color = "0.03 0.10 0.22 rg"
+            elif size >= 14:
+                commands.append(f"0.93 0.96 1 rg {MARGIN_X - 8} {y - 5} 512 21 re f")
+                commands.append(f"0.16 0.37 0.70 rg {MARGIN_X - 8} {y - 5} 4 21 re f")
+                color = "0.03 0.13 0.28 rg"
+            else:
+                color = "0.16 0.19 0.24 rg"
+            commands.append(f"{color} BT /F1 {size} Tf {MARGIN_X} {y} Td ({_pdf_string(text)}) Tj ET")
         y -= height
-    commands.append(f"BT /F1 9 Tf {MARGIN_X} 32 Td (Page {page_number} of {page_count}) Tj ET")
+    commands.append(f"0.39 0.45 0.55 rg BT /F1 9 Tf {MARGIN_X} 32 Td (ElecBidSpec AI | Page {page_number} of {page_count}) Tj ET")
     return "\n".join(commands).encode("latin-1", errors="replace")
 
 

@@ -50,6 +50,7 @@ from app.schemas import (
 from app.services.auth import create_session_token, hash_session_token, session_expiry, verify_password
 from app.services.alerts import build_alert_digest, get_or_create_alert_preference
 from app.services.attachment_ingestion import ingest_opportunity_attachments
+from app.services.backfill import backfill_existing_opportunities
 from app.services.classification import classify_bid
 from app.services.extraction import extract_specs, parse_attachment
 from app.services.fit_scoring import score_fit
@@ -61,9 +62,16 @@ from app.services.ingestion.defaults import (
     skipped_default_public_bid_jobs,
 )
 from app.services.ingestion.sam_gov import resolve_sam_api_key
+from app.services.intelligence_report import (
+    build_opportunity_brief,
+    build_weekly_intelligence_report,
+    generate_opportunity_brief_pdf,
+    generate_weekly_intelligence_pdf,
+)
 from app.services.proposal_cache import enhance_proposal, get_or_create_fast_proposal
 from app.services.proposal_docx import generate_proposal_docx
 from app.services.proposal_pdf import generate_proposal_pdf
+from app.services.pursuit_intelligence import add_pursuit_intelligence
 from app.services.search import (
     PROJECT_QUERY_MAP,
     parse_due_before,
@@ -74,7 +82,6 @@ from app.services.search import (
     search_opportunities,
 )
 from app.services.storage import store_upload
-from app.services.taihan_intelligence import add_taihan_intelligence
 from app.services.tenancy import PUBLIC_TENANT_ID
 from app.services.value_assessment import assess_value, infer_owner_type, infer_project_stage, infer_signal_type, infer_source_type, normalize_bid_status
 from app.worker import process_job
@@ -216,7 +223,7 @@ def opportunity_to_dict(opportunity: Opportunity) -> dict:
         "created_at": opportunity.created_at,
         "updated_at": opportunity.updated_at,
     }
-    return add_taihan_intelligence(data)
+    return add_pursuit_intelligence(data)
 
 
 def opportunity_to_dict_for_profile(opportunity: Opportunity, profile: dict | None) -> dict:
@@ -225,7 +232,7 @@ def opportunity_to_dict_for_profile(opportunity: Opportunity, profile: dict | No
         fit = score_fit(data, profile)
         data["fit_score"] = fit.get("fit_score")
         data["fit_explanation"] = fit.get("fit_explanation")
-    data = add_taihan_intelligence(data)
+    data = add_pursuit_intelligence(data, profile)
     return data
 
 
@@ -282,7 +289,7 @@ def enrich_opportunity_data(data: dict, db: Session) -> dict:
     profile = get_profile_data(db)
     if profile:
         enriched.update(score_fit(enriched, profile))
-    return add_taihan_intelligence(enriched)
+    return add_pursuit_intelligence(enriched, profile)
 
 
 def _job_label(job: IngestionJob) -> str:
@@ -669,6 +676,17 @@ def create_opportunity(
     return opportunity
 
 
+@router.post("/opportunities/rescore-all")
+def rescore_all_opportunities(
+    db: Session = Depends(get_db),
+    tenant_id: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    limit: int | None = Query(default=None, ge=1, le=5000),
+    _: None = Depends(require_admin),
+) -> dict:
+    return backfill_existing_opportunities(db, tenant_id=tenant_id, source=source, limit=limit)
+
+
 @router.get("/opportunities/{opportunity_id}", response_model=OpportunityRead)
 def get_opportunity(
     opportunity_id: int,
@@ -843,6 +861,80 @@ def download_proposal_pdf(
         content,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}-proposal.pdf"'},
+    )
+
+
+@router.get("/opportunities/{opportunity_id}/brief")
+def get_opportunity_brief(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> dict:
+    opportunity = _get_visible_opportunity(db, opportunity_id, current_user)
+    if not opportunity:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    profile = get_profile_data_for_user(db, current_user) if current_user else get_profile_data(db)
+    return build_opportunity_brief(opportunity_to_dict_for_profile(opportunity, profile), profile)
+
+
+@router.get("/opportunities/{opportunity_id}/brief.pdf")
+def download_opportunity_brief_pdf(
+    opportunity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+) -> Response:
+    opportunity = _get_visible_opportunity(db, opportunity_id, current_user)
+    if not opportunity:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    profile = get_profile_data_for_user(db, current_user)
+    brief = build_opportunity_brief(opportunity_to_dict_for_profile(opportunity, profile), profile)
+    content = generate_opportunity_brief_pdf(brief)
+    filename = "".join(char if char.isalnum() else "-" for char in opportunity.title.lower()).strip("-")[:80] or "opportunity"
+    return Response(
+        content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}-brief.pdf"'},
+    )
+
+
+def _intelligence_report_records(db: Session, current_user: User | None) -> tuple[list[dict], dict | None, list[dict]]:
+    profile = get_profile_data_for_user(db, current_user) if current_user else get_profile_data(db)
+    query = _visible_opportunities_query(db, current_user).filter(Opportunity.source != "seed")
+    query = query.filter(or_(Opportunity.minimum_value_match == True, Opportunity.project_stage.in_(["early_signal", "pre_rfp"])))  # noqa: E712
+    opportunities = (
+        query.order_by(
+            Opportunity.minimum_value_match.desc(),
+            Opportunity.fit_score.desc().nullslast(),
+            Opportunity.updated_at.desc(),
+        )
+        .limit(750)
+        .all()
+    )
+    source_health = _source_health(_source_count_rows(db), db.query(IngestionJob).order_by(IngestionJob.updated_at.desc()).limit(50).all())
+    return [opportunity_to_dict_for_profile(item, profile) for item in opportunities], profile, source_health
+
+
+@router.get("/intelligence/weekly-report")
+def get_weekly_intelligence_report(
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+) -> dict:
+    records, profile, source_health = _intelligence_report_records(db, current_user)
+    return build_weekly_intelligence_report(records, source_health, profile)
+
+
+@router.get("/intelligence/weekly-report.pdf")
+def download_weekly_intelligence_report_pdf(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+) -> Response:
+    records, profile, source_health = _intelligence_report_records(db, current_user)
+    report = build_weekly_intelligence_report(records, source_health, profile)
+    content = generate_weekly_intelligence_pdf(report)
+    return Response(
+        content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="taihan-weekly-intelligence-report.pdf"'},
     )
 
 

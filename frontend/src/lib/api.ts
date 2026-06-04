@@ -116,6 +116,10 @@ export function taihanEvidenceLabels(opportunity: Opportunity): string[] {
 }
 
 export function opportunityEvidenceExcerpt(opportunity: Opportunity): string {
+  const pursuitExcerpt = opportunity.extracted_specs?.pursuit_intelligence?.source_evidence?.find((item) => item.excerpt)?.excerpt;
+  if (pursuitExcerpt) {
+    return pursuitExcerpt;
+  }
   const specExcerpt = opportunity.extracted_specs?.evidence_excerpts?.find(Boolean);
   if (specExcerpt) {
     return specExcerpt;
@@ -136,6 +140,10 @@ export function opportunityEvidenceExcerpt(opportunity: Opportunity): string {
 }
 
 export function whyNowNarrative(opportunity: Opportunity): string {
+  const backendNarrative = opportunity.extracted_specs?.pursuit_intelligence?.why_now;
+  if (backendNarrative) {
+    return backendNarrative;
+  }
   const intel = opportunity.extracted_specs?.taihan_intelligence;
   const evidence = intel?.evidence_strength;
   const namedOwner = opportunity.agency ? `${opportunity.agency} is named` : "A project owner or source is identified";
@@ -304,6 +312,13 @@ export function whyThisBidMatters(opportunity: Opportunity): string {
   const taihanIntel = opportunity.extracted_specs?.taihan_intelligence;
   if (taihanIntel?.tier === "high") {
     reasons.push("Taihan high-priority signal");
+  }
+  const pursuit = opportunity.extracted_specs?.pursuit_intelligence;
+  if (pursuit?.evidence_grade) {
+    reasons.push(`${pursuit.evidence_grade} evidence`);
+  }
+  if (pursuit?.signal_change?.status && pursuit.signal_change.status !== "monitor") {
+    reasons.push(labelize(pursuit.signal_change.status));
   }
   if (opportunity.project_stage === "early_signal") {
     reasons.push("early signal before RFP");

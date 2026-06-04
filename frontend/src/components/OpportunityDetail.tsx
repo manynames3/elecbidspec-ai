@@ -216,6 +216,30 @@ export function OpportunityDetail() {
     URL.revokeObjectURL(objectUrl);
   }
 
+  async function downloadBrief() {
+    if (!opportunity) {
+      return;
+    }
+    if (!accountStatus?.feature_flags.proposal_exports) {
+      throw new Error("Pilot login required to export opportunity briefs.");
+    }
+    const response = await fetch(apiUrl(`/opportunities/${opportunity.id}/brief.pdf`), {
+      headers: authHeaders()
+    });
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `${opportunity.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-brief.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
+
   useEffect(() => {
     function refreshAccountState() {
       void apiFetch<AccountStatus>("/account/status")
@@ -237,6 +261,7 @@ export function OpportunityDetail() {
 
   const specs = opportunity.extracted_specs ?? {};
   const taihanIntel = specs.taihan_intelligence;
+  const pursuitIntel = specs.pursuit_intelligence;
   const taihanEvidence = taihanEvidenceLabels(opportunity);
   const whyNow = whyNowNarrative(opportunity);
   const evidenceExcerpt = opportunityEvidenceExcerpt(opportunity);
@@ -265,6 +290,10 @@ export function OpportunityDetail() {
         <button className="secondary-button" onClick={() => void downloadProposal("pdf").catch((err) => setError(err instanceof Error ? err.message : "PDF download failed"))} type="button" disabled={!canExport}>
           <Download size={16} />
           PDF
+        </button>
+        <button className="secondary-button" onClick={() => void downloadBrief().catch((err) => setError(err instanceof Error ? err.message : "Brief download failed"))} type="button" disabled={!canExport}>
+          <Download size={16} />
+          Brief PDF
         </button>
         <button className="secondary-button" onClick={() => void enhanceProposal()} type="button" disabled={enhancing || !canEnhance}>
           <Sparkles size={16} />
@@ -408,10 +437,58 @@ export function OpportunityDetail() {
         </section>
       ) : null}
 
+      {pursuitIntel ? (
+        <section className="panel">
+          <div className="panel-title-row">
+            <div>
+              <span className="field-label">Pre-RFP pursuit intelligence</span>
+              <h2>Source-backed action plan</h2>
+            </div>
+            <div className="card-topline">
+              <span className={`source-pill evidence-${pursuitIntel.evidence_grade}`}>{pursuitIntel.evidence_grade} evidence</span>
+              <span className="source-pill">{labelize(pursuitIntel.signal_change.status)}</span>
+            </div>
+          </div>
+          <p className="compact-copy">{pursuitIntel.signal_change.explanation}</p>
+          <div className="intelligence-grid">
+            <div>
+              <span className="field-label">Analyst review</span>
+              <strong>{labelize(pursuitIntel.analyst_review.recommended_status)}</strong>
+              <p className="compact-copy">{pursuitIntel.analyst_review.guidance}</p>
+            </div>
+            <div>
+              <span className="field-label">Primary next action</span>
+              <strong>{pursuitIntel.next_actions[0] ?? "Review source evidence"}</strong>
+            </div>
+          </div>
+          <div className="relationship-grid">
+            {pursuitIntel.relationship_targets.map((target) => (
+              <div key={`${target.role}-${target.name}`}>
+                <span className="field-label">{target.role}</span>
+                <strong>{target.name}</strong>
+                <p className="compact-copy">{target.action}</p>
+              </div>
+            ))}
+          </div>
+          <div className="relationship-grid">
+            {pursuitIntel.partner_targets.map((target) => (
+              <div key={target.role}>
+                <span className="field-label">{target.role}</span>
+                <strong>{target.need}</strong>
+                <p className="compact-copy">{target.trigger}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {workflowDraft ? (
         <section className="panel">
           <div className="panel-title-row">
-            <h2>Bid Workflow</h2>
+            <div>
+              <span className="field-label">Human-in-the-loop review</span>
+              <h2>Analyst workflow</h2>
+            </div>
             {workflow ? <span className="source-pill">updated {formatDate(workflow.updated_at.slice(0, 10))}</span> : null}
           </div>
           <div className="checkbox-grid">
@@ -432,6 +509,10 @@ export function OpportunityDetail() {
             <label>
               <span>Status</span>
               <select value={workflowDraft.status} onChange={(event) => patchWorkflowDraft({ status: event.target.value })}>
+                <option value="verified_signal">Verified signal</option>
+                <option value="needs_evidence">Needs evidence</option>
+                <option value="monitor">Monitor</option>
+                <option value="escalated">Escalated</option>
                 <option value="reviewing">Reviewing</option>
                 <option value="bid">Bid</option>
                 <option value="teaming">Teaming</option>

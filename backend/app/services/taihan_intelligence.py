@@ -162,65 +162,59 @@ def assess_taihan_intelligence(data: Mapping[str, Any]) -> dict[str, Any]:
     reasons: list[str] = []
     angles: list[str] = []
     risk_flags: list[str] = []
+    score_breakdown: list[dict[str, Any]] = []
+
+    def add_score(points: int, factor: str, reason: str) -> None:
+        nonlocal score
+        score += points
+        score_breakdown.append({"factor": factor, "points": points, "reason": reason})
+        reasons.append(reason)
 
     if project_stage in {"early_signal", "pre_rfp"}:
-        score += 8
-        reasons.append("Early-stage signal gives BD time before formal procurement.")
+        add_score(8, "timing", "Early-stage signal gives BD time before formal procurement.")
         risk_flags.append("No posted bid deadline; this is upstream intelligence, not a formal solicitation.")
     elif project_stage == "active_bid":
-        score += 6
-        reasons.append("Active bid can move directly into proposal review.")
+        add_score(6, "timing", "Active bid can move directly into proposal review.")
 
     if source_type in {"rto_iso", "regulatory", "land_use"}:
-        score += 8
-        reasons.append("Official upstream source points to future grid or data-center power demand.")
+        add_score(8, "source", "Official upstream source points to future grid or data-center power demand.")
 
     if has_load_evidence:
-        score += 20
-        reasons.append("Data center, AI infrastructure, or large-load evidence detected.")
+        add_score(20, "load_driver", "Data center, AI infrastructure, or large-load evidence detected.")
         angles.append("Data center power infrastructure")
 
     if has_named_utility:
-        score += 18
-        reasons.append("Named utility or transmission owner detected.")
+        add_score(18, "named_utility", "Named utility or transmission owner detected.")
         angles.append("Utility AVL and transmission-owner positioning")
 
     if has_explicit_voltage:
-        score += 16
-        reasons.append("Explicit HV/EHV voltage evidence detected.")
+        add_score(16, "voltage", "Explicit HV/EHV voltage evidence detected.")
         angles.append("HV/EHV cable package")
 
     if has_cable_scope:
-        score += 16
-        reasons.append("Cable, conductor, feeder, busduct, or duct-bank scope detected.")
+        add_score(16, "cable_scope", "Cable, conductor, feeder, busduct, or duct-bank scope detected.")
         angles.append("Cable supply package")
 
     if is_substation:
-        score += 6
-        reasons.append("Substation, switchyard, transformer, or switchgear scope detected.")
+        add_score(6, "substation", "Substation, switchyard, transformer, or switchgear scope detected.")
         angles.append("Substation and switchyard cable/accessories")
 
     if is_underground:
-        score += 4
-        reasons.append("Underground, conduit, duct bank, or cable-laying scope detected.")
+        add_score(4, "underground", "Underground, conduit, duct bank, or cable-laying scope detected.")
         angles.append("Underground cable and duct-bank scope")
 
     if is_utility:
-        score += 4
-        reasons.append("Utility, IOU, PUC, or transmission-owner context detected.")
+        add_score(4, "utility_context", "Utility, IOU, PUC, or transmission-owner context detected.")
 
     if data.get("minimum_value_match"):
-        score += 4
-        reasons.append("Record meets or likely exceeds the $5M pursuit threshold.")
+        add_score(4, "value_threshold", "Record meets or likely exceeds the $5M pursuit threshold.")
     if str(data.get("value_confidence") or "") == "likely" and not data.get("estimated_value"):
         risk_flags.append("No dollar value was posted; value is inferred from scope indicators.")
 
     if fit_score >= 85:
-        score += 4
-        reasons.append("Strong fit against the current Taihan capability profile.")
+        add_score(4, "capability_fit", "Strong fit against the current Taihan capability profile.")
     elif fit_score >= 70:
-        score += 2
-        reasons.append("Worth review against the current Taihan capability profile.")
+        add_score(2, "capability_fit", "Worth review against the current Taihan capability profile.")
 
     if signal_type in {"puc_docket", "rto_transmission_plan", "data_center_interconnection"}:
         risk_flags.append("Procurement may run through an EPC, utility AVL, or developer relationship rather than a public bid portal.")
@@ -267,16 +261,48 @@ def assess_taihan_intelligence(data: Mapping[str, Any]) -> dict[str, Any]:
     else:
         cable_relevance = "low"
 
+    influence_targets: list[str] = []
+    if has_named_utility or owner_type == "investor_owned_utility":
+        influence_targets.extend(["utility planning team", "utility procurement / supplier registration", "transmission owner engineering"])
+    if procurement_path in {"epc_partner_or_utility_planning", "developer_or_epc_partner", "utility_rfp_or_epc_partner"}:
+        influence_targets.extend(["EPC shortlist", "engineer of record", "local installation partner"])
+    if source_type == "regulatory":
+        influence_targets.append("regulatory docket intervenor / filing contact")
+    if source_type == "rto_iso":
+        influence_targets.append("interconnection customer or transmission owner")
+
+    next_steps = [
+        "Confirm owner, voltage class, cable package, and expected procurement path from source evidence.",
+        "Map utility AVL/vendor registration and identify whether specifications can still be influenced.",
+    ]
+    if has_load_evidence:
+        next_steps.append("Identify data-center developer, load-serving utility, and substation/interconnection scope owner.")
+    if has_cable_scope or has_explicit_voltage:
+        next_steps.append("Prepare Taihan cable capability language for HV/MV/EHV supply, testing, accessories, and schedule reliability.")
+    if procurement_path != "public_bid":
+        next_steps.append("Start partner outreach before the formal RFP: EPC, engineer-of-record, and installer coverage.")
+
+    if project_stage in {"early_signal", "pre_rfp"}:
+        entry_window = "pre_spec_influence"
+    elif project_stage == "active_bid":
+        entry_window = "proposal_handoff"
+    else:
+        entry_window = "market_watch"
+
     return {
         "score": bounded_score,
         "tier": tier,
         "cable_relevance": cable_relevance,
         "procurement_path": procurement_path,
+        "entry_window": entry_window,
         "taihan_angle": _dedupe(angles)[:5],
         "recommended_action": recommended_action,
         "evidence_strength": evidence_signals,
         "reasons": _dedupe(reasons)[:6],
         "risk_flags": _dedupe(risk_flags)[:4],
+        "score_breakdown": score_breakdown,
+        "influence_targets": _dedupe(influence_targets)[:6],
+        "next_steps": _dedupe(next_steps)[:6],
     }
 
 

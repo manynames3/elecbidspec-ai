@@ -15,7 +15,7 @@ from app.services.email_alerts import send_alert_digest_email
 from app.services.fit_scoring import score_fit
 from app.services.ingestion.defaults import available_default_public_bid_jobs
 from app.services.ingestion.registry import ADAPTERS
-from app.services.taihan_intelligence import add_taihan_intelligence
+from app.services.pursuit_intelligence import add_pursuit_intelligence
 from app.services.tenancy import PUBLIC_TENANT_ID
 from app.services.value_assessment import assess_value, infer_owner_type, infer_project_stage, infer_signal_type, infer_source_type, normalize_bid_status
 
@@ -91,7 +91,7 @@ def process_job(db: Session, job: IngestionJob) -> None:
         data.update(assess_value(data))
         if profile:
             data.update(score_fit(data, profile))
-        data = add_taihan_intelligence(data)
+        data = add_pursuit_intelligence(data, profile)
         if existing:
             if update_existing:
                 for key, value in data.items():

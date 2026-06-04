@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCircle2, DatabaseZap, Filter, Lock, RefreshCw, Save, Search } from "lucide-react";
-import { apiFetch, sourceLabel, whyNowNarrative } from "@/lib/api";
+import { Bell, CheckCircle2, DatabaseZap, Download, Filter, Lock, RefreshCw, Save, Search } from "lucide-react";
+import { apiFetch, apiUrl, authHeaders, sourceLabel, whyNowNarrative } from "@/lib/api";
 import type { AccountStatus, AlertPreference, AlertRun, IngestionRefreshResult, IngestionSummary, Opportunity, SavedSearch, SearchResult } from "@/lib/types";
 import { COVERED_BY_SOURCE_TOOLTIP, FIT_TOOLTIP, InfoTooltip, PORTAL_GATED_TOOLTIP, VALUE_MATCH_TOOLTIP } from "@/components/InfoTooltip";
 import { OpportunityCard } from "@/components/OpportunityCard";
@@ -184,6 +184,16 @@ function hasSignalText(opportunity: Opportunity, terms: string[]) {
     .join(" ")
     .toLowerCase();
   return terms.some((term) => text.includes(term));
+}
+
+function KpiCard({ label, value, helper, tone }: { label: ReactNode; value: ReactNode; helper: string; tone?: "primary" | "success" | "warning" }) {
+  return (
+    <div className={`kpi-card ${tone ? `kpi-${tone}` : ""}`}>
+      <span className="field-label">{label}</span>
+      <strong>{value}</strong>
+      <span className="kpi-helper">{helper}</span>
+    </div>
+  );
 }
 
 export function Dashboard() {
@@ -505,6 +515,28 @@ export function Dashboard() {
     }
   }
 
+  async function downloadWeeklyReport() {
+    if (!accountStatus?.feature_flags.proposal_exports) {
+      setError("Pilot login required to export weekly intelligence reports.");
+      return;
+    }
+    const response = await fetch(apiUrl("/intelligence/weekly-report.pdf"), {
+      headers: authHeaders()
+    });
+    if (!response.ok) {
+      throw new Error(await response.text());
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = "taihan-weekly-intelligence-report.pdf";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
+
   async function deleteSavedSearch(savedSearchId: number) {
     setAlertLoading(true);
     setAlertMessage(null);
@@ -532,35 +564,24 @@ export function Dashboard() {
     <div className="page-stack">
       <section className="page-header">
         <div>
-          <p className="eyebrow">Bid intelligence workspace</p>
-          <h1>Your next big electrical contract is already posted. Find it first.</h1>
+          <p className="eyebrow">Pre-RFP opportunity intelligence</p>
+          <h1>Grid, utility, and data-center power signals before they become bids.</h1>
           <p className="page-subheading">
-            ElecBidSpec AI monitors 44 official sources nationwide and scores each bid against your capabilities — so you only see the ones worth chasing.
+            ElecBidSpec AI monitors 44 official sources nationwide, ranks early public signals against your capabilities, and keeps active bid handoff ready when procurement opens.
           </p>
+          <div className="header-actions">
+            <button className="primary-button" type="button" onClick={() => void downloadWeeklyReport().catch((err) => setError(err instanceof Error ? err.message : "Weekly report download failed"))}>
+              <Download size={17} />
+              Weekly intelligence PDF
+            </button>
+          </div>
         </div>
         <div className="summary-strip">
-          <div>
-            <span className="field-label">Pipeline records</span>
-            <strong>{opportunities.length}</strong>
-          </div>
-          <div>
-            <span className="field-label">Shown</span>
-            <strong>{visibleCount}</strong>
-          </div>
-          <div>
-            <span className="field-label">
-              <InfoTooltip tooltip={FIT_TOOLTIP}>Avg fit</InfoTooltip>
-            </span>
-            <strong>{averageFit}</strong>
-          </div>
-          <div>
-            <span className="field-label">Active bids</span>
-            <strong>{activeBidCount}</strong>
-          </div>
-          <div>
-            <span className="field-label">Pre-RFP</span>
-            <strong>{earlySignalCount}</strong>
-          </div>
+          <KpiCard label="Pipeline records" value={opportunities.length} helper="Value-matched records in view" tone="primary" />
+          <KpiCard label="Shown" value={visibleCount} helper={searchResults ? "Ranked search results" : "Current filtered list"} />
+          <KpiCard label={<InfoTooltip tooltip={FIT_TOOLTIP}>Avg fit</InfoTooltip>} value={averageFit} helper="Capability alignment" />
+          <KpiCard label="Active bids" value={activeBidCount} helper="Formal open bid handoff" tone="warning" />
+          <KpiCard label="Pre-RFP" value={earlySignalCount} helper="Early signals to position" tone="success" />
         </div>
       </section>
 
@@ -1042,11 +1063,29 @@ export function Dashboard() {
         </form>
       </section>
 
-      {error ? <div className="alert">{error}</div> : null}
-      {loading ? <div className="empty-state">Loading bid intelligence...</div> : null}
+      {error ? (
+        <div className="alert">
+          <strong>Unable to load workspace</strong>
+          <span>{error}</span>
+        </div>
+      ) : null}
+      {loading ? (
+        <div className="empty-state loading-state">
+          <strong>Loading opportunity intelligence</strong>
+          <span>Refreshing source coverage, fit scoring, and signal ranking.</span>
+        </div>
+      ) : null}
 
       {!loading && searchResults ? (
-        <section className="card-list" aria-label="Search results">
+        <section className="results-section" aria-label="Search results">
+          <div className="results-header">
+            <div>
+              <span className="field-label">Ranked results</span>
+              <h2>{searchResults.length ? `${searchResults.length} matching opportunities` : "No ranked matches"}</h2>
+            </div>
+            <p className="compact-copy">Search results are ranked by relevance, fit, value, and electrical scope context.</p>
+          </div>
+          <div className="card-list">
           {searchResults.length ? (
             searchResults.map((result) => (
               <OpportunityCard
@@ -1057,14 +1096,34 @@ export function Dashboard() {
               />
             ))
           ) : (
-            <div className="empty-state">No ranked matches. Try broadening the query or filters.</div>
+            <div className="empty-state">
+              <strong>No ranked matches</strong>
+              <span>Try broadening the query, clearing a filter, or searching for a source type such as RTO/ISO, PUC, data center, or substation.</span>
+            </div>
           )}
+          </div>
         </section>
       ) : null}
 
       {!loading && !searchResults ? (
-        <section className="card-list" aria-label="Opportunities">
-          {opportunities.length ? opportunities.map((opportunity) => <OpportunityCard key={opportunity.id} opportunity={opportunity} />) : <div className="empty-state">No opportunities found.</div>}
+        <section className="results-section" aria-label="Opportunities">
+          <div className="results-header">
+            <div>
+              <span className="field-label">Opportunity pipeline</span>
+              <h2>{opportunities.length ? `${opportunities.length} prioritized records` : "No opportunities found"}</h2>
+            </div>
+            <p className="compact-copy">Default view emphasizes pre-RFP and early public signals before formal bid release.</p>
+          </div>
+          <div className="card-list">
+            {opportunities.length ? (
+              opportunities.map((opportunity) => <OpportunityCard key={opportunity.id} opportunity={opportunity} />)
+            ) : (
+              <div className="empty-state">
+                <strong>No opportunities found</strong>
+                <span>Adjust filters or switch from active bids to pre-RFP signals to expand the pipeline.</span>
+              </div>
+            )}
+          </div>
         </section>
       ) : null}
     </div>

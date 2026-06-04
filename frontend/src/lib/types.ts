@@ -38,6 +38,7 @@ export type Opportunity = {
       tier: "high" | "medium" | "low" | string;
       cable_relevance: "high" | "medium" | "low" | string;
       procurement_path: string;
+      entry_window?: string;
       taihan_angle: string[];
       recommended_action: string;
       evidence_strength?: {
@@ -48,6 +49,48 @@ export type Opportunity = {
       };
       reasons: string[];
       risk_flags: string[];
+      score_breakdown?: Array<{
+        factor: string;
+        points: number;
+        reason: string;
+      }>;
+      influence_targets?: string[];
+      next_steps?: string[];
+    };
+    pursuit_intelligence?: {
+      evidence_grade: "strong" | "moderate" | "thin" | string;
+      source_evidence: Array<{
+        name: string;
+        url: string;
+        source: string;
+        type: string;
+        excerpt: string;
+        quality: string;
+      }>;
+      why_now: string;
+      next_actions: string[];
+      relationship_targets: Array<{
+        role: string;
+        name: string;
+        rationale: string;
+        action: string;
+      }>;
+      partner_targets: Array<{
+        role: string;
+        need: string;
+        trigger: string;
+      }>;
+      signal_change: {
+        status: string;
+        explanation: string;
+        last_changed_at: string;
+      };
+      analyst_review: {
+        recommended_status: string;
+        confidence: string;
+        guidance: string;
+      };
+      estimated_value: number | null;
     };
   };
   project_type: string;
@@ -294,4 +337,25 @@ export type AccountStatus = {
     total_sources: number;
     real_opportunity_count: number;
   };
+};
+
+export type WeeklyIntelligenceReport = {
+  generated_at: string;
+  company: string;
+  title: string;
+  summary: {
+    upstream_signals: number;
+    high_priority: number;
+    data_center_or_large_load: number;
+    active_bid_handoffs: number;
+    strong_evidence: number;
+    live_importing_sources: number;
+    tracked_sources: number;
+  };
+  executive_takeaway: string;
+  top_signals: Array<Record<string, unknown>>;
+  watchlist_changes: Array<Record<string, unknown>>;
+  active_bid_handoffs: Array<Record<string, unknown>>;
+  recommended_actions: string[];
+  source_health: SourceHealth[];
 };

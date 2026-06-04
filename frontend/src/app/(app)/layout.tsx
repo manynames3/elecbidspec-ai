@@ -6,13 +6,17 @@ export default function AppLayout({ children }: Readonly<{ children: React.React
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <Link href="/" className="brand" aria-label="ElecBidSpec AI dashboard">
-          <DatabaseZap size={24} />
-          <span className="brand-copy">
-            <span>ElecBidSpec AI</span>
-            <span className="brand-descriptor">For electrical contractors &amp; GCs</span>
-          </span>
-        </Link>
+        <div className="sidebar-header">
+          <Link href="/" className="brand" aria-label="ElecBidSpec AI dashboard">
+            <span className="brand-mark">
+              <DatabaseZap size={22} />
+            </span>
+            <span className="brand-copy">
+              <span>ElecBidSpec AI</span>
+              <span className="brand-descriptor">For electrical contractors &amp; GCs</span>
+            </span>
+          </Link>
+        </div>
         <nav className="nav-links" aria-label="Primary">
           <Link href="/">
             <ClipboardList size={18} />
@@ -31,7 +35,9 @@ export default function AppLayout({ children }: Readonly<{ children: React.React
             Source Ops
           </Link>
         </nav>
-        <AuthStatus />
+        <div className="sidebar-footer">
+          <AuthStatus />
+        </div>
       </aside>
       <main className="main-content">{children}</main>
     </div>

@@ -263,12 +263,22 @@ def _record(
     bid_status: str = "planning",
     attachments: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    evidence_links = attachments or []
+    evidence_links = []
+    explicit_evidence_excerpts = []
+    for item in attachments or []:
+        normalized = dict(item)
+        if normalized.get("excerpt"):
+            explicit_evidence_excerpts.append(_clean(normalized.get("excerpt")))
+        if not normalized.get("excerpt"):
+            normalized["excerpt"] = description[:500]
+        normalized["quality"] = "excerpted" if normalized.get("excerpt") else "link_only"
+        evidence_links.append(normalized)
     specs = extract_specs(f"{title}. {description}")
     specs["evidence_links"] = evidence_links
     evidence_excerpts = [_clean(item.get("excerpt")) for item in evidence_links if isinstance(item, dict) and item.get("excerpt")]
     if evidence_excerpts:
-        specs["evidence_excerpts"] = evidence_excerpts[:3]
+        specs["evidence_excerpts"] = list(dict.fromkeys([*explicit_evidence_excerpts, *evidence_excerpts]))[:3]
+    specs["evidence_quality"] = "strong" if len(evidence_excerpts) >= 1 and len(evidence_links) >= 2 else "moderate" if evidence_links else "thin"
     classification = classify_bid(title, description, specs)
     return {
         "title": title[:280],
