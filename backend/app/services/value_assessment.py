@@ -113,6 +113,72 @@ PUBLIC_AGENCY_SOURCE_TYPES = {
     "water_authority",
 }
 
+ACTIVE_PUBLIC_VALUE_SOURCE_TYPES = PUBLIC_AGENCY_SOURCE_TYPES | {
+    "utility",
+    "investor_owned_utility",
+}
+
+ACTIVE_PUBLIC_CAPITAL_TERMS = {
+    "bid package",
+    "capital project",
+    "capital improvement",
+    "construction services",
+    "construction/construction services",
+    "electrical construction",
+    "modernization",
+    "rehabilitation",
+    "replacement",
+    "upgrade",
+    "systems repairs",
+    "facility",
+    "facilities",
+    "campus",
+    "school construction",
+}
+
+ACTIVE_PUBLIC_ELECTRICAL_TERMS = {
+    "power station",
+    "substation",
+    "transmission",
+    "power distribution",
+    "electrical distribution",
+    "distribution feeder",
+    "electrical systems",
+    "electrical construction",
+    "low voltage",
+    "medium voltage",
+    "high voltage",
+    "conduit",
+    "duct bank",
+    "cable",
+    "transformer",
+    "switchgear",
+    "feeder",
+    "utility relocation",
+    "general hvac plumbing and electrical",
+}
+
+LOW_CONFIDENCE_ACTIVE_VALUE_TERMS = {
+    "market research",
+    "market research only",
+    "survey",
+    "software",
+    "information technology",
+    "managed service",
+    "support",
+    "trailer rental",
+    "waste transportation",
+    "vehicle lighting",
+    "batteries",
+    "meters",
+    "bakery products",
+    "food distribution",
+    "cafeteria",
+    "kitchen equipment",
+    "wireless internet",
+    "internet services",
+}
+
 RTO_ISO_SOURCES = {
     "pjm_project_construction",
     "caiso_interconnection_queue",
@@ -375,6 +441,25 @@ def high_value_scope_score(data: dict) -> int:
     return score
 
 
+def active_public_likely_value_signal(data: dict) -> bool:
+    source_type = str(data.get("source_type") or infer_source_type(data.get("source"), data.get("agency"))).lower()
+    if source_type not in ACTIVE_PUBLIC_VALUE_SOURCE_TYPES:
+        return False
+
+    stage = str(data.get("project_stage") or infer_project_stage(data)).lower()
+    status = str(data.get("bid_status") or "").strip().lower().replace(" ", "_").replace("-", "_")
+    if stage != "active_bid" or (status and status not in OPEN_STATUS_TERMS):
+        return False
+
+    text = _opportunity_text(data)
+    if any(term in text for term in LOW_CONFIDENCE_ACTIVE_VALUE_TERMS):
+        return False
+
+    has_capital_context = any(term in text for term in ACTIVE_PUBLIC_CAPITAL_TERMS)
+    has_electrical_scope = any(contains_scope_term(text, term) for term in ACTIVE_PUBLIC_ELECTRICAL_TERMS)
+    return has_capital_context and has_electrical_scope
+
+
 def assess_value(data: dict, minimum_value: Decimal = DEFAULT_MINIMUM_VALUE) -> dict:
     estimated_value = decimal_or_none(data.get("estimated_value"))
     text = f"{data.get('title') or ''} {data.get('description') or ''}"
@@ -405,6 +490,14 @@ def assess_value(data: dict, minimum_value: Decimal = DEFAULT_MINIMUM_VALUE) -> 
             "value_confidence": "likely",
             "minimum_value_match": True,
             "value_explanation": "No value was posted, but scope indicators suggest this may meet the high-value threshold.",
+        }
+
+    if active_public_likely_value_signal(data):
+        return {
+            "estimated_value": None,
+            "value_confidence": "likely",
+            "minimum_value_match": True,
+            "value_explanation": "No value was posted, but active public construction and electrical infrastructure scope suggest this may meet the high-value threshold.",
         }
 
     return {

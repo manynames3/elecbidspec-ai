@@ -42,6 +42,51 @@ def test_assess_value_marks_public_power_hub_scope_likely_when_value_missing():
     assert result["value_confidence"] == "likely"
 
 
+def test_assess_value_marks_active_public_power_bid_package_likely_when_value_missing():
+    result = assess_value(
+        {
+            "title": "EXT GSA | Power Station Block 8 Bid Package 1",
+            "description": "Department: General Services Agency Category: Construction/Construction Services Type: Seeking Bids Status: Open",
+            "source_type": "state_local",
+            "project_stage": "active_bid",
+            "bid_status": "open",
+        }
+    )
+
+    assert result["minimum_value_match"] is True
+    assert result["value_confidence"] == "likely"
+
+
+def test_assess_value_does_not_promote_market_research_commodity_notices():
+    result = assess_value(
+        {
+            "title": "PULL BOXES, ELECTRICAL, MARKET RESEARCH SURVEY",
+            "description": "Category: Commodity Type: RFQ - Request for Quote Status: Open",
+            "source_type": "state_local",
+            "project_stage": "active_bid",
+            "bid_status": "open",
+        }
+    )
+
+    assert result["minimum_value_match"] is False
+    assert result["value_confidence"] == "unknown"
+
+
+def test_assess_value_does_not_promote_non_power_distribution_contracts():
+    result = assess_value(
+        {
+            "title": "Requirements contract for food distribution services",
+            "description": "Category: Services Method: Competitive Sealed Bids Status: Open",
+            "source_type": "state_local",
+            "project_stage": "active_bid",
+            "bid_status": "open",
+        }
+    )
+
+    assert result["minimum_value_match"] is False
+    assert result["value_confidence"] == "unknown"
+
+
 def test_infer_estimated_value_from_notice_text():
     value = infer_estimated_value("Estimated value exceeds $12.5M for the project.")
 
