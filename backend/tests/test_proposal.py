@@ -153,7 +153,9 @@ def test_proposal_docx_contains_word_package_parts():
     assert content.startswith(b"PK")
     with zipfile.ZipFile(BytesIO(content)) as docx:
         assert "word/document.xml" in docx.namelist()
-        assert "Taihan Cable &amp; Solution" in docx.read("word/document.xml").decode("utf-8")
+        document_xml = docx.read("word/document.xml").decode("utf-8")
+        assert "Taihan Cable &amp; Solution" in document_xml
+        assert "Pursuit Decision Brief" in document_xml
 
 
 def test_proposal_pdf_contains_pdf_document():
@@ -162,4 +164,5 @@ def test_proposal_pdf_contains_pdf_document():
 
     assert content.startswith(b"%PDF-1.4")
     assert b"Taihan Cable & Solution Proposal Prep Package" in content
+    assert b"Pursuit Decision Brief" in content
     assert b"%%EOF" in content

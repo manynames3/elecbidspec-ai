@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export const FIT_TOOLTIP = "How closely this bid matches your capabilities and project history. 70+ is worth reviewing. 85+ is a strong match.";
-export const PORTAL_GATED_TOOLTIP = "This source requires a separate login we can't automate. You'll need to check it manually using the link provided.";
+export const PORTAL_GATED_TOOLTIP = "This source is tracked, but live import requires a separate portal login or approved feed. Use the source link for manual review.";
 export const VALUE_MATCH_TOOLTIP = "Confirmed = dollar value was stated in the posting. Likely = estimated from scope indicators and comparable bids.";
 export const COVERED_BY_SOURCE_TOOLTIP = "This agency's bids are included via another connected source. No duplicate data.";
 

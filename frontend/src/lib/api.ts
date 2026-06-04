@@ -115,6 +115,51 @@ export function taihanEvidenceLabels(opportunity: Opportunity): string[] {
   return labels;
 }
 
+export function opportunityEvidenceExcerpt(opportunity: Opportunity): string {
+  const specExcerpt = opportunity.extracted_specs?.evidence_excerpts?.find(Boolean);
+  if (specExcerpt) {
+    return specExcerpt;
+  }
+  const attachment = opportunity.attachments.find((item) => typeof item.excerpt === "string" && item.excerpt.trim().length > 0);
+  if (typeof attachment?.excerpt === "string") {
+    return attachment.excerpt;
+  }
+  const preview = opportunity.extracted_specs?.source_text_preview;
+  if (preview) {
+    return preview;
+  }
+  const description = opportunity.description?.trim();
+  if (description) {
+    return description.length > 360 ? `${description.slice(0, 357)}...` : description;
+  }
+  return "No source excerpt was extracted yet. Open the source posting or ingest linked documents before pursuit decisions.";
+}
+
+export function whyNowNarrative(opportunity: Opportunity): string {
+  const intel = opportunity.extracted_specs?.taihan_intelligence;
+  const evidence = intel?.evidence_strength;
+  const namedOwner = opportunity.agency ? `${opportunity.agency} is named` : "A project owner or source is identified";
+  const evidenceSignals = taihanEvidenceLabels(opportunity);
+
+  if (opportunity.project_stage === "early_signal" || opportunity.project_stage === "pre_rfp") {
+    if (intel?.tier === "high") {
+      return `${namedOwner}, and the posting includes ${evidenceSignals.join(", ") || "strong scope evidence"}. This is the window to start AVL, EPC, and utility-owner positioning before a formal bid appears.`;
+    }
+    if (evidence?.explicit_voltage || evidence?.data_center_or_load || evidence?.cable_specific_scope) {
+      return `This is upstream intelligence, not a formal solicitation. Review now because the signal already shows ${evidenceSignals.join(", ") || "power-infrastructure evidence"} before procurement is fully shaped.`;
+    }
+    return "This is an early public signal. Monitor for owner, voltage, cable scope, EPC path, and expected procurement timing before assigning proposal resources.";
+  }
+
+  if (opportunity.bid_status === "open") {
+    return opportunity.due_date
+      ? `Formal bid is open and due ${formatDate(opportunity.due_date)}. Move directly into spec review, partner checks, bonding, and proposal gating.`
+      : "Formal bid appears open. Confirm due date, addenda, bonding, and submission path before allocating estimating time.";
+  }
+
+  return "Use this record for market intelligence unless the source confirms a live pursuit window or upcoming procurement path.";
+}
+
 export function sourceLabel(source: string): string {
   if (source === "txdot_bid_items") {
     return "TxDOT";

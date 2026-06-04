@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Bell, CheckCircle2, DatabaseZap, Filter, Lock, RefreshCw, Save, Search } from "lucide-react";
-import { apiFetch, sourceLabel } from "@/lib/api";
+import { apiFetch, sourceLabel, whyNowNarrative } from "@/lib/api";
 import type { AccountStatus, AlertPreference, AlertRun, IngestionRefreshResult, IngestionSummary, Opportunity, SavedSearch, SearchResult } from "@/lib/types";
 import { COVERED_BY_SOURCE_TOOLTIP, FIT_TOOLTIP, InfoTooltip, PORTAL_GATED_TOOLTIP, VALUE_MATCH_TOOLTIP } from "@/components/InfoTooltip";
 import { OpportunityCard } from "@/components/OpportunityCard";
@@ -100,9 +100,9 @@ const emptyFilters: Filters = {
   min_value: "",
   minimum_value_match: "true",
   source_type: "",
-  bid_status: "open",
+  bid_status: "",
   source: "",
-  open_only: "true",
+  open_only: "",
   real_only: "true",
   saved_only: "",
   watched_only: "",
@@ -119,7 +119,7 @@ const defaultAlertForm = {
 
 function SourceStatusText({ status }: { status: string }) {
   if (status === "portal_gated") {
-    return <InfoTooltip tooltip={PORTAL_GATED_TOOLTIP}>Portal Gated</InfoTooltip>;
+    return <InfoTooltip tooltip={PORTAL_GATED_TOOLTIP}>Manual Review</InfoTooltip>;
   }
   if (status === "covered_by_source") {
     return <InfoTooltip tooltip={COVERED_BY_SOURCE_TOOLTIP}>Covered By Source</InfoTooltip>;
@@ -133,6 +133,40 @@ function taihanScore(opportunity: Opportunity) {
 
 function isHighTaihanPriority(opportunity: Opportunity) {
   return opportunity.extracted_specs?.taihan_intelligence?.tier === "high";
+}
+
+function taihanTierRank(opportunity: Opportunity) {
+  const tier = opportunity.extracted_specs?.taihan_intelligence?.tier;
+  if (tier === "high") {
+    return 3;
+  }
+  if (tier === "medium") {
+    return 2;
+  }
+  if (tier === "low") {
+    return 1;
+  }
+  return 0;
+}
+
+function stageRank(opportunity: Opportunity) {
+  if (opportunity.project_stage === "early_signal" || opportunity.project_stage === "pre_rfp") {
+    return 2;
+  }
+  if (opportunity.project_stage === "active_bid") {
+    return 1;
+  }
+  return 0;
+}
+
+function sortPipeline(records: Opportunity[]) {
+  return [...records].sort(
+    (first, second) =>
+      taihanTierRank(second) - taihanTierRank(first) ||
+      taihanScore(second) - taihanScore(first) ||
+      (second.fit_score ?? 0) - (first.fit_score ?? 0) ||
+      stageRank(second) - stageRank(first)
+  );
 }
 
 function hasSignalText(opportunity: Opportunity, terms: string[]) {
@@ -210,7 +244,9 @@ export function Dashboard() {
     () => opportunities.filter((item) => item.project_stage === "early_signal" || item.project_stage === "pre_rfp").length,
     [opportunities]
   );
+  const activeBidCount = useMemo(() => opportunities.filter((item) => item.project_stage === "active_bid" && item.bid_status === "open").length, [opportunities]);
   const highTaihanSignalCount = useMemo(() => upstreamSignals.filter(isHighTaihanPriority).length, [upstreamSignals]);
+  const watchlistTaihanSignalCount = useMemo(() => upstreamSignals.filter((item) => ["high", "medium"].includes(item.extracted_specs?.taihan_intelligence?.tier ?? "")).length, [upstreamSignals]);
   const dataCenterSignalCount = useMemo(
     () => upstreamSignals.filter((item) => hasSignalText(item, ["data center", "datacenter", "hyperscale", "ai infrastructure", "large load", "gpu"])).length,
     [upstreamSignals]
@@ -220,7 +256,7 @@ export function Dashboard() {
     [upstreamSignals]
   );
   const topUpstreamSignals = useMemo(
-    () => [...upstreamSignals].sort((first, second) => taihanScore(second) - taihanScore(first) || (second.fit_score ?? 0) - (first.fit_score ?? 0)).slice(0, 4),
+    () => sortPipeline(upstreamSignals).slice(0, 8),
     [upstreamSignals]
   );
 
@@ -249,8 +285,8 @@ export function Dashboard() {
         loadedOpportunities = await apiFetch<Opportunity[]>(opportunityPath(activeFilters));
         setFilters(activeFilters);
       }
-      setOpportunities(loadedOpportunities);
-      setUpstreamSignals(loadedUpstreamSignals.filter((item) => item.project_stage === "early_signal" || item.project_stage === "pre_rfp"));
+      setOpportunities(sortPipeline(loadedOpportunities));
+      setUpstreamSignals(sortPipeline(loadedUpstreamSignals.filter((item) => item.project_stage === "early_signal" || item.project_stage === "pre_rfp")));
       setIngestionSummary(loadedSummary);
       setSearchResults(null);
     } catch (err) {
@@ -390,6 +426,18 @@ export function Dashboard() {
     void loadOpportunities(nextFilters);
   }
 
+  function applyPipelinePreset(preset: Partial<Filters>) {
+    const nextFilters = {
+      ...emptyFilters,
+      real_only: "true",
+      minimum_value_match: "true",
+      ...preset
+    };
+    setFilters(nextFilters);
+    setSearchResults(null);
+    void loadOpportunities(nextFilters);
+  }
+
   async function saveAlertPreferences() {
     setAlertLoading(true);
     setAlertMessage(null);
@@ -492,11 +540,11 @@ export function Dashboard() {
         </div>
         <div className="summary-strip">
           <div>
-            <span className="field-label">Loaded bids</span>
+            <span className="field-label">Pipeline records</span>
             <strong>{opportunities.length}</strong>
           </div>
           <div>
-            <span className="field-label">Visible</span>
+            <span className="field-label">Shown</span>
             <strong>{visibleCount}</strong>
           </div>
           <div>
@@ -506,7 +554,11 @@ export function Dashboard() {
             <strong>{averageFit}</strong>
           </div>
           <div>
-            <span className="field-label">Early signals</span>
+            <span className="field-label">Active bids</span>
+            <strong>{activeBidCount}</strong>
+          </div>
+          <div>
+            <span className="field-label">Pre-RFP</span>
             <strong>{earlySignalCount}</strong>
           </div>
         </div>
@@ -581,6 +633,10 @@ export function Dashboard() {
             <strong>{highTaihanSignalCount}</strong>
           </div>
           <div>
+            <span className="field-label">Taihan watchlist</span>
+            <strong>{watchlistTaihanSignalCount}</strong>
+          </div>
+          <div>
             <span className="field-label">Data center / AI</span>
             <strong>{dataCenterSignalCount}</strong>
           </div>
@@ -593,6 +649,9 @@ export function Dashboard() {
             <strong>{upstreamSignals.filter((item) => item.source_type === "rto_iso").length}</strong>
           </div>
         </div>
+        <p className="compact-copy">
+          Pre-RFP records are public planning, queue, docket, or permitting signals. They are not formal bids yet; they are where Taihan can start owner, AVL, EPC, and partner positioning before a solicitation is posted.
+        </p>
         <div className="upstream-actions" aria-label="Upstream intelligence filters">
           <button type="button" className="secondary-button" onClick={() => applyUpstreamPreset({ project_stage: "early_signal" })}>
             Pre-RFP signals
@@ -625,7 +684,10 @@ export function Dashboard() {
               return (
                 <Link href={`/opportunities?id=${item.id}`} className="upstream-signal-row" key={item.id}>
                   <strong>{intel ? `Taihan ${intel.score}` : item.fit_score ?? "--"}</strong>
-                  <span>{item.title}</span>
+                  <span>
+                    <b>{item.title}</b>
+                    <small>{whyNowNarrative(item)}</small>
+                  </span>
                   <em>{sourceLabel(item.source)}</em>
                 </Link>
               );
@@ -645,7 +707,7 @@ export function Dashboard() {
             <strong>{sourceHealth.length ? `${liveImportingSourceCount}/${sourceHealth.length}` : "--"}</strong>
           </div>
           <div className="source-card">
-            <span className="field-label">Gated portals</span>
+            <span className="field-label">Manual-review sources</span>
             <strong>{sourceHealth.length ? gatedSourceCount : "--"}</strong>
           </div>
           <div className="source-card">
@@ -679,9 +741,9 @@ export function Dashboard() {
             <p className="compact-copy">Recent official records are flowing into ranked opportunity cards.</p>
           </div>
           <div>
-            <span className="field-label">Portal gated</span>
+            <span className="field-label">Manual review</span>
             <strong>{gatedSourceCount}</strong>
-            <p className="compact-copy">Tracked agencies that require a separate login or manual portal review.</p>
+            <p className="compact-copy">Tracked sources that need approved portal access before they can become live imports.</p>
           </div>
           <div>
             <span className="field-label">Covered by source</span>
@@ -808,6 +870,21 @@ export function Dashboard() {
           {alertMessage ? <div className="success">{alertMessage}</div> : null}
         </section>
 
+        <div className="pipeline-preset-row" aria-label="Pipeline presets">
+          <button type="button" className="secondary-button" onClick={() => applyPipelinePreset({})}>
+            Recommended pipeline
+          </button>
+          <button type="button" className="secondary-button" onClick={() => applyPipelinePreset({ bid_status: "open", open_only: "true", project_stage: "active_bid" })}>
+            Active bids only
+          </button>
+          <button type="button" className="secondary-button" onClick={() => applyPipelinePreset({ project_stage: "early_signal", bid_status: "", open_only: "" })}>
+            Pre-RFP signals
+          </button>
+          <button type="button" className="secondary-button" onClick={() => applyPipelinePreset({ min_fit_score: "85", bid_status: "", open_only: "" })}>
+            Strong Taihan fit
+          </button>
+        </div>
+
         <form className="filter-grid" onSubmit={handleFilter}>
           <label>
             <span>Data</span>
@@ -933,8 +1010,8 @@ export function Dashboard() {
           <label>
             <span>Status</span>
             <select value={filters.bid_status} onChange={(event) => setFilters({ ...filters, bid_status: event.target.value, open_only: event.target.value === "open" ? "true" : "" })}>
-              <option value="open">Open</option>
               <option value="">Any</option>
+              <option value="open">Open</option>
               <option value="closed">Closed</option>
             </select>
           </label>

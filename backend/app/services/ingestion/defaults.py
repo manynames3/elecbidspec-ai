@@ -505,8 +505,8 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "requires_setting": "sam_gov_api_key",
         "params": {
             "job_label": "sam_gov",
-            "limit": 50,
-            "source_limit": 20,
+            "limit": 75,
+            "source_limit": 40,
             "posted_window_days": 90,
             "ptype": "o",
             "status": "active",
@@ -538,7 +538,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "pjm_project_construction",
         "params": {
             "job_label": "pjm_project_construction",
-            "limit": 35,
+            "limit": 75,
             "source_limit": 20000,
             "min_cost_millions": 5,
             "keywords": [
@@ -562,7 +562,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "caiso_interconnection_queue",
         "params": {
             "job_label": "caiso_interconnection_queue",
-            "limit": 30,
+            "limit": 60,
             "min_mw": 100,
             "min_voltage_kv": 70,
             "keywords": [
@@ -583,7 +583,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "ercot_capacity_changes",
         "params": {
             "job_label": "ercot_capacity_changes",
-            "limit": 30,
+            "limit": 60,
             "min_mw": 100,
             "keywords": [
                 "data center",
@@ -602,7 +602,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "iso_ne_interconnection_queue",
         "params": {
             "job_label": "iso_ne_interconnection_queue",
-            "limit": 35,
+            "limit": 60,
             "min_mw": 75,
             "keywords": [
                 "battery",
@@ -623,7 +623,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "miso_eras_interconnection",
         "params": {
             "job_label": "miso_eras_interconnection",
-            "limit": 35,
+            "limit": 60,
             "min_mw": 75,
             "keywords": [
                 "data center",
@@ -650,7 +650,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "nyiso_interconnection_queue",
         "params": {
             "job_label": "nyiso_interconnection_queue",
-            "limit": 35,
+            "limit": 60,
             "min_mw": 75,
             "keywords": [
                 "data center",
@@ -676,7 +676,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "spp_gi_active_requests",
         "params": {
             "job_label": "spp_gi_active_requests",
-            "limit": 35,
+            "limit": 60,
             "min_mw": 75,
             "keywords": [
                 "battery",
@@ -698,7 +698,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "virginia_scc_transmission_cases",
         "params": {
             "job_label": "virginia_scc_transmission_cases",
-            "limit": 35,
+            "limit": 60,
             "source_limit": 300,
             "keywords": [
                 "data center",
@@ -735,7 +735,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "texas_puc_dockets",
         "params": {
             "job_label": "texas_puc_dockets",
-            "limit": 30,
+            "limit": 60,
             "source_limit": 800,
             "keywords": [
                 "certificate of convenience",
@@ -757,7 +757,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "loudoun_land_applications",
         "params": {
             "job_label": "loudoun_land_applications",
-            "limit": 30,
+            "limit": 60,
             "source_limit": 500,
             "statuses": ["In Review", "Approved"],
             "keywords": [
@@ -775,7 +775,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "txdot_bid_items",
         "params": {
             "job_label": "txdot_bid_items",
-            "limit": 50,
+            "limit": 75,
             "source_limit": 5000,
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,
@@ -785,7 +785,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "pa_emarketplace",
         "params": {
             "job_label": "pa_emarketplace",
-            "limit": 50,
+            "limit": 75,
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,
         },
@@ -795,7 +795,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "requires_setting": "nypa_api_subscription_key",
         "params": {
             "job_label": "nypa",
-            "limit": 50,
+            "limit": 75,
             "update_existing": True,
         },
     },
@@ -803,7 +803,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "nyc_city_record",
         "params": {
             "job_label": "nyc_city_record",
-            "limit": 25,
+            "limit": 50,
             "source_limit": 300,
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,
@@ -815,7 +815,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
             "job_label": "nyc_school_construction_authority",
             "source": "nyc_school_construction_authority",
             "source_type": "education",
-            "limit": 25,
+            "limit": 50,
             "source_limit": 300,
             "agency_keywords": ["School Construction Authority"],
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
@@ -826,7 +826,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "sf_open_bids",
         "params": {
             "job_label": "sf_open_bids",
-            "limit": 25,
+            "limit": 50,
             "source_limit": 300,
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,
@@ -842,7 +842,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
             "location": "Los Angeles, CA",
             "state": "CA",
             "agency_prefix": "Los Angeles RAMP",
-            "limit": 50,
+            "limit": 75,
             "source_limit": 500,
             "order": "closedate ASC",
             "query_params": {
@@ -879,7 +879,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
             "location": "Montgomery County, MD",
             "state": "MD",
             "agency_prefix": "Montgomery County, MD",
-            "limit": 25,
+            "limit": 50,
             "source_limit": 300,
             "order": "closingdate ASC",
             "query_params": {
@@ -911,7 +911,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
         "adapter": "chicago_solicitations",
         "params": {
             "job_label": "chicago_solicitations",
-            "limit": 25,
+            "limit": 50,
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,
         },
@@ -925,7 +925,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
             "agency": "JEA",
             "state": "FL",
             "location": "Jacksonville, FL",
-            "limit": 25,
+            "limit": 50,
             "source_limit": 1200,
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,
@@ -941,7 +941,7 @@ DEFAULT_PUBLIC_BID_JOBS = [
             "state": "TX",
             "location": "Dallas-Fort Worth, TX",
             "portal_url": "https://dfwairport.bonfirehub.com/portal/?tab=openOpportunities",
-            "limit": 25,
+            "limit": 50,
             "source_limit": 250,
             "keywords": DEFAULT_ELECTRICAL_SOURCE_KEYWORDS,
             "update_existing": True,

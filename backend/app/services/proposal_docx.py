@@ -58,6 +58,20 @@ def _document_xml(opportunity: Mapping, proposal: Mapping, company_profile: Mapp
     agency = opportunity.get("agency") or "Issuing agency"
     due = opportunity.get("due_date") or "Due date not posted"
     value = opportunity.get("estimated_value") or "Value not posted"
+    stage = str(opportunity.get("project_stage") or "active_bid").replace("_", " ")
+    source_type = str(opportunity.get("source_type") or "source not classified").replace("_", " ")
+    fit_score = opportunity.get("fit_score")
+    fit_text = f"{fit_score}/100" if fit_score is not None else "Not scored"
+    value_confidence = str(opportunity.get("value_confidence") or "unknown").replace("_", " ")
+    summary_rows = [
+        ["Field", "Value"],
+        ["Agency", agency],
+        ["Stage", stage],
+        ["Source type", source_type],
+        ["Fit score", fit_text],
+        ["Due date", due],
+        ["Estimated value", f"{value} ({value_confidence})"],
+    ]
     rows = [
         ["Requirement", "Status", "Evidence", "Owner"],
         *[
@@ -73,19 +87,18 @@ def _document_xml(opportunity: Mapping, proposal: Mapping, company_profile: Mapp
     ]
     body_parts = [
         _paragraph(f"{company} Proposal Prep Package", "Title"),
+        _paragraph("Pursuit Decision Brief", "Heading1"),
         _paragraph(title, "Heading1"),
-        _paragraph(f"Agency: {agency}"),
-        _paragraph(f"Due date: {due}"),
-        _paragraph(f"Estimated value: {value}"),
+        _table(summary_rows),
+        *_section("Executive Summary", proposal.get("draft_executive_summary", "")),
+        *_section("Bid / No-Bid Recommendation", proposal.get("bid_no_bid_memo", "")),
         *_section("Bid Summary", proposal.get("bid_summary", "")),
-        *_section("Draft Executive Summary", proposal.get("draft_executive_summary", "")),
         *_section("Scope Checklist", proposal.get("scope_checklist", [])),
         *_section("Missing Information Checklist", proposal.get("missing_information_checklist", [])),
         *_section("Required Documents Checklist", proposal.get("required_documents_checklist", [])),
         *_section("Risk Flags", proposal.get("risk_flags", []) or ["No major automated risk flags."]),
         _paragraph("Compliance Matrix", "Heading1"),
         _table(rows),
-        *_section("Bid / No-Bid Memo", proposal.get("bid_no_bid_memo", "")),
         *_section("Partner Outreach Email", proposal.get("partner_email_template", "")),
     ]
     return (
@@ -100,8 +113,8 @@ def _styles_xml() -> str:
     return (
         '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-        '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:rPr><w:b/><w:sz w:val="40"/></w:rPr></w:style>'
-        '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:rPr><w:b/><w:sz w:val="28"/></w:rPr></w:style>'
+        '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:rPr><w:b/><w:color w:val="2F7D53"/><w:sz w:val="40"/></w:rPr></w:style>'
+        '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:rPr><w:b/><w:color w:val="20231F"/><w:sz w:val="28"/></w:rPr></w:style>'
         "</w:styles>"
     )
 

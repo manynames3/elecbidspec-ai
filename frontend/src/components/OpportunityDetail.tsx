@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, Download, ExternalLink, FileSearch, FileText, Lock, RefreshCw, Save, Sparkles } from "lucide-react";
-import { apiFetch, apiUrl, authHeaders, formatCurrency, formatDate, labelize, sourceLabel, taihanEvidenceLabels } from "@/lib/api";
+import { apiFetch, apiUrl, authHeaders, formatCurrency, formatDate, labelize, opportunityEvidenceExcerpt, sourceLabel, taihanEvidenceLabels, whyNowNarrative } from "@/lib/api";
 import { FIT_TOOLTIP, InfoTooltip, VALUE_MATCH_TOOLTIP } from "@/components/InfoTooltip";
 import type { AccountStatus, AttachmentExtraction, AttachmentIngestionResult, Opportunity, OpportunityWorkflow, Proposal } from "@/lib/types";
 
@@ -238,6 +238,8 @@ export function OpportunityDetail() {
   const specs = opportunity.extracted_specs ?? {};
   const taihanIntel = specs.taihan_intelligence;
   const taihanEvidence = taihanEvidenceLabels(opportunity);
+  const whyNow = whyNowNarrative(opportunity);
+  const evidenceExcerpt = opportunityEvidenceExcerpt(opportunity);
   const canExport = accountStatus?.feature_flags.proposal_exports ?? false;
   const canEnhance = accountStatus?.feature_flags.ai_enhance ?? false;
   const canIngestDocuments = accountStatus?.feature_flags.custom_source_requests ?? false;
@@ -309,6 +311,50 @@ export function OpportunityDetail() {
         </div>
       ) : null}
 
+      <section className="proposal-command-panel">
+        <div className="panel-title-row">
+          <div>
+            <span className="field-label">Proposal command center</span>
+            <h2>Boardroom-ready pursuit package</h2>
+            <p className="compact-copy">Generate the executive summary, compliance matrix, risk review, bid/no-bid memo, partner outreach, and DOCX/PDF exports from the same source-backed record.</p>
+          </div>
+          <div className="proposal-export-actions">
+            <button className="primary-button" onClick={() => void enhanceProposal()} type="button" disabled={enhancing || !canEnhance}>
+              <Sparkles size={16} />
+              {enhancing ? "Enhancing" : "AI enhance"}
+            </button>
+            <button className="secondary-button" onClick={() => void downloadProposal("docx").catch((err) => setError(err instanceof Error ? err.message : "DOCX download failed"))} type="button" disabled={!canExport}>
+              <Download size={16} />
+              DOCX
+            </button>
+            <button className="secondary-button" onClick={() => void downloadProposal("pdf").catch((err) => setError(err instanceof Error ? err.message : "PDF download failed"))} type="button" disabled={!canExport}>
+              <Download size={16} />
+              PDF
+            </button>
+          </div>
+        </div>
+        {proposal ? (
+          <div className="proposal-snapshot-grid">
+            <div>
+              <span className="field-label">Executive summary</span>
+              <p>{proposal.draft_executive_summary}</p>
+            </div>
+            <div>
+              <span className="field-label">Compliance rows</span>
+              <strong>{proposal.compliance_matrix.length}</strong>
+              <p className="compact-copy">Requirements mapped to status, evidence, and owner.</p>
+            </div>
+            <div>
+              <span className="field-label">Risk flags</span>
+              <strong>{proposal.risk_flags.length || 0}</strong>
+              <p className="compact-copy">{proposal.risk_flags[0] ?? "No major automated risk flags."}</p>
+            </div>
+          </div>
+        ) : proposalLoading ? (
+          <div className="empty-state">Generating proposal package...</div>
+        ) : null}
+      </section>
+
       {taihanIntel ? (
         <section className="panel">
           <div className="panel-title-row">
@@ -333,6 +379,10 @@ export function OpportunityDetail() {
             </div>
           </div>
           <p>{taihanIntel.recommended_action}</p>
+          <p className="why-now-callout">
+            <span>Why now</span>
+            {whyNow}
+          </p>
           {taihanEvidence.length ? (
             <div className="tag-row" aria-label="Taihan priority evidence">
               {taihanEvidence.map((label) => (
@@ -487,6 +537,10 @@ export function OpportunityDetail() {
           {opportunity.project_stage === "early_signal" || opportunity.project_stage === "pre_rfp"
             ? "Use this before the formal RFP window to pursue AVL/prequalification, partner positioning, and utility stakeholder outreach."
             : "Use this to manage active bid review, partner outreach, compliance checks, and proposal preparation before the due date."}
+        </p>
+        <p className="evidence-excerpt">
+          <span>Source evidence</span>
+          {evidenceExcerpt}
         </p>
       </section>
 

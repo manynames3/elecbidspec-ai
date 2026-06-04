@@ -63,15 +63,25 @@ def _document_lines(opportunity: Mapping, proposal: Mapping, company_profile: Ma
     agency = opportunity.get("agency") or "Issuing agency"
     due = opportunity.get("due_date") or "Due date not posted"
     value = opportunity.get("estimated_value") or "Value not posted"
+    stage = str(opportunity.get("project_stage") or "active_bid").replace("_", " ")
+    source_type = str(opportunity.get("source_type") or "source not classified").replace("_", " ")
+    fit_score = opportunity.get("fit_score")
+    fit_text = f"{fit_score}/100" if fit_score is not None else "Not scored"
+    value_confidence = str(opportunity.get("value_confidence") or "unknown").replace("_", " ")
     lines: list[tuple[str, int]] = [
         (f"{company} Proposal Prep Package", 18),
+        ("Pursuit Decision Brief", 14),
         (str(title), 14),
         (f"Agency: {agency}", 10),
+        (f"Stage: {stage}", 10),
+        (f"Source type: {source_type}", 10),
+        (f"Fit score: {fit_text}", 10),
         (f"Due date: {due}", 10),
-        (f"Estimated value: {value}", 10),
+        (f"Estimated value: {value} ({value_confidence})", 10),
     ]
+    _add_section(lines, "Executive Summary", proposal.get("draft_executive_summary", ""))
+    _add_section(lines, "Bid / No-Bid Recommendation", proposal.get("bid_no_bid_memo", ""))
     _add_section(lines, "Bid Summary", proposal.get("bid_summary", ""))
-    _add_section(lines, "Draft Executive Summary", proposal.get("draft_executive_summary", ""))
     _add_section(lines, "Scope Checklist", proposal.get("scope_checklist", []))
     _add_section(lines, "Missing Information Checklist", proposal.get("missing_information_checklist", []))
     _add_section(lines, "Required Documents Checklist", proposal.get("required_documents_checklist", []))
@@ -90,7 +100,6 @@ def _document_lines(opportunity: Mapping, proposal: Mapping, company_profile: Ma
                 )
     else:
         _add_wrapped(lines, "No compliance matrix rows generated.", 10)
-    _add_section(lines, "Bid / No-Bid Memo", proposal.get("bid_no_bid_memo", ""))
     _add_section(lines, "Partner Outreach Email", proposal.get("partner_email_template", ""))
     return lines
 

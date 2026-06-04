@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CalendarDays, ExternalLink, MapPin, TrendingUp } from "lucide-react";
-import { formatCurrency, formatDate, labelize, sourceLabel, taihanEvidenceLabels, whyThisBidMatters } from "@/lib/api";
+import { formatCurrency, formatDate, labelize, opportunityEvidenceExcerpt, sourceLabel, taihanEvidenceLabels, whyNowNarrative, whyThisBidMatters } from "@/lib/api";
 import { FIT_TOOLTIP, InfoTooltip } from "@/components/InfoTooltip";
 import type { Opportunity } from "@/lib/types";
 
@@ -25,21 +25,13 @@ function fitClass(score: number | null) {
   return "poor";
 }
 
-function attachmentEvidenceExcerpt(opportunity: Opportunity): string | null {
-  const specExcerpt = opportunity.extracted_specs?.evidence_excerpts?.find(Boolean);
-  if (specExcerpt) {
-    return specExcerpt;
-  }
-  const attachment = opportunity.attachments.find((item) => typeof item.excerpt === "string" && item.excerpt.trim().length > 0);
-  return typeof attachment?.excerpt === "string" ? attachment.excerpt : null;
-}
-
 export function OpportunityCard({ opportunity, explanation, rankScore }: OpportunityCardProps) {
   const keywords = opportunity.extracted_specs?.keywords ?? [];
   const taihanIntel = opportunity.extracted_specs?.taihan_intelligence;
   const taihanEvidence = taihanEvidenceLabels(opportunity);
   const rationale = whyThisBidMatters(opportunity);
-  const evidenceExcerpt = attachmentEvidenceExcerpt(opportunity);
+  const whyNow = whyNowNarrative(opportunity);
+  const evidenceExcerpt = opportunityEvidenceExcerpt(opportunity);
   const timingLabel = opportunity.due_date
     ? formatDate(opportunity.due_date)
     : opportunity.forecast_rfp_date
@@ -109,12 +101,14 @@ export function OpportunityCard({ opportunity, explanation, rankScore }: Opportu
         <span>Why it matters</span>
         {rationale}
       </p>
-      {evidenceExcerpt ? (
-        <p className="evidence-excerpt">
-          <span>Source evidence</span>
-          {evidenceExcerpt}
-        </p>
-      ) : null}
+      <p className="why-now-callout">
+        <span>Why now</span>
+        {whyNow}
+      </p>
+      <p className="evidence-excerpt">
+        <span>Source evidence</span>
+        {evidenceExcerpt}
+      </p>
       {opportunity.value_explanation ? <p className="compact-copy">{opportunity.value_explanation}</p> : null}
       {taihanIntel ? (
         <div className="taihan-intel-block">
