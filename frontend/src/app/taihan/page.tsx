@@ -338,7 +338,7 @@ export default function TaihanPage() {
       </section>
 
       <footer className="sales-footer">
-        <span>©2026 ElecBidSpec AI</span>
+        <span>©2026 SUPREME AI VENTURES LLC</span>
         <span>대한전선의 미국 공공입찰 인텔리전스와 제안 준비를 위한 파일럿.</span>
       </footer>
     </main>

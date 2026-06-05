@@ -37,6 +37,7 @@ export default function AppLayout({ children }: Readonly<{ children: React.React
         </nav>
         <div className="sidebar-footer">
           <AuthStatus />
+          <p className="sidebar-legal">©2026 SUPREME AI VENTURES LLC</p>
         </div>
       </aside>
       <main className="main-content">{children}</main>

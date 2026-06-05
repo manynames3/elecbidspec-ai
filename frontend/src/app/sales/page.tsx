@@ -464,7 +464,7 @@ export default function SalesPage() {
       </section>
 
       <footer className="sales-footer">
-        <span>©2026 ElecBidSpec AI</span>
+        <span>©2026 SUPREME AI VENTURES LLC</span>
         <span>Pre-RFP opportunity intelligence for grid, utility, data-center, and electrical infrastructure pursuits.</span>
       </footer>
     </main>
