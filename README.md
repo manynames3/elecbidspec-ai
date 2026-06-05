@@ -1,6 +1,6 @@
 # ElecBidSpec AI
 
-ElecBidSpec AI is a full-stack pursuit intelligence and proposal-prep platform for electrical contractors, GCs, and cable suppliers pursuing grid, data-center, and public infrastructure work. It ingests fragmented public bid sources, models upstream PUC/RTO/permitting/capital-plan signals, accepts uploaded RFP/spec documents, extracts electrical scope, classifies project type and pursuit stage, scores each opportunity against a company capability profile, and generates bid-readiness and proposal artifacts.
+ElecBidSpec AI is a full-stack pre-RFP power infrastructure intelligence and proposal-prep platform for cable suppliers, electrical contractors, and GCs pursuing large U.S. grid, utility, and data-center power projects. It ingests fragmented public bid sources and upstream PUC/RTO/ISO/permitting/capital-plan signals, turns them into source-backed opportunity records, scores each pursuit against a company capability profile, and generates executive-ready intelligence briefs, weekly reports, and proposal artifacts.
 
 **Live demo:** https://elecbidspec-ai.pages.dev
 
@@ -12,7 +12,9 @@ ElecBidSpec AI is a full-stack pursuit intelligence and proposal-prep platform f
 
 ## About
 
-This project was built as an MVP for a realistic B2B workflow: helping electrical infrastructure teams find and qualify high-value opportunities before the bid window gets crowded. The product problem is fragmented opportunity data. Relevant work can be buried in federal postings, state DOT bid-item tables, public utility pages, investor-owned utility signals, PUC dockets, RTO/ISO transmission plans and interconnection queues, zoning and permitting records, school authority notices, city/county procurement sites, Bonfire portals, and PDFs with inconsistent titles and value signals.
+This project was built as an MVP for a realistic B2B workflow: helping electrical infrastructure teams find and qualify high-value opportunities before the bid window gets crowded. The product is now focused on Taihan-style pre-RFP intelligence: tracking early signals from investor-owned utilities, public utility commissions, RTO/ISO queues, transmission planning, data-center load growth, permitting, and official procurement sources before a formal solicitation appears.
+
+The product problem is fragmented opportunity data. Relevant work can be buried in federal postings, state DOT bid-item tables, public utility pages, investor-owned utility signals, PUC dockets, RTO/ISO transmission plans and interconnection queues, zoning and permitting records, school authority notices, city/county procurement sites, Bonfire portals, and PDFs with inconsistent titles and value signals.
 
 The app works without live SAM.gov access. Local startup seeds sample electrical/data-center/grid replacement opportunities and a sample company profile, while manual PDF/text upload supports spec extraction and proposal prep from documents found elsewhere.
 
@@ -24,7 +26,7 @@ The app works without live SAM.gov access. Local startup seeds sample electrical
 | Backend | FastAPI, Python, Mangum for AWS Lambda |
 | Data | PostgreSQL, SQLAlchemy 2, Alembic migrations, JSON/JSONB for extracted specs and artifacts |
 | Ingestion | Adapter registry for SAM.gov, public JSON feeds, public HTML pages, bid-item tables, Bonfire portals, RTO/ISO workbooks, PUC dockets, ArcGIS land-use layers, and source-specific public adapters |
-| Documents | PDF/text upload, `pypdf` extraction, generated DOCX/PDF proposal outputs |
+| Documents | PDF/text upload, `pypdf` extraction, generated DOCX/PDF proposal outputs, source-backed brief PDFs, weekly intelligence report PDFs |
 | AI | Optional Amazon Bedrock proposal enhancement with deterministic fallback |
 | Auth | First-party email/password auth, hashed passwords, bearer sessions, admin/user roles, tenant-aware profiles |
 | Deployment | Docker Compose locally; Cloudflare Pages frontend; Terraform-managed AWS Lambda Function URL, scheduled Lambda worker, S3 uploads/artifacts, Neon Postgres-compatible database |
@@ -34,12 +36,15 @@ The app works without live SAM.gov access. Local startup seeds sample electrical
 
 - Built an extensible ingestion layer where each public source is an adapter, not one hardcoded scraper.
 - Normalizes bid and upstream-signal records into a common opportunity model with source health, value confidence, pursuit stage, owner type, signal type, project classification, extracted specs, and fit scoring.
+- Added a deterministic pursuit-intelligence layer that grades evidence, explains why an opportunity matters now, identifies likely owner/utility targets, flags cable-specific scope, and separates active bids from upstream pre-RFP signals.
+- Generates boardroom-oriented weekly intelligence PDFs and one-page opportunity brief PDFs from the same source-backed records used in the dashboard.
+- Includes an admin backfill/rescore workflow so existing records can be updated after scoring, value, or pursuit-intelligence logic changes.
 - Keeps the MVP useful without third-party keys through seed data, public no-key adapters, and manual RFP/spec upload.
 - Separates deterministic proposal generation from optional Bedrock enhancement so demo flows continue when AI services are disabled or unavailable.
 - Uses SQLAlchemy/Alembic migrations with tenant-aware records for manual opportunities, profiles, workflows, proposal artifacts, alert preferences, and saved searches.
 - Implements low-idle deployment with Cloudflare Pages, Lambda Function URL, EventBridge-scheduled worker, S3, and pooled Postgres rather than always-on compute.
 - Protects admin ingestion refreshes and mutating job endpoints behind admin auth or a bootstrap token.
-- Includes 68 backend tests across core domain logic, tenant boundaries, and ingestion adapter behavior.
+- Includes 80 backend tests across core domain logic, tenant boundaries, ingestion adapter behavior, auth, proposals, alerts, backfill, and pursuit intelligence.
 
 ## Architecture
 
@@ -58,17 +63,18 @@ See [docs/architecture.md](docs/architecture.md) for a C4-style container diagra
 - Manual PDF/text upload for RFP/spec intake.
 - Public source ingestion with health reporting and portal-gated source labels.
 - Admin source-operations view for source status, record counts, gated portals, covered duplicate sources, and follow-up notes.
-- Early-signal modeling for PUC dockets, RTO/ISO transmission plans, zoning/permitting records, data-center interconnection signals, utility capital plans, pre-RFP/prequalification windows, and investor-owned utility owner context.
-- Source evidence excerpts on opportunity cards so users can see the official row, docket, or fact-sheet basis before opening detail.
+- Pre-RFP intelligence workspace for PUC dockets, RTO/ISO transmission plans, zoning/permitting records, data-center interconnection signals, utility capital plans, prequalification windows, and investor-owned utility owner context.
+- Source evidence excerpts, evidence grades, signal-change labels, "why now" narratives, and suggested next actions on opportunity cards so users can see why a pursuit matters before opening detail.
+- Taihan-priority scoring that weights named utility evidence, voltage, data-center/AI-load indicators, cable-specific scope, estimated value, pursuit stage, geography, and owner type.
 - Electrical spec extraction for cable, conduit, trenching, transformer, substation, fiber, data center, emergency repair, and related terms.
 - Project classification into data center power, utility replacement, fire damage rebuild, underground installation, overhead/pole installation, substation-related, and general electrical.
 - Company fit scoring based on states served, bonding capacity, cable supply, installation capabilities, labor model, and experience.
-- Proposal assistant with summary, scope checklist, missing-info checklist, required-documents checklist, risk flags, executive summary, compliance matrix, bid/no-bid memo, partner outreach email, DOCX export, and PDF export.
+- Proposal assistant with summary, scope checklist, missing-info checklist, required-documents checklist, risk flags, executive summary, compliance matrix, bid/no-bid memo, partner outreach email, DOCX export, PDF export, one-page brief PDF, and weekly intelligence PDF.
 - Saved searches, watched/saved opportunities, in-app alert digests, and optional SMTP email delivery.
 
-## Public Bid Sources
+## Public Bid and Pre-RFP Sources
 
-SAM.gov is optional. The backend treats SAM.gov as one source in a nationwide source registry, not as the whole product.
+SAM.gov is optional. The backend treats SAM.gov as one source in a nationwide source registry, not as the whole product. The stronger differentiator is upstream coverage: regulatory dockets, transmission queues, interconnection records, permitting/zoning signals, and utility planning evidence that can reveal likely cable and power infrastructure work before procurement opens.
 
 Default no-key sources include:
 
